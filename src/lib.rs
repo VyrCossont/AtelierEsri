@@ -1,3 +1,5 @@
+include!(concat!(env!("OUT_DIR"), "/assets.rs"));
+
 #[cfg(feature = "buddy-alloc")]
 mod alloc;
 mod wasm4;
@@ -27,4 +29,7 @@ fn update() {
 
     blit(&SMILEY, 76, 76, 8, 8, BLIT_1BPP);
     text("Press X to blink", 16, 90);
+
+    unsafe { *DRAW_COLORS = 0x0320 }
+    blit(&MY_FONT_DARK, 0, 0, MY_FONT_DARK_WIDTH, MY_FONT_DARK_HEIGHT, MY_FONT_DARK_FLAGS);
 }
