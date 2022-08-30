@@ -1,6 +1,6 @@
-# atelier_esri
+# Atelier Esri
 
-A game written in Rust for the [WASM-4](https://wasm4.org) fantasy console.
+An Atelier-inspired game written in Rust for the [WASM-4](https://wasm4.org) fantasy console.
 
 ## Building
 
@@ -13,20 +13,17 @@ cargo build --release
 Then run it with:
 
 ```shell
-w4 run target/wasm32-unknown-unknown/release/cart.wasm
+w4 run-native target/wasm32-unknown-unknown/release/cart.wasm
 ```
 
 For more info about setting up WASM-4, see the [quickstart guide](https://wasm4.org/docs/getting-started/setup?code-lang=rust#quickstart).
 
-## Links
+# License
 
-- [Documentation](https://wasm4.org/docs): Learn more about WASM-4.
-- [Snake Tutorial](https://wasm4.org/docs/tutorials/snake/goal): Learn how to build a complete game
-  with a step-by-step tutorial.
-- [GitHub](https://github.com/aduros/wasm4): Submit an issue or PR. Contributions are welcome!
+[MIT license.](LICENSE.md) This only covers the code, not the assets. Please see the asset list below for asset licenses.
 
 # Assets used
 
 ## Fonts
 
-- [Tiny Bitmap Font](https://opengameart.org/content/tiny-bitmap-font) by [Binary Moon](https://www.binarymoon.co.uk/) (public domain)
+- [`my-font-dark.png`](assets/my-font-dark.png): [Tiny Bitmap Font](https://opengameart.org/content/tiny-bitmap-font) by [Binary Moon](https://www.binarymoon.co.uk/) (public domain)

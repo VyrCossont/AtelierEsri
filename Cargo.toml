@@ -1,7 +1,10 @@
 [package]
-name = "cart"
+name = "atelier_esri"
 version = "0.1.0"
 edition = "2021"
+
+repository = "https://github.com/VyrCossont/AtelierEsri"
+license = "MIT"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
