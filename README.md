@@ -13,7 +13,7 @@ cargo build --release
 Then run it with:
 
 ```shell
-w4 run-native target/wasm32-unknown-unknown/release/cart.wasm
+w4 run-native target/wasm32-unknown-unknown/release/atelier_esri.wasm
 ```
 
 For more info about setting up WASM-4, see the [quickstart guide](https://wasm4.org/docs/getting-started/setup?code-lang=rust#quickstart).
