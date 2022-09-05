@@ -1,6 +1,6 @@
 include!(concat!(env!("OUT_DIR"), "/assets.rs"));
-use std::cmp::max;
 use crate::wasm4::*;
+use std::cmp::max;
 
 const MY_FONT_SPRITE_WIDTH: u32 = 7;
 const MY_FONT_SPRITE_HEIGHT: u32 = 7;
@@ -54,13 +54,28 @@ fn fcore(s: &str, x: i32, y: i32, draw: bool) -> (i32, i32) {
                     let (src_x, src_y) = g.src();
                     let w = g.width();
                     if draw {
-                        blit_sub(&MY_FONT_DARK, cx, cy, w as u32, MY_FONT_DEFAULT_HEIGHT as u32, src_x, src_y, MY_FONT_DARK_WIDTH, MY_FONT_DARK_FLAGS);
+                        blit_sub(
+                            &MY_FONT_DARK,
+                            cx,
+                            cy,
+                            w as u32,
+                            MY_FONT_DEFAULT_HEIGHT as u32,
+                            src_x,
+                            src_y,
+                            MY_FONT_DARK_WIDTH,
+                            MY_FONT_DARK_FLAGS,
+                        );
                     }
                     cx += w;
                 } else {
                     // Missing character replacement block.
                     if draw {
-                        rect(cx, cy, MY_FONT_DEFAULT_WIDTH as u32, MY_FONT_DEFAULT_HEIGHT as u32);
+                        rect(
+                            cx,
+                            cy,
+                            MY_FONT_DEFAULT_WIDTH as u32,
+                            MY_FONT_DEFAULT_HEIGHT as u32,
+                        );
                     }
                     cx += MY_FONT_DEFAULT_WIDTH;
                 }
@@ -68,7 +83,7 @@ fn fcore(s: &str, x: i32, y: i32, draw: bool) -> (i32, i32) {
         }
     }
     cx_max = max(cx, cx_max);
-    (cx_max, cy)
+    (cx_max, cy + MY_FONT_LINE_HEIGHT)
 }
 
 enum FontError {
@@ -82,7 +97,8 @@ impl Glyph {
     fn src(&self) -> (u32, u32) {
         let r = self.0 % MY_FONT_SPRITES_PER_ROW;
         let c = self.0 / MY_FONT_SPRITES_PER_ROW;
-        let x = r * MY_FONT_SPRITE_WIDTH + match self.0 {
+        let x = r * MY_FONT_SPRITE_WIDTH
+            + match self.0 {
             34 /* 'i' */ => 3,
             37 /* 'l' */ => 3,
             53 /* '1' */ => 3,
@@ -151,4 +167,10 @@ impl TryFrom<char> for Glyph {
         };
         Ok(Glyph(i))
     }
+}
+
+/// WASM-4 `text()` actually expects ASCII with some nonstandard escapes, not UTF-8.
+pub fn btext(t: &[u8], x: i32, y: i32) {
+    let extd_ascii_text = unsafe { std::str::from_utf8_unchecked(t) };
+    text(extd_ascii_text, x, y);
 }
