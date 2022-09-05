@@ -20,10 +20,32 @@ For more info about setting up WASM-4, see the [quickstart guide](https://wasm4.
 
 # License
 
-[MIT license.](LICENSE.md) This only covers the code, not the assets. Please see the asset list below for asset licenses.
+[MIT license](LICENSE.md), except for some assets as noted below.
 
-# Assets used
+# Assets
+
+## Folders
+
+`asset_originals` is for assets created for this game, is not directly consumed by the build script, and contains project files in formats like [Pixaki](https://pixaki.com/)/[Aseprite](https://www.aseprite.org/) documents (graphics) and [PICO-8](https://www.lexaloffle.com/pico-8.php) cartridges (music, sound effects).
+
+[`assets`](assets) is intended for consumption by the [build script](build.rs).
+
+## Licensing
+
+Some assets are from [OpenGameArt](https://opengameart.org/) and come with their own license terms.
+
+I created some of the assets with reference to AI-generated images from [Artbreeder](https://www.artbreeder.com/), for which the [Artbreeder ToS](https://www.artbreeder.com/terms.pdf) requires outputs to be licensed under the [CC0](https://creativecommons.org/share-your-work/public-domain/cc0/) public domain license. 
+
+I created some of the other assets from reference to AI-generated images from [Waifu Labs](https://waifulabs.com/), for which I can't find a ToS.
+
+In both cases, the Pixaki and Aseprite files will contain the AI-generated reference, as well as my own pixel-art interpretation. Copyright for AI-generated images is an evolving area, and what counts as a protectable copyrighted derivative of a public domain work seems to be a large grey area, so I'm not sure if I have a copyright on the pixel-art versions, in which case the project's MIT license applies, or if they fall under CC0 (for Artbreeder references) or some other license (for Waifu Labs references). Use at your own risk, or ask a lawyer (and then please tell me what they said).
+
+## Character portraits
+
+- [`Allie.png`](asset_originals/Allie.png)/[`Allie.pixaki`](asset_originals/Allie.pixaki)/[`Allie.aseprite`](asset_originals/Allie.aseprite) (Waifu Labs reference)
+- [`Esri.png`](asset_originals/Esri.png)/[`Esri.pixaki`](asset_originals/Esri.pixaki)/[`Esri.aseprite`](asset_originals/Esri.aseprite) (Waifu Labs reference)
+- [`Sae.png`](asset_originals/Sae.png)/[`Sae.pixaki`](asset_originals/Sae.pixaki)/[`Sae.aseprite`](asset_originals/Sae.aseprite) (Artbreeder reference)
 
 ## Fonts
 
-- [`my-font-dark.png`](assets/my-font-dark.png): [Tiny Bitmap Font](https://opengameart.org/content/tiny-bitmap-font) by [Binary Moon](https://www.binarymoon.co.uk/) (public domain)
+- [`my-font-dark.png`](assets/my-font-dark.png): [Tiny Bitmap Font](https://opengameart.org/content/tiny-bitmap-font) by [Binary Moon](https://www.binarymoon.co.uk/) (CC0)
