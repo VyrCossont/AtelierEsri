@@ -26,7 +26,7 @@ For more info about setting up WASM-4, see the [quickstart guide](https://wasm4.
 
 ## Folders
 
-`asset_originals` is for assets created for this game, is not directly consumed by the build script, and contains project files in formats like [Pixaki](https://pixaki.com/)/[Aseprite](https://www.aseprite.org/) documents (graphics) and [PICO-8](https://www.lexaloffle.com/pico-8.php) cartridges (music, sound effects).
+`asset_originals` is not directly consumed by the build script, and contains project files in formats like [Pixaki](https://pixaki.com/)/[Aseprite](https://www.aseprite.org/) documents (graphics), [PICO-8](https://www.lexaloffle.com/pico-8.php) cartridges (music, sound effects), and [Tiled](https://www.mapeditor.org/) (tilesets, maps).
 
 [`assets`](assets) is intended for consumption by the [build script](build.rs).
 
@@ -49,3 +49,4 @@ In both cases, the Pixaki and Aseprite files will contain the AI-generated refer
 ## Fonts
 
 - [`my-font-dark.png`](assets/my-font-dark.png): [Tiny Bitmap Font](https://opengameart.org/content/tiny-bitmap-font) by [Binary Moon](https://www.binarymoon.co.uk/) (CC0)
+- [`Kenney-MonochromeRPG.png`](assets/Kenney-MonochromeRPG.png), [`Village.tmx`](asset_originals/Village.tmx): [Monochrome RPG](https://opengameart.org/content/monochrome-rpg) by [Kenney](https://kenney.nl/) (CC0)
