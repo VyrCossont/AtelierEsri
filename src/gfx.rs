@@ -1,6 +1,8 @@
-use crate::wasm4::trace;
 use crate::wasm4::{blit, blit_sub, BLIT_2BPP, DRAW_COLORS};
+use crate::wasm4::{hline, line, vline};
 use std::cmp::{max, min};
+
+// region split sprites
 
 /// Sprite composed of 2 2BPP sprites,
 /// the 1st with transparent color, color 0, color 1, unused color,
@@ -23,6 +25,10 @@ impl SplitSprite<'_> {
         blit(self.layers[1], x, y, self.w, self.h, flags | BLIT_2BPP);
     }
 }
+
+// endregion split sprites
+
+// region map
 
 type TileId = u8;
 
@@ -95,3 +101,29 @@ impl Layer<'_> {
         }
     }
 }
+
+// endregion map
+
+// region thick lines
+
+pub fn thick_hline(x: i32, y: i32, len: u32, h: i32) {
+    for dy in 0..h {
+        hline(x, y + dy, len);
+    }
+}
+
+pub fn thick_vline(x: i32, y: i32, len: u32, w: i32) {
+    for dx in 0..w {
+        vline(x + dx, y, len);
+    }
+}
+
+pub fn thick_line(x1: i32, y1: i32, x2: i32, y2: i32, w: i32, h: i32) {
+    for dy in 0..h {
+        for dx in 0..w {
+            line(x1 + dx, y1 + dy, x2 + dx, y2 + dy);
+        }
+    }
+}
+
+// endregion thick lines
