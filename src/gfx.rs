@@ -73,6 +73,14 @@ pub struct Layer<'a> {
 }
 
 impl Layer<'_> {
+    /// Return dimensions in pixels instead of tiles.
+    pub fn dimensions(&self) -> (u32, u32) {
+        (
+            self.width_tiles * self.tileset.tile_width,
+            self.height_tiles * self.tileset.tile_height,
+        )
+    }
+
     pub fn draw(&self, x: i32, y: i32, map_x: i32, map_y: i32, w: u32, h: u32) {
         let map_x_to_x = x - map_x;
         let map_y_to_y = y - map_y;
