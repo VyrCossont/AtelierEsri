@@ -1,6 +1,7 @@
 include!(concat!(env!("OUT_DIR"), "/assets.rs"));
-use crate::wasm4::*;
+use crate::wasm4;
 use std::cmp::max;
+use std::str::from_utf8_unchecked;
 
 const MY_FONT_SPRITE_WIDTH: u32 = 7;
 const MY_FONT_SPRITE_HEIGHT: u32 = 7;
@@ -14,12 +15,135 @@ const MY_FONT_DEFAULT_START_Y_OFFSET: u32 = 1;
 const MY_FONT_KERNING: i32 = 1;
 const MY_FONT_LINE_SPACING: i32 = 1;
 
+pub enum Font<'a> {
+    BuiltIn,
+    Proportional {
+        sprite_data: &'a [u8],
+        sprite_width: u32,
+        sprite_height: u32,
+        sprites_per_row: u32,
+        default_width: i32,
+        default_height: i32,
+        line_height: i32,
+        space_width: i32,
+        default_start_x_offset: u32,
+        default_start_y_offset: u32,
+        kerning: i32,
+        line_spacing: i32,
+    },
+}
+
+impl Font<'_> {
+    /// Draw text.
+    pub fn text(&self, s: &str, x: i32, y: i32) {
+        match self {
+            Self::BuiltIn => Self::builtin_text(s, x, y),
+            _ => todo!(),
+        }
+    }
+
+    /// Return the bounding box that a drawn string would have.
+    pub fn metrics(&self, s: &str) -> (u32, u32) {
+        match self {
+            Self::BuiltIn => Self::builtin_metrics(s),
+            _ => todo!(),
+        }
+    }
+
+    fn builtin_text(s: &str, x: i32, y: i32) {
+        let bytes = Self::builtin_text_to_bytes(s);
+        let extd_ascii_text = unsafe { from_utf8_unchecked(&bytes) };
+        wasm4::text(extd_ascii_text, x, y);
+    }
+
+    fn builtin_metrics(s: &str) -> (u32, u32) {
+        let bytes = Self::builtin_text_to_bytes(s);
+        if bytes.is_empty() {
+            return (0, 0);
+        }
+        let mut current_col = 0;
+        let mut max_col = 0;
+        let mut lines = 1;
+        for c in bytes {
+            if c == '\n' as u8 {
+                lines += 1;
+                max_col = max(max_col, current_col);
+                current_col = 0;
+            } else {
+                current_col += 1;
+            }
+        }
+        max_col = max(max_col, current_col);
+        return (8 * max_col, 8 * lines);
+    }
+
+    /// WASM-4's `text()` actually takes a 1-byte character set based on ISO-8859-1,
+    /// with a few extra symbols, so we have to translate Unicode characters to that.
+    fn builtin_text_to_bytes(s: &str) -> Vec<u8> {
+        let mut bytes = Vec::with_capacity(s.len());
+        for c in s.chars() {
+            match c {
+                // ASCII:
+                // TODO: is \r handled differently?
+                '\n' => bytes.push(c as u8),
+                ' '..='~' => bytes.push(c as u8),
+
+                // WASM-4 puts two low dots where U+007F DELETE would be.
+                // Might be an under-dieresis, but U+0324 COMBINING DIAERESIS BELOW
+                // has no non-combining equivalent like U+00A8 ¨ DIAERESIS,
+                // so we'll use U+2025 TWO DOT LEADER to represent this glyph in Unicode text.
+                '‥' => bytes.push(0x7f),
+
+                // WASM-4 button characters:
+                // Ignore text and emoji variation selectors to make it easier to type buttons.
+                '\u{fe0e}' | '\u{fe0f}' => (),
+
+                // Note that buttons 1 and 2 are documented as buttons A and B in
+                // https://wasm4.org/docs/guides/text#special-characters
+                // but rendered with X and Z respectively, so we'll accept either of these:
+                // U+1F167 NEGATIVE CIRCLED LATIN CAPITAL LETTER X
+                // U+1F170 NEGATIVE SQUARED LATIN CAPITAL LETTER A (aka blood type emoji A)
+                '🅧' | '🅰' => bytes.push(0x80),
+
+                // U+1F169 NEGATIVE CIRCLED LATIN CAPITAL LETTER Z
+                // U+1F171 NEGATIVE SQUARED LATIN CAPITAL LETTER B (aka blood type emoji B)
+                '🅩' | '🅱' => bytes.push(0x81),
+
+                // U+2B05 LEFTWARDS BLACK ARROW
+                '⬅' => bytes.push(0x84),
+
+                // U+27A1 BLACK RIGHTWARDS ARROW
+                // (used by Apple emoji picker but renders funny without emoji variation selector because it's from Dingbats)
+                // U+2B95 RIGHTWARDS BLACK ARROW
+                '➡' | '⮕' => bytes.push(0x85),
+
+                // U+2B06 UPWARDS BLACK ARROW
+                '⬆' => bytes.push(0x86),
+
+                // U+2B07 DOWNWARDS BLACK ARROW
+                '⬇' => bytes.push(0x87),
+
+                // Map all Latin-1 Supplement characters to their ISO-8859-1 equivalents:
+                '\u{a0}'..='ÿ' => bytes.push(c as u8),
+
+                _ => {
+                    let mut panic_msg =
+                        String::from("Unicode character not supported by built-in font: ");
+                    panic_msg.extend(c.escape_default());
+                    wasm4::trace(panic_msg);
+                    panic!();
+                }
+            }
+        }
+        bytes
+    }
+}
+
 /// Draw text with custom font from `my-font-dark.png`.
 pub fn ftext(s: &str, x: i32, y: i32) {
     fcore(s, x, y, true);
 }
 
-/// Return the bounding box that a string would use.
 pub fn fmetrics(s: &str) -> (u32, u32) {
     let (x, y) = fcore(s, 0, 0, false);
     (x as u32, y as u32)
@@ -54,7 +178,7 @@ fn fcore(s: &str, x: i32, y: i32, draw: bool) -> (i32, i32) {
                     let (src_x, src_y) = g.src();
                     let w = g.width();
                     if draw {
-                        blit_sub(
+                        wasm4::blit_sub(
                             &MY_FONT_DARK,
                             cx,
                             cy,
@@ -70,7 +194,7 @@ fn fcore(s: &str, x: i32, y: i32, draw: bool) -> (i32, i32) {
                 } else {
                     // Missing character replacement block.
                     if draw {
-                        rect(
+                        wasm4::rect(
                             cx,
                             cy,
                             MY_FONT_DEFAULT_WIDTH as u32,
@@ -167,10 +291,4 @@ impl TryFrom<char> for Glyph {
         };
         Ok(Glyph(i))
     }
-}
-
-/// WASM-4 `text()` actually expects ASCII with some nonstandard escapes, not UTF-8.
-pub fn btext(t: &[u8], x: i32, y: i32) {
-    let extd_ascii_text = unsafe { std::str::from_utf8_unchecked(t) };
-    text(extd_ascii_text, x, y);
 }
