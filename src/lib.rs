@@ -70,12 +70,13 @@ const CHARACTERS: [Character; 3] = [
 
 #[no_mangle]
 fn start() {
-    //music(0);
+    audio::init();
+    music(0);
 }
 
 #[no_mangle]
 fn update() {
-    //music_update();
+    music_update();
 
     let animation_clock = unsafe { ANIMATION_CLOCK };
 
@@ -119,11 +120,6 @@ fn update() {
         shadow_btext(b"\x85", x, y);
         shadow_ftext(t, x + 10, y);
     }
-
-    // let msg = "Hello\nfrom\nRust!";
-    // let (w, h) = fmetrics(msg);
-    // unsafe { *DRAW_COLORS = 0x0320 }
-    // ftext(msg, 80 - (w as i32 / 2), 80 - (h as i32 / 2));
 
     unsafe {
         ANIMATION_CLOCK = (animation_clock + 1) % ANIMATION_CYCLE_LEN;

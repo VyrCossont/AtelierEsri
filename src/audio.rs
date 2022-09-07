@@ -20,6 +20,12 @@ impl<'a> Sfx<'a> {
     }
 }
 
+/// Worse version of the workaround for a lack of fine timing used by `w4on`:
+/// https://github.com/JerwuQu/w4on/blob/82ff95f/w4on.c#L60-L63
+/// Prevents audible gaps between supposed-to-be-continuous notes.
+/// `w4on` is a bit smarter and only does it for runs of the *same* note.
+const NOTE_DURATION_FUDGE_FACTOR: u32 = 2;
+
 #[derive(Default)]
 pub struct SfxPlayback<'a> {
     pub frame_counter: u8,
@@ -68,7 +74,7 @@ impl<'a> SfxPlayback<'a> {
             if sfx_tone.volume > 0 {
                 tone(
                     sfx_tone.frequency,
-                    sfx_tone.duration,
+                    sfx_tone.duration + NOTE_DURATION_FUDGE_FACTOR,
                     sfx_tone.volume,
                     sfx_tone.flags,
                 );
