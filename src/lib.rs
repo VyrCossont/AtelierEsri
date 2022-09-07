@@ -7,12 +7,12 @@ mod audio_data;
 mod font;
 mod gfx;
 mod gfx_data;
+mod map_data;
 mod wasm4;
 
 use crate::audio::{music, music_update};
 use crate::font::{btext, fmetrics, ftext};
 use crate::gfx::SplitSprite;
-use crate::gfx_data::{ALLIE, ESRI, SAE};
 use wasm4::*;
 
 const ANIMATION_CYCLE_LEN: u32 = 2 * 5 * 60;
@@ -23,7 +23,8 @@ struct Character<'a> {
     bio: [&'a str; 4],
     sprite: &'a SplitSprite<'a>,
     palette: [u32; 4],
-    mid_bg: bool,
+    map_x: i32,
+    map_y: i32,
 }
 
 const CHARACTERS: [Character; 3] = [
@@ -35,10 +36,11 @@ const CHARACTERS: [Character; 3] = [
             "petty criminal, kleptomaniac,",
             "aspiring drug dealer",
         ],
-        sprite: &ESRI,
+        sprite: &gfx_data::ESRI,
         // https://lospec.com/palette-list/ice-cream-gb
         palette: [0xfffff6d3, 0xfff9a875, 0xffeb6b6f, 0xff7c3f58],
-        mid_bg: false,
+        map_x: 0,
+        map_y: 20,
     },
     Character {
         name: "Allie",
@@ -48,10 +50,11 @@ const CHARACTERS: [Character; 3] = [
             "would never do a crime on purpose",
             "constantly doing crimes by accident",
         ],
-        sprite: &ALLIE,
+        sprite: &gfx_data::ALLIE,
         // https://lospec.com/palette-list/muddysand
         palette: [0xffe6d69c, 0xffb4a56a, 0xff7b7162, 0xff393829],
-        mid_bg: false,
+        map_x: 200,
+        map_y: 110,
     },
     Character {
         name: "Sae",
@@ -61,10 +64,11 @@ const CHARACTERS: [Character; 3] = [
             "party conscience",
             "natural top",
         ],
-        sprite: &SAE,
+        sprite: &gfx_data::SAE,
         // https://lospec.com/palette-list/2bit-demichrome
         palette: [0xffe9efec, 0xffa0a08b, 0xff555568, 0xff211e20],
-        mid_bg: false,
+        map_x: 120,
+        map_y: 50,
     },
 ];
 
@@ -85,11 +89,6 @@ fn update() {
         unsafe { (&mut *PALETTE)[i] = c }
     }
 
-    if character.mid_bg {
-        unsafe { *DRAW_COLORS = 0x0023 }
-    } else {
-        unsafe { *DRAW_COLORS = 0x0012 }
-    }
     // Loops 15 times in the animation cycle assuming 8x? tile..
     let bg_cycle = (animation_clock / 5) % BG_BRICKS_WIDTH;
     // Intentionally drawing one more column than would fill the screen.
@@ -106,18 +105,41 @@ fn update() {
         }
     }
 
+    unsafe { *DRAW_COLORS = 0x1234 }
+    map_data::VILLAGE.draw(0, 90, character.map_x, character.map_y, 160, 70);
+
+    let character_bg_start_x = SCREEN_SIZE - character.sprite.w + 6;
+    let character_bg_start_y = SCREEN_SIZE - character.sprite.h - 2;
+    unsafe { *DRAW_COLORS = 1 }
+    for y in character_bg_start_y..SCREEN_SIZE {
+        let x = character_bg_start_x - (y - character_bg_start_y) / 4;
+        hline(x as i32, y as i32, SCREEN_SIZE - x);
+    }
+    unsafe { *DRAW_COLORS = 2 }
+    let thickness = 2;
+    for t in 0..thickness {
+        let x1 = character_bg_start_x as i32 - t;
+        let y1 = character_bg_start_y as i32 - t;
+        let x2 = x1 - (SCREEN_SIZE as i32 - y1) / 4;
+        let y2 = SCREEN_SIZE as i32;
+        hline(x1, y1, SCREEN_SIZE - x1 as u32);
+        line(x1, y1, x2, y2);
+    }
+
     character.sprite.blit(
         (SCREEN_SIZE - character.sprite.w) as i32,
         (SCREEN_SIZE - character.sprite.h) as i32,
         0,
     );
 
+    unsafe { *DRAW_COLORS = 0x11 }
+    rect(9, 9, 10 * character.name.len() as u32 + 2, 10 + 2);
     shadow_text(character.name, 10, 10);
 
     for (i, t) in character.bio.into_iter().enumerate() {
         let x = 10;
         let y = 25 + (i as i32) * 15;
-        shadow_btext(b"\x85", x, y);
+        shadow_btext(b"\x85", x, y - 1);
         shadow_ftext(t, x + 10, y);
     }
 
