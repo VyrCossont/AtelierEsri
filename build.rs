@@ -23,8 +23,15 @@ fn main() {
 
     let w4_png2src_status = Command::new("w4")
         .args(&["png2src", "--rust", "--output"])
-        .arg(dest_path)
+        .arg(&dest_path)
         .args(&pngs)
         .status();
     assert!(w4_png2src_status.unwrap().success());
+
+    // Make all the generated data constants public.
+    let sed_status = Command::new("sed")
+        .args(&["-E", "-i", "", "-e", "s/const/pub const/g"])
+        .arg(&dest_path)
+        .status();
+    assert!(sed_status.unwrap().success());
 }

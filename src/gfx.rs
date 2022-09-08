@@ -1,5 +1,4 @@
-use crate::wasm4::{blit, blit_sub, BLIT_2BPP, DRAW_COLORS};
-use crate::wasm4::{hline, line, vline};
+use crate::wasm4;
 use std::cmp::{max, min};
 
 // region split sprites
@@ -19,14 +18,92 @@ pub struct SplitSprite<'a> {
 impl SplitSprite<'_> {
     pub fn blit(&self, x: i32, y: i32, flags: u32) {
         // TODO: standardize which color indexes are the brighter ones across the project.
-        unsafe { *DRAW_COLORS = 0x0043 }
-        blit(self.layers[0], x, y, self.w, self.h, flags | BLIT_2BPP);
-        unsafe { *DRAW_COLORS = 0x0021 }
-        blit(self.layers[1], x, y, self.w, self.h, flags | BLIT_2BPP);
+        unsafe { *wasm4::DRAW_COLORS = 0x0043 }
+        wasm4::blit(
+            self.layers[0],
+            x,
+            y,
+            self.w,
+            self.h,
+            flags | wasm4::BLIT_2BPP,
+        );
+        unsafe { *wasm4::DRAW_COLORS = 0x0021 }
+        wasm4::blit(
+            self.layers[1],
+            x,
+            y,
+            self.w,
+            self.h,
+            flags | wasm4::BLIT_2BPP,
+        );
     }
 }
 
 // endregion split sprites
+
+// region character sprites
+
+#[repr(u8)]
+#[derive(Default, Copy, Clone)]
+pub enum Orientation {
+    E = 0,
+    NE = 1,
+    N = 2,
+    NW = 3,
+    W = 4,
+    SW = 5,
+    #[default]
+    S = 6,
+    SE = 7,
+}
+
+impl From<(i32, i32)> for Orientation {
+    fn from((x, y): (i32, i32)) -> Self {
+        match (x, y) {
+            _ if x > 0 && y == 0 => Orientation::E,
+            _ if x > 0 && y < 0 => Orientation::NE,
+            _ if x == 0 && y < 0 => Orientation::N,
+            _ if x < 0 && y < 0 => Orientation::NW,
+            _ if x < 0 && y == 0 => Orientation::W,
+            _ if x < 0 && y > 0 => Orientation::SW,
+            _ if x == 0 && y > 0 => Orientation::S,
+            _ if x > 0 && y > 0 => Orientation::SE,
+            _ => Orientation::default(),
+        }
+    }
+}
+
+/// Assumed to use a sprite strip.
+pub struct CharacterSprite<'a> {
+    pub image_w: u32,
+    pub image_h: u32,
+    pub image: &'a [u8],
+    pub draw_colors: u16,
+    pub sprite_w: u32,
+    pub walk_cycle_length: usize,
+    pub orientation_starts_flags: [(usize, u32); 8],
+}
+
+impl CharacterSprite<'_> {
+    pub fn draw(&self, x: i32, y: i32, w: usize, o: Orientation) {
+        let (start, flags) = self.orientation_starts_flags[o as usize];
+        let sprite_num: usize = start + (w % self.walk_cycle_length);
+        unsafe { *wasm4::DRAW_COLORS = self.draw_colors };
+        wasm4::blit_sub(
+            self.image,
+            x,
+            y,
+            self.sprite_w,
+            self.image_h,
+            sprite_num as u32 * self.sprite_w,
+            0,
+            self.image_w,
+            flags,
+        );
+    }
+}
+
+// endregion character sprites
 
 // region map
 
@@ -50,7 +127,7 @@ impl Tileset<'_> {
         let tiles_per_row = self.image_width / self.tile_width;
         let row = (tile as u32 - 1) / tiles_per_row;
         let col = (tile as u32 - 1) % tiles_per_row;
-        blit_sub(
+        wasm4::blit_sub(
             self.image,
             x,
             y,
@@ -116,20 +193,20 @@ impl Layer<'_> {
 
 pub fn thick_hline(x: i32, y: i32, len: u32, h: i32) {
     for dy in 0..h {
-        hline(x, y + dy, len);
+        wasm4::hline(x, y + dy, len);
     }
 }
 
 pub fn thick_vline(x: i32, y: i32, len: u32, w: i32) {
     for dx in 0..w {
-        vline(x + dx, y, len);
+        wasm4::vline(x + dx, y, len);
     }
 }
 
 pub fn thick_line(x1: i32, y1: i32, x2: i32, y2: i32, w: i32, h: i32) {
     for dy in 0..h {
         for dx in 0..w {
-            line(x1 + dx, y1 + dy, x2 + dx, y2 + dy);
+            wasm4::line(x1 + dx, y1 + dy, x2 + dx, y2 + dy);
         }
     }
 }

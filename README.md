@@ -46,6 +46,10 @@ In both cases, the Pixaki and Aseprite files will contain the AI-generated refer
 - [`Esri.png`](asset_originals/Esri.png)/[`Esri.pixaki`](asset_originals/Esri.pixaki)/[`Esri.aseprite`](asset_originals/Esri.aseprite) (Waifu Labs reference)
 - [`Sae.png`](asset_originals/Sae.png)/[`Sae.pixaki`](asset_originals/Sae.pixaki)/[`Sae.aseprite`](asset_originals/Sae.aseprite) (Artbreeder reference)
 
+## Sprites
+
+- [`gungirl.png`](assets/gungirl.png): [Gun Girl + Riflemen + Shielded Rifleman + Tiles](https://opengameart.org/content/gun-girl-riflemen-shielded-rifleman-tiles) by [Spring Spring](https://opengameart.org/users/spring-spring) (CC-BY-3.0)
+
 ## Fonts
 
 - [`my-font-dark.png`](assets/my-font-dark.png): [Tiny Bitmap Font](https://opengameart.org/content/tiny-bitmap-font) by [Binary Moon](https://www.binarymoon.co.uk/) (CC0)

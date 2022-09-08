@@ -1,7 +1,6 @@
-include!(concat!(env!("OUT_DIR"), "/assets.rs"));
-
 #[cfg(feature = "buddy-alloc")]
 mod alloc;
+mod asset_data;
 mod audio;
 mod audio_data;
 mod font;

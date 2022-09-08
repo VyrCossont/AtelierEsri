@@ -1,4 +1,4 @@
-include!(concat!(env!("OUT_DIR"), "/assets.rs"));
+use crate::asset_data;
 
 use crate::gfx::{Layer, Tileset};
 
@@ -6,9 +6,9 @@ use crate::gfx::{Layer, Tileset};
 pub const KMRPG: Tileset = Tileset {
     tile_width: 16,
     tile_height: 16,
-    image_width: KENNEY__MONOCHROME_R_P_G_WIDTH,
-    image: &KENNEY__MONOCHROME_R_P_G,
-    image_flags: KENNEY__MONOCHROME_R_P_G_FLAGS,
+    image_width: asset_data::KENNEY__MONOCHROME_R_P_G_WIDTH,
+    image: &asset_data::KENNEY__MONOCHROME_R_P_G,
+    image_flags: asset_data::KENNEY__MONOCHROME_R_P_G_FLAGS,
 };
 
 /// TODO: add Tiled .tmx map files to build script

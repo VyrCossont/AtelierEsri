@@ -1,11 +1,11 @@
-include!(concat!(env!("OUT_DIR"), "/assets.rs"));
+use crate::asset_data;
 use crate::wasm4;
 use std::cmp::max;
 use std::str::from_utf8_unchecked;
 
 const MY_FONT_SPRITE_WIDTH: u32 = 7;
 const MY_FONT_SPRITE_HEIGHT: u32 = 7;
-const MY_FONT_SPRITES_PER_ROW: u32 = MY_FONT_DARK_WIDTH / MY_FONT_SPRITE_WIDTH;
+const MY_FONT_SPRITES_PER_ROW: u32 = asset_data::MY_FONT_DARK_WIDTH / MY_FONT_SPRITE_WIDTH;
 const MY_FONT_DEFAULT_WIDTH: i32 = 3;
 const MY_FONT_DEFAULT_HEIGHT: i32 = 5;
 const MY_FONT_LINE_HEIGHT: i32 = MY_FONT_DEFAULT_HEIGHT;
@@ -179,15 +179,15 @@ fn fcore(s: &str, x: i32, y: i32, draw: bool) -> (i32, i32) {
                     let w = g.width();
                     if draw {
                         wasm4::blit_sub(
-                            &MY_FONT_DARK,
+                            &asset_data::MY_FONT_DARK,
                             cx,
                             cy,
                             w as u32,
                             MY_FONT_DEFAULT_HEIGHT as u32,
                             src_x,
                             src_y,
-                            MY_FONT_DARK_WIDTH,
-                            MY_FONT_DARK_FLAGS,
+                            asset_data::MY_FONT_DARK_WIDTH,
+                            asset_data::MY_FONT_DARK_FLAGS,
                         );
                     }
                     cx += w;
