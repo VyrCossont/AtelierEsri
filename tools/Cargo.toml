@@ -1,0 +1,13 @@
+[package]
+name = "tools"
+version = "0.1.0"
+edition = "2021"
+
+repository = "https://github.com/VyrCossont/AtelierEsri"
+license = "MIT"
+
+[dependencies]
+png = "0.17.6"
+clap = { version = "3.2.19", features = ["derive"] }
+anyhow = "1.0.63"
+divrem = "1.0.0"
