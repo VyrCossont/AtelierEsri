@@ -109,8 +109,8 @@ pub fn convert(input_path: &Path, output_path: &Path) -> anyhow::Result<()> {
     let lo4_map = |c: u8| match c {
         _ if c == input_transparent_color_index => 0u8,
         _ if c == last_color_index => 0u8,
-        _ if c < input_transparent_color_index => c,
-        _ => c - 1,
+        _ if c < input_transparent_color_index => c + 1,
+        _ => c,
     };
     let mut lo4_buf =
         vec![0u8; <usize as DivCeil>::div_ceil(num_pixels * BitDepth::Two as usize, 8)];
@@ -157,7 +157,7 @@ pub fn convert(input_path: &Path, output_path: &Path) -> anyhow::Result<()> {
     }
 
     let mut output_filename_lo4 = OsString::from(input_stem);
-    output_filename_lo4.push("-T123.png");
+    output_filename_lo4.push("_lo4.png");
     let mut output_path_lo4 = PathBuf::from(output_path);
     output_path_lo4.push(output_filename_lo4);
 
@@ -174,7 +174,7 @@ pub fn convert(input_path: &Path, output_path: &Path) -> anyhow::Result<()> {
     writer_lo4.write_image_data(&lo4_buf)?;
 
     let mut output_filename_hi2 = OsString::from(input_stem);
-    output_filename_hi2.push("-T4.png");
+    output_filename_hi2.push("_hi2.png");
     let mut output_path_hi2 = PathBuf::from(output_path);
     output_path_hi2.push(output_filename_hi2);
 

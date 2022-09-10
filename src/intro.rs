@@ -1,6 +1,6 @@
 use crate::asset_data;
 use crate::font::{fmetrics, ftext, Font};
-use crate::gfx::{thick_hline, thick_line, SplitSprite};
+use crate::gfx::{thick_hline, thick_line, Lo5SplitSprite};
 use crate::gfx_data;
 use crate::map_data;
 use crate::wasm4;
@@ -11,7 +11,7 @@ static mut ANIMATION_CLOCK: u32 = 0;
 struct Character<'a> {
     name: &'a str,
     bio: [&'a str; 4],
-    sprite: &'a SplitSprite<'a>,
+    sprite: &'a Lo5SplitSprite<'a>,
     palette: [u32; 4],
     map_x: i32,
     map_y: i32,
@@ -81,19 +81,21 @@ pub fn update() -> bool {
     // TODO: map clipping
     let bg_split_y: u32 = 80;
     let map_cycle = (animation_clock as i32 % 200) / 10;
-    unsafe { *wasm4::DRAW_COLORS = 0x1234 }
-    map_data::VILLAGE.draw(
-        0,
-        bg_split_y as i32,
-        character.map_x + map_cycle,
-        character.map_y + map_cycle,
-        wasm4::SCREEN_SIZE,
-        wasm4::SCREEN_SIZE - bg_split_y,
-    );
+    for layer in [&map_data::VILLAGE_FLOOR, &map_data::VILLAGE_BUILDINGS] {
+        map_data::VILLAGE_FLOOR.draw(
+            0,
+            bg_split_y as i32,
+            character.map_x + map_cycle,
+            character.map_y + map_cycle,
+            wasm4::SCREEN_SIZE,
+            wasm4::SCREEN_SIZE - bg_split_y,
+        );
+    }
 
     // Loops 15 times in the animation cycle assuming 8x? tile..
     let bg_cycle = (animation_clock / 5) % asset_data::BG_BRICKS_WIDTH;
     // Intentionally drawing one more column than would fill the screen.
+    unsafe { *wasm4::DRAW_COLORS = 0x21 }
     for x in (0..=wasm4::SCREEN_SIZE).step_by(asset_data::BG_BRICKS_WIDTH as usize) {
         for y in (0..bg_split_y).step_by(asset_data::BG_BRICKS_HEIGHT as usize) {
             wasm4::blit(

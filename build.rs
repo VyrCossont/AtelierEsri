@@ -21,17 +21,24 @@ fn main() {
         .map(|e| e.into_path())
         .collect();
 
-    let w4_png2src_status = Command::new("w4")
+    let w4_png2src_output = Command::new("w4")
         .args(&["png2src", "--rust", "--output"])
         .arg(&dest_path)
         .args(&pngs)
-        .status();
-    assert!(w4_png2src_status.unwrap().success());
+        .output()
+        .unwrap();
+    assert!(
+        w4_png2src_output.stderr.is_empty(),
+        "w4 pngsrc reported errors: {}",
+        std::str::from_utf8(&w4_png2src_output.stderr).unwrap()
+    );
+    assert!(w4_png2src_output.status.success());
 
     // Make all the generated data constants public.
     let sed_status = Command::new("sed")
         .args(&["-E", "-i", "", "-e", "s/const/pub const/g"])
         .arg(&dest_path)
-        .status();
-    assert!(sed_status.unwrap().success());
+        .status()
+        .unwrap();
+    assert!(sed_status.success());
 }

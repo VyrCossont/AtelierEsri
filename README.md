@@ -52,5 +52,5 @@ In both cases, the Pixaki and Aseprite files will contain the AI-generated refer
 
 ## Fonts
 
-- [`my-font-dark.png`](assets/my-font-dark.png): [Tiny Bitmap Font](https://opengameart.org/content/tiny-bitmap-font) by [Binary Moon](https://www.binarymoon.co.uk/) (CC0)
-- [`Kenney-MonochromeRPG.png`](assets/Kenney-MonochromeRPG.png), [`Village.tmx`](asset_originals/Village.tmx): [Monochrome RPG](https://opengameart.org/content/monochrome-rpg) by [Kenney](https://kenney.nl/) (CC0)
+- [`tiny_font.png`](assets/tiny_font.png): [Tiny Bitmap Font](https://opengameart.org/content/tiny-bitmap-font) by [Binary Moon](https://www.binarymoon.co.uk/) (CC0)
+- [`Kenney_MonochromeRPG_extended.png`](asset_originals/Kenney_monochromerpg_extended.png), [`Village.tmx`](asset_originals/Village.tmx): [Monochrome RPG](https://opengameart.org/content/monochrome-rpg) by [Kenney](https://kenney.nl/) and extended by me (CC0)

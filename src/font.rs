@@ -3,17 +3,17 @@ use crate::wasm4;
 use std::cmp::max;
 use std::str::from_utf8_unchecked;
 
-const MY_FONT_SPRITE_WIDTH: u32 = 7;
-const MY_FONT_SPRITE_HEIGHT: u32 = 7;
-const MY_FONT_SPRITES_PER_ROW: u32 = asset_data::MY_FONT_DARK_WIDTH / MY_FONT_SPRITE_WIDTH;
-const MY_FONT_DEFAULT_WIDTH: i32 = 3;
-const MY_FONT_DEFAULT_HEIGHT: i32 = 5;
-const MY_FONT_LINE_HEIGHT: i32 = MY_FONT_DEFAULT_HEIGHT;
-const MY_FONT_SPACE_WIDTH: i32 = MY_FONT_DEFAULT_WIDTH;
-const MY_FONT_DEFAULT_START_X_OFFSET: u32 = 2;
-const MY_FONT_DEFAULT_START_Y_OFFSET: u32 = 1;
-const MY_FONT_KERNING: i32 = 1;
-const MY_FONT_LINE_SPACING: i32 = 1;
+const TINY_FONT_SPRITE_WIDTH: u32 = 7;
+const TINY_FONT_SPRITE_HEIGHT: u32 = 7;
+const TINY_FONT_SPRITES_PER_ROW: u32 = asset_data::TINY_FONT_WIDTH / TINY_FONT_SPRITE_WIDTH;
+const TINY_FONT_DEFAULT_WIDTH: i32 = 3;
+const TINY_FONT_DEFAULT_HEIGHT: i32 = 5;
+const TINY_FONT_LINE_HEIGHT: i32 = TINY_FONT_DEFAULT_HEIGHT;
+const TINY_FONT_SPACE_WIDTH: i32 = TINY_FONT_DEFAULT_WIDTH;
+const TINY_FONT_DEFAULT_START_X_OFFSET: u32 = 2;
+const TINY_FONT_DEFAULT_START_Y_OFFSET: u32 = 1;
+const TINY_FONT_KERNING: i32 = 1;
+const TINY_FONT_LINE_SPACING: i32 = 1;
 
 pub enum Font<'a> {
     BuiltIn,
@@ -160,17 +160,17 @@ fn fcore(s: &str, x: i32, y: i32, draw: bool) -> (i32, i32) {
     let mut kern_next = false;
     for c in s.chars() {
         if kern_next {
-            cx += MY_FONT_KERNING;
+            cx += TINY_FONT_KERNING;
         }
         kern_next = true;
         match c {
             ' ' => {
-                cx += MY_FONT_SPACE_WIDTH as i32 + MY_FONT_KERNING;
+                cx += TINY_FONT_SPACE_WIDTH as i32 + TINY_FONT_KERNING;
             }
             '\n' => {
                 cx_max = max(cx, cx_max);
                 cx = x;
-                cy += MY_FONT_LINE_HEIGHT + MY_FONT_LINE_SPACING;
+                cy += TINY_FONT_LINE_HEIGHT + TINY_FONT_LINE_SPACING;
                 kern_next = false;
             }
             _ => {
@@ -179,15 +179,15 @@ fn fcore(s: &str, x: i32, y: i32, draw: bool) -> (i32, i32) {
                     let w = g.width();
                     if draw {
                         wasm4::blit_sub(
-                            &asset_data::MY_FONT_DARK,
+                            &asset_data::TINY_FONT,
                             cx,
                             cy,
                             w as u32,
-                            MY_FONT_DEFAULT_HEIGHT as u32,
+                            TINY_FONT_DEFAULT_HEIGHT as u32,
                             src_x,
                             src_y,
-                            asset_data::MY_FONT_DARK_WIDTH,
-                            asset_data::MY_FONT_DARK_FLAGS,
+                            asset_data::TINY_FONT_WIDTH,
+                            asset_data::TINY_FONT_FLAGS,
                         );
                     }
                     cx += w;
@@ -197,17 +197,17 @@ fn fcore(s: &str, x: i32, y: i32, draw: bool) -> (i32, i32) {
                         wasm4::rect(
                             cx,
                             cy,
-                            MY_FONT_DEFAULT_WIDTH as u32,
-                            MY_FONT_DEFAULT_HEIGHT as u32,
+                            TINY_FONT_DEFAULT_WIDTH as u32,
+                            TINY_FONT_DEFAULT_HEIGHT as u32,
                         );
                     }
-                    cx += MY_FONT_DEFAULT_WIDTH;
+                    cx += TINY_FONT_DEFAULT_WIDTH;
                 }
             }
         }
     }
     cx_max = max(cx, cx_max);
-    (cx_max, cy + MY_FONT_LINE_HEIGHT)
+    (cx_max, cy + TINY_FONT_LINE_HEIGHT)
 }
 
 enum FontError {
@@ -219,9 +219,9 @@ struct Glyph(u32);
 impl Glyph {
     /// Returns texture coordinates for use with `blit_sub`.
     fn src(&self) -> (u32, u32) {
-        let r = self.0 % MY_FONT_SPRITES_PER_ROW;
-        let c = self.0 / MY_FONT_SPRITES_PER_ROW;
-        let x = r * MY_FONT_SPRITE_WIDTH
+        let r = self.0 % TINY_FONT_SPRITES_PER_ROW;
+        let c = self.0 / TINY_FONT_SPRITES_PER_ROW;
+        let x = r * TINY_FONT_SPRITE_WIDTH
             + match self.0 {
             34 /* 'i' */ => 3,
             37 /* 'l' */ => 3,
@@ -232,9 +232,9 @@ impl Glyph {
             70 /* '\'' */ => 3,
             71 /* '*' */ => 1,
             78 /* ')' */ => 3,
-            _ => MY_FONT_DEFAULT_START_X_OFFSET,
+            _ => TINY_FONT_DEFAULT_START_X_OFFSET,
         };
-        let y = c * MY_FONT_SPRITE_HEIGHT + MY_FONT_DEFAULT_START_Y_OFFSET;
+        let y = c * TINY_FONT_SPRITE_HEIGHT + TINY_FONT_DEFAULT_START_Y_OFFSET;
         (x, y)
     }
 
@@ -255,7 +255,7 @@ impl Glyph {
             71 /* '*' */ => 5,
             77 /* '(' */ => 2,
             78 /* ')' */ => 2,
-            _ => MY_FONT_DEFAULT_WIDTH,
+            _ => TINY_FONT_DEFAULT_WIDTH,
         }
     }
 }

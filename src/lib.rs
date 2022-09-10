@@ -20,13 +20,13 @@ static mut MODE: Mode = Mode::Intro;
 
 #[no_mangle]
 fn start() {
-    audio::init();
-    audio::music(0);
+    // audio::init();
+    // audio::music(0);
 }
 
 #[no_mangle]
 fn update() {
-    audio::music_update();
+    // audio::music_update();
 
     unsafe {
         match MODE {

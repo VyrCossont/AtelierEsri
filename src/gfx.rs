@@ -3,39 +3,58 @@ use std::cmp::{max, min};
 
 // region split sprites
 
-/// Sprite composed of 2 2BPP sprites,
-/// the 1st with transparent color, color 0, color 1, unused color,
-/// the 2nd with transparent color, color 2, color 3, unused color,
+/// Logical sprite composed of 2 other sprites,
+/// the first 2BPP sprite with transparent color, color 0, color 1, color 2,
+/// the second a 1BPP sprite with transparent color, color 3,
 /// letting us draw a 4-color sprite with transparency.
-/// TODO: use 1 2BPP sprite for transparent, color 0, color 1, color 2
-///     and 1 1BPP sprite for transparent, color 3?
-pub struct SplitSprite<'a> {
+/// Use `tools lo5` to split those PNGs from an input PNG.
+pub struct Lo5SplitSprite<'a> {
     pub w: u32,
     pub h: u32,
-    pub layers: [&'a [u8]; 2],
+    pub lo4: &'a [u8],
+    pub hi2: &'a [u8],
 }
 
-impl SplitSprite<'_> {
-    pub fn blit(&self, x: i32, y: i32, flags: u32) {
+impl Lo5SplitSprite<'_> {
+    pub fn blit_sub(
+        &self,
+        x: i32,
+        y: i32,
+        width: u32,
+        height: u32,
+        src_x: u32,
+        src_y: u32,
+        flags: u32,
+    ) {
         // TODO: standardize which color indexes are the brighter ones across the project.
-        unsafe { *wasm4::DRAW_COLORS = 0x0043 }
-        wasm4::blit(
-            self.layers[0],
+        unsafe { *wasm4::DRAW_COLORS = 0x2340 }
+        wasm4::blit_sub(
+            self.lo4,
             x,
             y,
+            width,
+            height,
+            src_x,
+            src_y,
             self.w,
-            self.h,
             flags | wasm4::BLIT_2BPP,
         );
-        unsafe { *wasm4::DRAW_COLORS = 0x0021 }
-        wasm4::blit(
-            self.layers[1],
+        unsafe { *wasm4::DRAW_COLORS = 0x0010 }
+        wasm4::blit_sub(
+            self.hi2,
             x,
             y,
+            width,
+            height,
+            src_x,
+            src_y,
             self.w,
-            self.h,
-            flags | wasm4::BLIT_2BPP,
+            flags | wasm4::BLIT_1BPP,
         );
+    }
+
+    pub fn blit(&self, x: i32, y: i32, flags: u32) {
+        self.blit_sub(x, y, self.w, self.h, 0, 0, flags);
     }
 }
 
@@ -113,9 +132,7 @@ type TileId = u8;
 pub struct Tileset<'a> {
     pub tile_width: u32,
     pub tile_height: u32,
-    pub image_width: u32,
-    pub image: &'a [u8],
-    pub image_flags: u32,
+    pub image: &'a Lo5SplitSprite<'a>,
 }
 
 impl Tileset<'_> {
@@ -124,19 +141,17 @@ impl Tileset<'_> {
             return;
         }
 
-        let tiles_per_row = self.image_width / self.tile_width;
+        let tiles_per_row = self.image.w / self.tile_width;
         let row = (tile as u32 - 1) / tiles_per_row;
         let col = (tile as u32 - 1) % tiles_per_row;
-        wasm4::blit_sub(
-            self.image,
+        self.image.blit_sub(
             x,
             y,
             self.tile_width,
             self.tile_height,
             col * self.tile_width,
             row * self.tile_height,
-            self.image_width,
-            self.image_flags,
+            0,
         );
     }
 }
