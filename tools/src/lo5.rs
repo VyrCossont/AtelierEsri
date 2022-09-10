@@ -118,7 +118,7 @@ pub fn convert(input_path: &Path, output_path: &Path) -> anyhow::Result<()> {
     let mut lo4_write = |i: usize, c: u8| {
         lo4_packed <<= 2;
         lo4_packed |= lo4_map(c);
-        if i % 4 == 0 {
+        if i % 4 == 4 - 1 || i % width as usize == 4 - 1 {
             lo4_buf[i / 4] = lo4_packed;
         }
     };
@@ -133,7 +133,7 @@ pub fn convert(input_path: &Path, output_path: &Path) -> anyhow::Result<()> {
     let mut hi2_write = |i: usize, c: u8| {
         hi2_packed <<= 1;
         hi2_packed |= hi2_map(c);
-        if i % 8 == 0 {
+        if i % 8 == 8 - 1 || i % width as usize == 8 - 1 {
             hi2_buf[i / 8] = hi2_packed;
         }
     };
@@ -149,26 +149,10 @@ pub fn convert(input_path: &Path, output_path: &Path) -> anyhow::Result<()> {
             lo4_write(i_right, c_right);
             hi2_write(i_right, c_right);
         }
-        // Flush last byte.
-        let num_pixels = input_bytes.len() * 2;
-        for i in (num_pixels % 4)..=4 {
-            lo4_write(i, input_transparent_color_index)
-        }
-        for i in (num_pixels % 8)..=8 {
-            hi2_write(i, input_transparent_color_index)
-        }
     } else {
         for (i, c) in input_bytes.into_iter().enumerate() {
             lo4_write(i, *c);
             hi2_write(i, *c);
-        }
-        // Flush last byte.
-        let num_pixels = input_bytes.len();
-        for i in (num_pixels % 4)..=4 {
-            lo4_write(i, input_transparent_color_index)
-        }
-        for i in (num_pixels % 8)..=8 {
-            hi2_write(i, input_transparent_color_index)
         }
     }
 
