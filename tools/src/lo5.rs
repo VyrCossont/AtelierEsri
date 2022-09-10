@@ -118,7 +118,7 @@ pub fn convert(input_path: &Path, output_path: &Path) -> anyhow::Result<()> {
     let mut lo4_write = |i: usize, c: u8| {
         lo4_packed <<= 2;
         lo4_packed |= lo4_map(c);
-        if i % 4 == 4 - 1 || i % width as usize == 4 - 1 {
+        if i % 4 == 4 - 1 || i % width as usize == width as usize - 1 {
             lo4_buf[i / 4] = lo4_packed;
         }
     };
@@ -133,7 +133,7 @@ pub fn convert(input_path: &Path, output_path: &Path) -> anyhow::Result<()> {
     let mut hi2_write = |i: usize, c: u8| {
         hi2_packed <<= 1;
         hi2_packed |= hi2_map(c);
-        if i % 8 == 8 - 1 || i % width as usize == 8 - 1 {
+        if i % 8 == 8 - 1 || i % width as usize == width as usize - 1 {
             hi2_buf[i / 8] = hi2_packed;
         }
     };
