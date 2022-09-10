@@ -16,12 +16,12 @@ pub fn update() {
     let (mut player_x, mut player_y, mut player_o, mut player_w) =
         unsafe { (PLAYER_X, PLAYER_Y, PLAYER_O, PLAYER_W) };
 
-    let (map_w, map_h) = map_data::VILLAGE_FLOOR.dimensions();
+    let (map_w, map_h) = map_data::VILLAGE_GROUND.dimensions();
     let map_x = max(0, min((map_w - SCREEN_SIZE) as i32, player_x));
     let map_y = max(0, min((map_h - SCREEN_SIZE) as i32, player_y));
 
     unsafe { *DRAW_COLORS = 0x1234 }
-    map_data::VILLAGE_FLOOR.draw(0, 0, map_x, map_y, SCREEN_SIZE, SCREEN_SIZE);
+    map_data::VILLAGE_GROUND.draw(0, 0, map_x, map_y, SCREEN_SIZE, SCREEN_SIZE);
 
     let gamepad = unsafe { *GAMEPAD1 };
     let mut heading_x = 0;

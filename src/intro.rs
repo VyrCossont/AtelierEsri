@@ -81,8 +81,8 @@ pub fn update() -> bool {
     // TODO: map clipping
     let bg_split_y: u32 = 80;
     let map_cycle = (animation_clock as i32 % 200) / 10;
-    for layer in [&map_data::VILLAGE_FLOOR, &map_data::VILLAGE_BUILDINGS] {
-        map_data::VILLAGE_FLOOR.draw(
+    for layer in [&map_data::VILLAGE_GROUND, &map_data::VILLAGE_BUILDINGS] {
+        map_data::VILLAGE_GROUND.draw(
             0,
             bg_split_y as i32,
             character.map_x + map_cycle,
