@@ -130,12 +130,8 @@ pub struct ProportionalFont<'a> {
     pub kerning: i32,
     /// Vertical space between lines.
     pub line_spacing: i32,
-    /// Contiguous array of `src_x` values starting from '!'.
+    /// Contiguous array of `src_x` values for the *next* character..
     /// Implicitly stores widths.
-    /// The first entry should be 0
-    /// (unless multiple fonts are packed in the same image)
-    /// and the last entry is not associated with an actual character,
-    /// but is just there to provide a final length.
     pub src_xs: &'a [u32],
 }
 
@@ -175,11 +171,16 @@ impl ProportionalFont<'_> {
                     kern_next = false;
                 }
 
-                _ if c > '!' && (c as usize - '!' as usize) < self.src_xs.len() - 1 => {
-                    let src_x_index = c as usize - '!' as usize;
-                    let src_x = self.src_xs[src_x_index];
-                    let next_src_x_index = src_x_index + 1;
-                    let width = self.src_xs[next_src_x_index] - src_x;
+                _ if c >= '!' && (c as usize - '!' as usize) < self.src_xs.len() => {
+                    let next_src_x_index = c as usize - '!' as usize;
+                    let next_src_x = self.src_xs[next_src_x_index];
+                    let src_x = if c == '!' {
+                        0
+                    } else {
+                        let src_x_index = next_src_x_index - 1;
+                        self.src_xs[src_x_index]
+                    };
+                    let width = next_src_x - src_x;
                     if draw {
                         wasm4::blit_sub(
                             self.image_data,
