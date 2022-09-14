@@ -1,36 +1,10 @@
-use crate::asset_data;
 use crate::wasm4;
 use std::cmp::max;
 use std::str::from_utf8_unchecked;
 
-const TINY_FONT_SPRITE_WIDTH: u32 = 7;
-const TINY_FONT_SPRITE_HEIGHT: u32 = 7;
-const TINY_FONT_SPRITES_PER_ROW: u32 = asset_data::TINY_FONT_WIDTH / TINY_FONT_SPRITE_WIDTH;
-const TINY_FONT_DEFAULT_WIDTH: i32 = 3;
-const TINY_FONT_DEFAULT_HEIGHT: i32 = 5;
-const TINY_FONT_LINE_HEIGHT: i32 = TINY_FONT_DEFAULT_HEIGHT;
-const TINY_FONT_SPACE_WIDTH: i32 = TINY_FONT_DEFAULT_WIDTH;
-const TINY_FONT_DEFAULT_START_X_OFFSET: u32 = 2;
-const TINY_FONT_DEFAULT_START_Y_OFFSET: u32 = 1;
-const TINY_FONT_KERNING: i32 = 1;
-const TINY_FONT_LINE_SPACING: i32 = 1;
-
 pub enum Font<'a> {
     BuiltIn,
-    Proportional {
-        sprite_data: &'a [u8],
-        sprite_width: u32,
-        sprite_height: u32,
-        sprites_per_row: u32,
-        default_width: i32,
-        default_height: i32,
-        line_height: i32,
-        space_width: i32,
-        default_start_x_offset: u32,
-        default_start_y_offset: u32,
-        kerning: i32,
-        line_spacing: i32,
-    },
+    Proportional(ProportionalFont<'a>),
 }
 
 impl Font<'_> {
@@ -38,7 +12,7 @@ impl Font<'_> {
     pub fn text(&self, s: &str, x: i32, y: i32) {
         match self {
             Self::BuiltIn => Self::builtin_text(s, x, y),
-            _ => todo!(),
+            Self::Proportional(font) => font.text(s, x, y),
         }
     }
 
@@ -46,7 +20,7 @@ impl Font<'_> {
     pub fn metrics(&self, s: &str) -> (u32, u32) {
         match self {
             Self::BuiltIn => Self::builtin_metrics(s),
-            _ => todo!(),
+            Self::Proportional(font) => font.metrics(s),
         }
     }
 
@@ -77,7 +51,7 @@ impl Font<'_> {
         return (8 * max_col, 8 * lines);
     }
 
-    /// WASM-4's `text()` actually takes a 1-byte character set based on ISO-8859-1,
+    /// [`wasm4::text`] actually takes a 1-byte character set based on ISO-8859-1,
     /// with a few extra symbols, so we have to translate Unicode characters to that.
     fn builtin_text_to_bytes(s: &str) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(s.len());
@@ -139,156 +113,99 @@ impl Font<'_> {
     }
 }
 
-/// Draw text with custom font from `my-font-dark.png`.
-pub fn ftext(s: &str, x: i32, y: i32) {
-    fcore(s, x, y, true);
+/// Assumes fixed height, variable width, starting at '!', stored in horizontal strip.
+/// Color 1 is assumed to be transparent,
+/// color 2 the most intense and used for most of the text,
+/// color 3 (if present) used for antialiasing,
+/// color 4 (if present) used for even fainter antialiasing than color 3.
+pub struct ProportionalFont<'a> {
+    pub image_data: &'a [u8],
+    pub image_width: u32,
+    /// Used as line height in a lot of places.
+    pub image_height: u32,
+    pub image_flags: u32,
+    /// Width of the space character, which is not stored in the image.
+    pub space_width: i32,
+    /// Horizontal space between glyphs.
+    pub kerning: i32,
+    /// Vertical space between lines.
+    pub line_spacing: i32,
+    /// Contiguous array of `src_x` values starting from '!'.
+    /// Implicitly stores widths.
+    /// The first entry should be 0
+    /// (unless multiple fonts are packed in the same image)
+    /// and the last entry is not associated with an actual character,
+    /// but is just there to provide a final length.
+    pub src_xs: &'a [u32],
 }
 
-pub fn fmetrics(s: &str) -> (u32, u32) {
-    let (x, y) = fcore(s, 0, 0, false);
-    (x as u32, y as u32)
-}
+impl ProportionalFont<'_> {
+    pub fn text(&self, s: &str, x: i32, y: i32) {
+        self.core(s, x, y, true);
+    }
 
-/// Common functionality of `ftext` and `fmetrics`.
-fn fcore(s: &str, x: i32, y: i32, draw: bool) -> (i32, i32) {
-    let mut cx = x;
-    let mut cy = y;
-    // Keep track of end of widest line.
-    let mut cx_max = x;
-    // Keep track of when inter-letter spacing needs to be added,
-    // so we don't count spurious end-of-line kerning in metrics boxes.
-    let mut kern_next = false;
-    for c in s.chars() {
-        if kern_next {
-            cx += TINY_FONT_KERNING;
-        }
-        kern_next = true;
-        match c {
-            ' ' => {
-                cx += TINY_FONT_SPACE_WIDTH as i32 + TINY_FONT_KERNING;
+    pub fn metrics(&self, s: &str) -> (u32, u32) {
+        self.core(s, 0, 0, false)
+    }
+
+    /// Common functionality of [`text`] and [`metrics`].
+    fn core(&self, s: &str, x: i32, y: i32, draw: bool) -> (u32, u32) {
+        let mut cx = x;
+        let mut cy = y;
+        // Keep track of end of widest line.
+        let mut cx_max = x;
+        // Keep track of when inter-letter spacing needs to be added,
+        // so we don't count spurious end-of-line kerning in metrics boxes.
+        let mut kern_next = false;
+        for c in s.chars() {
+            if kern_next {
+                cx += self.kerning;
             }
-            '\n' => {
-                cx_max = max(cx, cx_max);
-                cx = x;
-                cy += TINY_FONT_LINE_HEIGHT + TINY_FONT_LINE_SPACING;
-                kern_next = false;
-            }
-            _ => {
-                if let Ok(g) = Glyph::try_from(c) {
-                    let (src_x, src_y) = g.src();
-                    let w = g.width();
+            kern_next = true;
+
+            match c {
+                ' ' => {
+                    cx += self.space_width + self.kerning;
+                }
+
+                '\n' => {
+                    cx_max = max(cx, cx_max);
+                    cx = x;
+                    cy += self.image_height as i32 + self.line_spacing;
+                    kern_next = false;
+                }
+
+                _ if c > '!' && (c as usize - '!' as usize) < self.src_xs.len() - 1 => {
+                    let src_x_index = c as usize - '!' as usize;
+                    let src_x = self.src_xs[src_x_index];
+                    let next_src_x_index = src_x_index + 1;
+                    let width = self.src_xs[next_src_x_index] - src_x;
                     if draw {
                         wasm4::blit_sub(
-                            &asset_data::TINY_FONT,
+                            self.image_data,
                             cx,
                             cy,
-                            w as u32,
-                            TINY_FONT_DEFAULT_HEIGHT as u32,
+                            width,
+                            self.image_height,
                             src_x,
-                            src_y,
-                            asset_data::TINY_FONT_WIDTH,
-                            asset_data::TINY_FONT_FLAGS,
+                            0,
+                            self.image_width,
+                            self.image_flags,
                         );
                     }
-                    cx += w;
-                } else {
-                    // Missing character replacement block.
-                    if draw {
-                        wasm4::rect(
-                            cx,
-                            cy,
-                            TINY_FONT_DEFAULT_WIDTH as u32,
-                            TINY_FONT_DEFAULT_HEIGHT as u32,
-                        );
-                    }
-                    cx += TINY_FONT_DEFAULT_WIDTH;
+                    cx += width as i32;
+                }
+
+                _ => {
+                    let mut panic_msg =
+                        String::from("Unicode character not supported by proportional font: ");
+                    panic_msg.extend(c.escape_default());
+                    wasm4::trace(panic_msg);
+                    panic!();
                 }
             }
         }
-    }
-    cx_max = max(cx, cx_max);
-    (cx_max, cy + TINY_FONT_LINE_HEIGHT)
-}
-
-enum FontError {
-    UnsupportedCharacter(char),
-}
-
-struct Glyph(u32);
-
-impl Glyph {
-    /// Returns texture coordinates for use with `blit_sub`.
-    fn src(&self) -> (u32, u32) {
-        let r = self.0 % TINY_FONT_SPRITES_PER_ROW;
-        let c = self.0 / TINY_FONT_SPRITES_PER_ROW;
-        let x = r * TINY_FONT_SPRITE_WIDTH
-            + match self.0 {
-            34 /* 'i' */ => 3,
-            37 /* 'l' */ => 3,
-            53 /* '1' */ => 3,
-            64 /* ';' */ => 3,
-            65 /* ':' */ => 3,
-            67 /* '!' */ => 3,
-            70 /* '\'' */ => 3,
-            71 /* '*' */ => 1,
-            78 /* ')' */ => 3,
-            _ => TINY_FONT_DEFAULT_START_X_OFFSET,
-        };
-        let y = c * TINY_FONT_SPRITE_HEIGHT + TINY_FONT_DEFAULT_START_Y_OFFSET;
-        (x, y)
-    }
-
-    fn width(&self) -> i32 {
-        match self.0 {
-            34 /* 'i' */ => 1,
-            35 /* 'j' */ => 2,
-            37 /* 'l' */ => 2,
-            43 /* 'r' */ => 2,
-            53 /* '1' */ => 2,
-            62 /* '.' */ => 1,
-            63 /* ',' */ => 2,
-            64 /* ';' */ => 2,
-            65 /* ':' */ => 1,
-            67 /* '!' */ => 1,
-            68 /* '-' */ => 2,
-            70 /* '\'' */ => 1,
-            71 /* '*' */ => 5,
-            77 /* '(' */ => 2,
-            78 /* ')' */ => 2,
-            _ => TINY_FONT_DEFAULT_WIDTH,
-        }
-    }
-}
-
-impl TryFrom<char> for Glyph {
-    type Error = FontError;
-
-    fn try_from(c: char) -> Result<Self, Self::Error> {
-        let u = c as u32;
-        let i: u32 = match c {
-            'A'..='Z' => u - 'A' as u32,
-            'a'..='z' => u - 'a' as u32 + 26,
-            '0'..='9' => u - '0' as u32 + 52,
-            '.' => 62,
-            ',' => 63,
-            ';' => 64,
-            ':' => 65,
-            '?' => 66,
-            '!' => 67,
-            '-' => 68,
-            '_' => 69,
-            '\'' => 70,
-            '*' => 71,
-            '"' => 72,
-            '\\' => 73,
-            '/' => 74,
-            '<' => 75,
-            '>' => 76,
-            '(' => 77,
-            ')' => 78,
-            '@' => 79,
-            _ => return Err(FontError::UnsupportedCharacter(c)),
-        };
-        Ok(Glyph(i))
+        cx_max = max(cx, cx_max);
+        (cx_max as u32, self.image_height + cy as u32)
     }
 }

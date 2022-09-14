@@ -1,5 +1,6 @@
 use crate::asset_data;
-use crate::font::{fmetrics, ftext, Font};
+use crate::font::Font;
+use crate::font_data;
 use crate::gfx::{thick_hline, thick_line, Lo5SplitSprite};
 use crate::gfx_data;
 use crate::map_data;
@@ -17,7 +18,7 @@ struct Character<'a> {
     map_y: i32,
 }
 
-const CHARACTERS: [Character; 3] = [
+const CHARACTERS: &[Character] = &[
     Character {
         name: "Esri",
         bio: [
@@ -32,34 +33,35 @@ const CHARACTERS: [Character; 3] = [
         map_x: 0,
         map_y: 20,
     },
-    Character {
-        name: "Allie",
-        bio: [
-            "blonde in body and soul",
-            "entirely too cheerful",
-            "would never do a crime on purpose",
-            "constantly doing crimes by accident",
-        ],
-        sprite: &gfx_data::ALLIE,
-        // https://lospec.com/palette-list/muddysand
-        palette: [0xffe6d69c, 0xffb4a56a, 0xff7b7162, 0xff393829],
-        map_x: 200,
-        map_y: 110,
-    },
-    Character {
-        name: "Sae",
-        bio: [
-            "failed alchemist",
-            "perpetually half asleep",
-            "party conscience",
-            "natural top",
-        ],
-        sprite: &gfx_data::SAE,
-        // https://lospec.com/palette-list/2bit-demichrome
-        palette: [0xffe9efec, 0xffa0a08b, 0xff555568, 0xff211e20],
-        map_x: 120,
-        map_y: 50,
-    },
+    // Temporarily disabled to save space
+    // Character {
+    //     name: "Allie",
+    //     bio: [
+    //         "blonde in body and soul",
+    //         "entirely too cheerful",
+    //         "would never do a crime on purpose",
+    //         "constantly doing crimes by accident",
+    //     ],
+    //     sprite: &gfx_data::ALLIE,
+    //     // https://lospec.com/palette-list/muddysand
+    //     palette: [0xffe6d69c, 0xffb4a56a, 0xff7b7162, 0xff393829],
+    //     map_x: 200,
+    //     map_y: 110,
+    // },
+    // Character {
+    //     name: "Sae",
+    //     bio: [
+    //         "failed alchemist",
+    //         "perpetually half asleep",
+    //         "party conscience",
+    //         "natural top",
+    //     ],
+    //     sprite: &gfx_data::SAE,
+    //     // https://lospec.com/palette-list/2bit-demichrome
+    //     palette: [0xffe9efec, 0xffa0a08b, 0xff555568, 0xff211e20],
+    //     map_x: 120,
+    //     map_y: 50,
+    // },
 ];
 
 /// Returns whether we should keep running the intro.
@@ -72,7 +74,7 @@ pub fn update() -> bool {
 
     let animation_clock = unsafe { ANIMATION_CLOCK };
 
-    let character = &CHARACTERS[(animation_clock / 200) as usize];
+    let character = &CHARACTERS[((animation_clock / 200) as usize) % CHARACTERS.len()];
     for (i, c) in character.palette.into_iter().enumerate() {
         unsafe { (&mut *wasm4::PALETTE)[i] = c }
     }
@@ -82,7 +84,7 @@ pub fn update() -> bool {
     let bg_split_y: u32 = 80;
     let map_cycle = (animation_clock as i32 % 200) / 10;
     for layer in [&map_data::VILLAGE_GROUND, &map_data::VILLAGE_BUILDINGS] {
-        map_data::VILLAGE_GROUND.draw(
+        layer.draw(
             0,
             bg_split_y as i32,
             character.map_x + map_cycle,
@@ -162,9 +164,9 @@ fn shadow_text(t: &str, x: i32, y: i32) {
 }
 
 fn shadow_ftext(t: &str, x: i32, y: i32) {
-    let (mw, mh) = fmetrics(t);
+    let (mw, mh) = font_data::TINY.metrics(t);
     unsafe { *wasm4::DRAW_COLORS = 0x11 }
     wasm4::rect(x - 1, y - 1, mw + 2, mh + 2);
-    unsafe { *wasm4::DRAW_COLORS = 0x430 }
-    ftext(t, x, y);
+    unsafe { *wasm4::DRAW_COLORS = 0x340 }
+    font_data::TINY.text(t, x, y);
 }

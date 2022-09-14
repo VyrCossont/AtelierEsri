@@ -4,6 +4,7 @@ mod asset_data;
 mod audio;
 mod audio_data;
 mod font;
+mod font_data;
 mod gfx;
 mod gfx_data;
 mod intro;
