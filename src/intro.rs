@@ -1,68 +1,41 @@
-use crate::asset_data;
 use crate::font::Font;
 use crate::font_data;
-use crate::gfx::{thick_hline, thick_line, Lo5SplitSprite};
-use crate::gfx_data;
-use crate::map_data;
 use crate::wasm4;
 
-const ANIMATION_CYCLE_LEN: u32 = 2 * 5 * 60;
-static mut ANIMATION_CLOCK: u32 = 0;
+const DEMO_TEXT: &str = "That's Harris all over - so ready to take the burden of everything himself, and put it on the backs of other people.
 
-struct Character<'a> {
-    name: &'a str,
-    bio: [&'a str; 4],
-    sprite: &'a Lo5SplitSprite<'a>,
-    palette: [u32; 4],
-    map_x: i32,
-    map_y: i32,
+He always reminds me of my poor Uncle Podger. You never saw such a commotion up and down a house, in all your life, as when my Uncle Podger undertook to do a job. A picture would have come home from the frame-maker's, and be standing in the dining-room, waiting to be put up; and Aunt Podger would ask what was to be done with it, and Uncle Podger would say:
+
+\"Oh, you leave that to me. Don't you, any of you, worry yourselves about that. I'll do all that.\"
+
+And then he would take off his coat, and begin. He would send the girl out for sixpen'orth of nails, and then one of the boys after her to tell her what size to get; and, from that, he would gradually work down, and start the whole house.";
+
+struct State<'a> {
+    tt_text: TypewriterText<'a>,
+    animation_cycle_len: usize,
+    animation_clock: usize,
 }
 
-const CHARACTERS: &[Character] = &[
-    Character {
-        name: "Esri",
-        bio: [
-            "alchemist",
-            "impulsive party girl",
-            "petty criminal, kleptomaniac,",
-            "aspiring drug dealer",
-        ],
-        sprite: &gfx_data::ESRI,
-        // https://lospec.com/palette-list/ice-cream-gb
-        palette: [0xfffff6d3, 0xfff9a875, 0xffeb6b6f, 0xff7c3f58],
-        map_x: 0,
-        map_y: 20,
-    },
-    // Temporarily disabled to save space
-    // Character {
-    //     name: "Allie",
-    //     bio: [
-    //         "blonde in body and soul",
-    //         "entirely too cheerful",
-    //         "would never do a crime on purpose",
-    //         "constantly doing crimes by accident",
-    //     ],
-    //     sprite: &gfx_data::ALLIE,
-    //     // https://lospec.com/palette-list/muddysand
-    //     palette: [0xffe6d69c, 0xffb4a56a, 0xff7b7162, 0xff393829],
-    //     map_x: 200,
-    //     map_y: 110,
-    // },
-    // Character {
-    //     name: "Sae",
-    //     bio: [
-    //         "failed alchemist",
-    //         "perpetually half asleep",
-    //         "party conscience",
-    //         "natural top",
-    //     ],
-    //     sprite: &gfx_data::SAE,
-    //     // https://lospec.com/palette-list/2bit-demichrome
-    //     palette: [0xffe9efec, 0xffa0a08b, 0xff555568, 0xff211e20],
-    //     map_x: 120,
-    //     map_y: 50,
-    // },
-];
+static mut STATE: Option<State> = None;
+
+const FRAMES_PER_CHARACTER: usize = 3;
+
+pub fn init() {
+    let tt_text = TypewriterText::new(
+        /* &font_data::TINY */ &Font::BuiltIn,
+        DEMO_TEXT,
+        wasm4::SCREEN_SIZE,
+    );
+    let animation_cycle_len = FRAMES_PER_CHARACTER * tt_text.char_count();
+    let state = State {
+        tt_text,
+        animation_cycle_len,
+        animation_clock: 0,
+    };
+    unsafe {
+        STATE = Some(state);
+    }
+}
 
 /// Returns whether we should keep running the intro.
 pub fn update() -> bool {
@@ -72,101 +45,87 @@ pub fn update() -> bool {
         }
     }
 
-    let animation_clock = unsafe { ANIMATION_CLOCK };
+    let state = unsafe { STATE.as_mut() }.expect("intro::init() probably not called");
 
-    let character = &CHARACTERS[((animation_clock / 200) as usize) % CHARACTERS.len()];
-    for (i, c) in character.palette.into_iter().enumerate() {
-        unsafe { (&mut *wasm4::PALETTE)[i] = c }
-    }
+    state
+        .tt_text
+        .draw(state.animation_clock / FRAMES_PER_CHARACTER, 0, 0);
 
-    // Cheat past our map clipping problem by drawing the bricks on top of the map.
-    // TODO: map clipping
-    let bg_split_y: u32 = 80;
-    let map_cycle = (animation_clock as i32 % 200) / 10;
-    for layer in [&map_data::VILLAGE_GROUND, &map_data::VILLAGE_BUILDINGS] {
-        layer.draw(
-            0,
-            bg_split_y as i32,
-            character.map_x + map_cycle,
-            character.map_y + map_cycle,
-            wasm4::SCREEN_SIZE,
-            wasm4::SCREEN_SIZE - bg_split_y,
-        );
-    }
-
-    // Loops 15 times in the animation cycle assuming 8x? tile..
-    let bg_cycle = (animation_clock / 5) % asset_data::BG_BRICKS_WIDTH;
-    // Intentionally drawing one more column than would fill the screen.
-    unsafe { *wasm4::DRAW_COLORS = 0x21 }
-    for x in (0..=wasm4::SCREEN_SIZE).step_by(asset_data::BG_BRICKS_WIDTH as usize) {
-        for y in (0..bg_split_y).step_by(asset_data::BG_BRICKS_HEIGHT as usize) {
-            wasm4::blit(
-                &asset_data::BG_BRICKS,
-                (x - bg_cycle) as i32,
-                y as i32,
-                asset_data::BG_BRICKS_WIDTH,
-                asset_data::BG_BRICKS_HEIGHT,
-                asset_data::BG_BRICKS_FLAGS,
-            );
-        }
-    }
-
-    let character_bg_start_x = wasm4::SCREEN_SIZE - character.sprite.w + 6;
-    let character_bg_start_y = wasm4::SCREEN_SIZE - character.sprite.h - 2;
-    // draw character overlay fill
-    unsafe { *wasm4::DRAW_COLORS = 1 }
-    for y in character_bg_start_y..wasm4::SCREEN_SIZE {
-        let x = character_bg_start_x - (y - character_bg_start_y) / 4;
-        wasm4::hline(x as i32, y as i32, wasm4::SCREEN_SIZE - x);
-    }
-    // draw character overlay border
-    {
-        unsafe { *wasm4::DRAW_COLORS = 3 }
-        let thickness = 2;
-        let x1 = character_bg_start_x as i32;
-        let y1 = character_bg_start_y as i32;
-        let x2 = x1 - (wasm4::SCREEN_SIZE as i32 - y1) / 4;
-        let y2 = wasm4::SCREEN_SIZE as i32;
-        thick_hline(x1, y1, wasm4::SCREEN_SIZE - x1 as u32, thickness);
-        thick_line(x1, y1, x2, y2, thickness, thickness);
-    }
-
-    character.sprite.blit(
-        (wasm4::SCREEN_SIZE - character.sprite.w) as i32,
-        (wasm4::SCREEN_SIZE - character.sprite.h) as i32,
-        0,
-    );
-
-    shadow_text(character.name, 5, 5);
-
-    for (i, t) in character.bio.into_iter().enumerate() {
-        let x = 5;
-        let y = 20 + (i as i32) * 15;
-        shadow_text("➡️", x, y - 1);
-        shadow_ftext(t, x + 10, y);
-    }
-
-    unsafe {
-        ANIMATION_CLOCK = (animation_clock + 1) % ANIMATION_CYCLE_LEN;
-    }
+    state.animation_clock = (state.animation_clock + 1) % state.animation_cycle_len;
 
     true
 }
 
-fn shadow_text(t: &str, x: i32, y: i32) {
-    let (mw, mh) = Font::BuiltIn.metrics(t);
-    unsafe { *wasm4::DRAW_COLORS = 0x11 }
-    wasm4::rect(x - 1, y - 1, mw + 2, mh + 2);
-    unsafe { *wasm4::DRAW_COLORS = 0x3 }
-    Font::BuiltIn.text(t, x + 1, y + 1);
-    unsafe { *wasm4::DRAW_COLORS = 0x4 }
-    Font::BuiltIn.text(t, x, y);
+pub struct TypewriterText<'a> {
+    font: &'a Font<'a>,
+    text: String,
+    /// Map character slice ends to byte slice ends for [`text`].
+    byte_slice_ends: Vec<usize>,
 }
 
-fn shadow_ftext(t: &str, x: i32, y: i32) {
-    let (mw, mh) = font_data::TINY.metrics(t);
-    unsafe { *wasm4::DRAW_COLORS = 0x11 }
-    wasm4::rect(x - 1, y - 1, mw + 2, mh + 2);
-    unsafe { *wasm4::DRAW_COLORS = 0x340 }
-    font_data::TINY.text(t, x, y);
+impl TypewriterText<'_> {
+    pub fn new<'a>(font: &'a Font, text: &str, width: u32) -> TypewriterText<'a> {
+        let mut output_text = String::new();
+        let mut is_first_line = true;
+        for line in text.lines() {
+            let mut words = line.split_whitespace();
+            let mut output_line = if let Some(word) = words.next() {
+                // A new line always takes at least one word to guarantee progress.
+                String::from(word)
+            } else {
+                // If it has no words, it's a blank line.
+                if is_first_line {
+                    is_first_line = false;
+                } else {
+                    output_text.push('\n');
+                }
+                continue;
+            };
+            for word in words {
+                let mut extended_line = output_line.clone();
+                extended_line.push(' ');
+                extended_line.push_str(word);
+                if font.metrics(&extended_line).0 <= width {
+                    output_line = extended_line;
+                } else {
+                    if is_first_line {
+                        is_first_line = false;
+                    } else {
+                        output_text.push('\n');
+                    }
+                    output_text.push_str(&output_line);
+                    output_line = String::from(word);
+                }
+            }
+            if is_first_line {
+                is_first_line = false;
+            } else {
+                output_text.push('\n');
+            }
+            output_text.push_str(&output_line);
+        }
+        output_text.shrink_to_fit();
+
+        let mut char_slice_ends = Vec::<usize>::with_capacity(text.len() + 1);
+        for (byte_pos, _) in output_text.char_indices() {
+            char_slice_ends.push(byte_pos);
+        }
+        char_slice_ends.push(output_text.len());
+        char_slice_ends.shrink_to_fit();
+
+        TypewriterText {
+            font,
+            text: output_text,
+            byte_slice_ends: char_slice_ends,
+        }
+    }
+
+    pub fn char_count(&self) -> usize {
+        self.text.chars().count()
+    }
+
+    pub fn draw(&self, num_chars: usize, x: i32, y: i32) {
+        let byte_slice_end = self.byte_slice_ends[num_chars];
+        self.font.text(&self.text[..byte_slice_end], x, y);
+    }
 }

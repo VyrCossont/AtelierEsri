@@ -9,29 +9,29 @@ pub enum Font<'a> {
 
 impl Font<'_> {
     /// Draw text.
-    pub fn text(&self, s: &str, x: i32, y: i32) {
+    pub fn text(&self, text: &str, x: i32, y: i32) {
         match self {
-            Self::BuiltIn => Self::builtin_text(s, x, y),
-            Self::Proportional(font) => font.text(s, x, y),
+            Self::BuiltIn => Self::builtin_text(text, x, y),
+            Self::Proportional(font) => font.text(text, x, y),
         }
     }
 
     /// Return the bounding box that a drawn string would have.
-    pub fn metrics(&self, s: &str) -> (u32, u32) {
+    pub fn metrics(&self, text: &str) -> (u32, u32) {
         match self {
-            Self::BuiltIn => Self::builtin_metrics(s),
-            Self::Proportional(font) => font.metrics(s),
+            Self::BuiltIn => Self::builtin_metrics(text),
+            Self::Proportional(font) => font.metrics(text),
         }
     }
 
-    fn builtin_text(s: &str, x: i32, y: i32) {
-        let bytes = Self::builtin_text_to_bytes(s);
+    fn builtin_text(text: &str, x: i32, y: i32) {
+        let bytes = Self::builtin_text_to_bytes(text);
         let extd_ascii_text = unsafe { from_utf8_unchecked(&bytes) };
         wasm4::text(extd_ascii_text, x, y);
     }
 
-    fn builtin_metrics(s: &str) -> (u32, u32) {
-        let bytes = Self::builtin_text_to_bytes(s);
+    fn builtin_metrics(text: &str) -> (u32, u32) {
+        let bytes = Self::builtin_text_to_bytes(text);
         if bytes.is_empty() {
             return (0, 0);
         }
@@ -53,9 +53,9 @@ impl Font<'_> {
 
     /// [`wasm4::text`] actually takes a 1-byte character set based on ISO-8859-1,
     /// with a few extra symbols, so we have to translate Unicode characters to that.
-    fn builtin_text_to_bytes(s: &str) -> Vec<u8> {
-        let mut bytes = Vec::with_capacity(s.len());
-        for c in s.chars() {
+    fn builtin_text_to_bytes(text: &str) -> Vec<u8> {
+        let mut bytes = Vec::with_capacity(text.len());
+        for c in text.chars() {
             match c {
                 // ASCII:
                 // TODO: is \r handled differently?
@@ -136,16 +136,16 @@ pub struct ProportionalFont<'a> {
 }
 
 impl ProportionalFont<'_> {
-    pub fn text(&self, s: &str, x: i32, y: i32) {
-        self.core(s, x, y, true);
+    pub fn text(&self, text: &str, x: i32, y: i32) {
+        self.core(text, x, y, true);
     }
 
-    pub fn metrics(&self, s: &str) -> (u32, u32) {
-        self.core(s, 0, 0, false)
+    pub fn metrics(&self, text: &str) -> (u32, u32) {
+        self.core(text, 0, 0, false)
     }
 
     /// Common functionality of [`text`] and [`metrics`].
-    fn core(&self, s: &str, x: i32, y: i32, draw: bool) -> (u32, u32) {
+    fn core(&self, text: &str, x: i32, y: i32, draw: bool) -> (u32, u32) {
         let mut cx = x;
         let mut cy = y;
         // Keep track of end of widest line.
@@ -153,7 +153,7 @@ impl ProportionalFont<'_> {
         // Keep track of when inter-letter spacing needs to be added,
         // so we don't count spurious end-of-line kerning in metrics boxes.
         let mut kern_next = false;
-        for c in s.chars() {
+        for c in text.chars() {
             if kern_next {
                 cx += self.kerning;
             }

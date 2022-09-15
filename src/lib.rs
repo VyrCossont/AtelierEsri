@@ -23,6 +23,7 @@ static mut MODE: Mode = Mode::Intro;
 fn start() {
     // audio::init();
     // audio::music(0);
+    intro::init();
 }
 
 #[no_mangle]
