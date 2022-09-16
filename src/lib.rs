@@ -14,7 +14,7 @@ mod wasm4;
 
 enum Mode {
     Intro,
-    Walkaround,
+    // Walkaround,
 }
 
 static mut MODE: Mode = Mode::Intro;
@@ -34,11 +34,10 @@ fn update() {
         match MODE {
             Mode::Intro => {
                 let continue_intro = intro::update();
-                if !continue_intro {
-                    MODE = Mode::Walkaround;
-                }
-            }
-            Mode::Walkaround => walkaround::update(),
+                // if !continue_intro {
+                //     MODE = Mode::Walkaround;
+                // }
+            } // Mode::Walkaround => walkaround::update(),
         }
     }
 }

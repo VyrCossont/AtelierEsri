@@ -18,10 +18,18 @@ struct State<'a> {
 
 static mut STATE: Option<State> = None;
 
+const MARGIN: i32 = 4;
 const FRAMES_PER_CHARACTER: usize = 3;
 
 pub fn init() {
-    let tt_text = TypewriterText::new(font_data::BUILTIN, DEMO_TEXT, wasm4::SCREEN_SIZE);
+    let tt_text = TypewriterText::new(
+        // font_data::BUILTIN,
+        font_data::TINY,
+        // 0x0003,
+        0x230,
+        DEMO_TEXT,
+        wasm4::SCREEN_SIZE - 2 * MARGIN as u32,
+    );
     let animation_cycle_len = FRAMES_PER_CHARACTER * tt_text.char_count();
     let state = State {
         tt_text,
@@ -45,7 +53,7 @@ pub fn update() -> bool {
 
     state
         .tt_text
-        .draw(state.animation_clock / FRAMES_PER_CHARACTER, 0, 0);
+        .draw(state.animation_clock / FRAMES_PER_CHARACTER, MARGIN, MARGIN);
 
     state.animation_clock = (state.animation_clock + 1) % state.animation_cycle_len;
 
@@ -54,13 +62,14 @@ pub fn update() -> bool {
 
 pub struct TypewriterText<'a> {
     font: &'a Font<'a>,
+    colors: u16,
     text: String,
     /// Map character slice ends to byte slice ends for [`text`].
     byte_slice_ends: Vec<usize>,
 }
 
 impl TypewriterText<'_> {
-    pub fn new<'a>(font: &'a Font, text: &str, width: u32) -> TypewriterText<'a> {
+    pub fn new<'a>(font: &'a Font, colors: u16, text: &str, width: u32) -> TypewriterText<'a> {
         let mut output_text = String::new();
         let mut is_first_line = true;
         for line in text.lines() {
@@ -111,6 +120,7 @@ impl TypewriterText<'_> {
 
         TypewriterText {
             font,
+            colors,
             text: output_text,
             byte_slice_ends: char_slice_ends,
         }
@@ -122,6 +132,7 @@ impl TypewriterText<'_> {
 
     pub fn draw(&self, num_chars: usize, x: i32, y: i32) {
         let byte_slice_end = self.byte_slice_ends[num_chars];
+        unsafe { *wasm4::DRAW_COLORS = self.colors }
         self.font.text(&self.text[..byte_slice_end], x, y);
     }
 }

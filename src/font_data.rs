@@ -8,7 +8,7 @@ pub const TINY: &Font = &Font::Proportional(ProportionalFont {
     image_width: asset_data::TINY_FONT_WIDTH,
     image_height: asset_data::TINY_FONT_HEIGHT,
     image_flags: asset_data::TINY_FONT_FLAGS,
-    space_width: 3,
+    space_width: 1,
     kerning: 1,
     line_spacing: 1,
     src_xs: &[
