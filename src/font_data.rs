@@ -1,7 +1,9 @@
 use crate::asset_data;
 use crate::font::{Font, ProportionalFont};
 
-pub const TINY: Font = Font::Proportional(ProportionalFont {
+pub const BUILTIN: &Font = &Font::BuiltIn;
+
+pub const TINY: &Font = &Font::Proportional(ProportionalFont {
     image_data: &asset_data::TINY_FONT,
     image_width: asset_data::TINY_FONT_WIDTH,
     image_height: asset_data::TINY_FONT_HEIGHT,

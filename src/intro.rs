@@ -21,11 +21,7 @@ static mut STATE: Option<State> = None;
 const FRAMES_PER_CHARACTER: usize = 3;
 
 pub fn init() {
-    let tt_text = TypewriterText::new(
-        /* &font_data::TINY */ &Font::BuiltIn,
-        DEMO_TEXT,
-        wasm4::SCREEN_SIZE,
-    );
+    let tt_text = TypewriterText::new(font_data::BUILTIN, DEMO_TEXT, wasm4::SCREEN_SIZE);
     let animation_cycle_len = FRAMES_PER_CHARACTER * tt_text.char_count();
     let state = State {
         tt_text,
