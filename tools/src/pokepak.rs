@@ -64,22 +64,31 @@ enum EncodingMode2Or3 {
     Mode3,
 }
 
+impl EncodingMethod {
+    const MODE_1: Self = Self::Mode1;
+    const MODE_2: Self = Self::Mode2Or3(EncodingMode2Or3::Mode2);
+    const MODE_3: Self = Self::Mode2Or3(EncodingMode2Or3::Mode3);
+}
+
 /// See https://youtu.be/aF1Yw_wu2cM?t=753
+/// and https://youtu.be/aF1Yw_wu2cM?t=932
+/// for the plus-one bit.
 /// `n` may be in the range `1..=65536`.
 fn encode_rle_count(n: u32) -> BitVec<Msb0, u8> {
+    let n_plus_one = n + 1;
     let u32_bits = u32::BITS as usize;
 
     // Number of bits in representation of n, minus 1
-    let field_size = (u32_bits - n.leading_zeros() as usize) - 1;
+    let field_size = (u32_bits - n_plus_one.leading_zeros() as usize) - 1;
 
     // See https://youtu.be/aF1Yw_wu2cM?t=789
-    // All the bits in `n` after the first 1.
-    let v = n & (u32::MAX >> (n.leading_zeros() + 1));
+    // All the bits in `n_plus_one` after the first 1.
+    let v = n_plus_one & (u32::MAX >> (n_plus_one.leading_zeros() + 1));
 
     // See https://youtu.be/aF1Yw_wu2cM?t=812
     // The next smallest power of 2, minus 2.
     // A string of 1s with a 0 terminator.
-    let l = (n - v) - 2;
+    let l = (n_plus_one - v) - 2;
 
     let mut bv = bitvec![Msb0, u8; 0; 2 * field_size];
     bv[..field_size].store_be(l);
@@ -92,60 +101,80 @@ fn decode_rle_count(bv: BitVec<Msb0, u8>) -> u32 {
 
     let l: u32 = bv[..field_size].load_be();
     let v: u32 = bv[field_size..(2 * field_size)].load_be();
-    l + v + 2
+    let n_plus_one = l + v + 2;
+    n_plus_one - 1
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::pokepak::{decode_rle_count, encode_rle_count};
+    use crate::pokepak::{decode_rle_count, encode_rle_count, EncodingMethod};
     use deku::bitvec::*;
+    use deku::prelude::*;
 
     #[test]
-    fn encode_2() {
+    fn encode_rle_count_1() {
         let expected = bitvec![Msb0, u8; 0, 0];
-        let actual = encode_rle_count(2);
+        let actual = encode_rle_count(1);
         assert_eq!(actual, expected);
     }
 
     #[test]
-    fn decode_2() {
-        let expected = 2u32;
+    fn decode_rle_count_1() {
+        let expected = 1u32;
         let actual = decode_rle_count(bitvec![Msb0, u8; 0, 0]);
         assert_eq!(actual, expected);
     }
 
     #[test]
-    fn encode_45() {
+    fn encode_rle_count_44() {
         let expected = bitvec![Msb0, u8; 1, 1, 1, 1, 0, 0, 1, 1, 0, 1];
-        let actual = encode_rle_count(45);
+        let actual = encode_rle_count(44);
         assert_eq!(actual, expected);
     }
 
     #[test]
-    fn decode_45() {
-        let expected = 45u32;
+    fn decode_rle_count_44() {
+        let expected = 44u32;
         let actual = decode_rle_count(bitvec![Msb0, u8; 1, 1, 1, 1, 0, 0, 1, 1, 0, 1]);
         assert_eq!(actual, expected);
     }
 
     #[test]
-    fn encode_63282() {
+    fn encode_rle_count_63281() {
         let expected = bitvec![Msb0, u8;
             1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1,
             0
         ];
-        let actual = encode_rle_count(63282);
+        let actual = encode_rle_count(63281);
         assert_eq!(actual, expected);
     }
 
     #[test]
-    fn decode_63282() {
-        let expected = 63282u32;
+    fn decode_rle_count_63281() {
+        let expected = 63281u32;
         let actual = decode_rle_count(bitvec![Msb0, u8;
             1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1,
             0
         ]);
         assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn encode_mode1() {
+        let expected = vec![0b1u8];
+        let actual = EncodingMethod::MODE_1.to_bytes().unwrap();
+    }
+
+    #[test]
+    fn encode_mode2() {
+        let expected = vec![0b10u8];
+        let actual = EncodingMethod::MODE_2.to_bytes().unwrap();
+    }
+
+    #[test]
+    fn encode_mode3() {
+        let expected = vec![0b11u8];
+        let actual = EncodingMethod::MODE_3.to_bytes().unwrap();
     }
 }
 
