@@ -511,6 +511,32 @@ mod tests {
         assert_eq!(compressed.len(), reader.pos, "Didn't read entire input");
     }
 
+    /// See https://youtu.be/aF1Yw_wu2cM?t=991
+    /// and https://youtu.be/aF1Yw_wu2cM?t=1104
+    /// Example padded to 64 output bits by adding one more RLE packet.
+    #[test]
+    fn decompress_example() {
+        let expected = bitvec![Msb0, u8;
+            0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0,
+            1, 0, 1, 0, 0, 0,
+        ];
+        assert_eq!(64, expected.len());
+        let compressed = bitvec![Msb0, u8;
+            0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0,
+            0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0,
+        ];
+        let mut reader = BitReader::new(&compressed);
+        let actual = decompress_bitplane(1, 1, &mut reader).unwrap();
+        assert_eq!(
+            expected.len(),
+            actual.len(),
+            "Didn't write as much data as in original"
+        );
+        assert_eq!(actual, expected);
+        assert_eq!(compressed.len(), reader.pos, "Didn't read entire input");
+    }
+
     /// Test pattern: 0x0 tiles.
     /// It'd be weird to actually use this corner case,
     /// but it shouldn't break the encoder either.
@@ -583,6 +609,33 @@ mod tests {
             0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1,
             1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1,
             1, 1, 0, 0, 0, 0,
+        ];
+        let mut reader = BitReader::new(&data);
+        let mut writer = BitWriter::new();
+        compress_bitplane(1, 1, &mut reader, &mut writer).unwrap();
+        let actual = writer.bits;
+        assert_eq!(
+            expected.len(),
+            actual.len(),
+            "Didn't write as much data as in original"
+        );
+        assert_eq!(actual, expected);
+        assert_eq!(data.len(), reader.pos, "Didn't read entire input");
+    }
+
+    /// See https://youtu.be/aF1Yw_wu2cM?t=991
+    /// and https://youtu.be/aF1Yw_wu2cM?t=1104
+    /// Example padded to 64 output bits by adding one more RLE packet.
+    #[test]
+    fn compress_example() {
+        let expected = bitvec![Msb0, u8;
+            0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0,
+            0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0,
+        ];
+        let data = bitvec![Msb0, u8;
+            0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0,
+            1, 0, 1, 0, 0, 0,
         ];
         let mut reader = BitReader::new(&data);
         let mut writer = BitWriter::new();
