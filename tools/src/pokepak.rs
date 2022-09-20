@@ -90,7 +90,7 @@ struct BitReader<'a> {
 }
 
 impl BitReader<'_> {
-    fn new<'a>(bits: &'a BitSlice<Msb0, u8>) -> BitReader<'a> {
+    fn new(bits: &BitSlice<Msb0, u8>) -> BitReader {
         BitReader { bits, pos: 0 }
     }
 
@@ -137,8 +137,17 @@ impl BitWriter {
         }
     }
 
+    fn len(&self) -> usize {
+        self.bits.len()
+    }
+
     fn write(&mut self, bits: &BitSlice<Msb0, u8>) {
         self.bits.extend(bits);
+    }
+
+    fn extend_with_zeroes(&mut self, num_bits: usize) {
+        let new_len = self.len() + num_bits;
+        self.bits.resize(new_len, false);
     }
 
     fn store_be<M>(&mut self, n: usize, val: M)
@@ -188,32 +197,44 @@ fn decompress_bitplane(
     w_tiles: u8,
     h_tiles: u8,
     initial_packet_type: PacketType,
-    bv: BitVec<Msb0, u8>,
-) -> BitVec<Msb0, u8> {
-    let mut buf = bitvec![Msb0, u8; 0; w_tiles as usize * 8 * h_tiles as usize * 8];
+    reader: &mut BitReader,
+) -> anyhow::Result<BitVec<Msb0, u8>> {
+    let expected_bits = w_tiles as usize * 8 * h_tiles as usize * 8;
+    let mut writer = BitWriter::new();
     let mut packet_type = initial_packet_type;
-    let mut buf_pos = 0usize;
-    while buf_pos < buf.len() {
+    while writer.len() < expected_bits {
         match packet_type {
-            PacketType::RLE => decode_rle_packet(),
-            PacketType::Data => decode_data_packet(),
+            PacketType::RLE => decode_rle_packet(reader, &mut writer)?,
+            PacketType::Data => decode_data_packet(reader, &mut writer)?,
         }
         packet_type = !packet_type;
     }
-    todo!()
+    Ok(writer.bits)
 }
 
-fn decode_rle_packet() {
-    todo!()
+fn decode_rle_packet(reader: &mut BitReader, writer: &mut BitWriter) -> anyhow::Result<()> {
+    let pair_count = read_rle_count(reader)?;
+    writer.extend_with_zeroes(2 * pair_count as usize);
+    Ok(())
 }
 
-fn decode_data_packet() {
-    todo!()
+fn decode_data_packet(reader: &mut BitReader, writer: &mut BitWriter) -> anyhow::Result<()> {
+    loop {
+        let pair = reader.read(2)?;
+        if pair == bitvec![Msb0, u8; 0, 0] {
+            break;
+        }
+        writer.write(pair);
+    }
+    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::pokepak::{read_rle_count, write_rle_count, BitReader, BitWriter, EncodingMethod};
+    use crate::pokepak::{
+        decompress_bitplane, read_rle_count, write_rle_count, BitReader, BitWriter, EncodingMethod,
+        PacketType,
+    };
     use deku::bitvec::*;
     use deku::prelude::*;
 
@@ -323,6 +344,67 @@ mod tests {
             .unwrap()
             .1;
         assert_eq!(actual, expected);
+    }
+
+    /// Test pattern: 1 tile, all 0s.
+    #[test]
+    fn decompress_solid_0() {
+        let expected = bitvec![Msb0, u8; 0; 64];
+        let compressed = bitvec![Msb0, u8; 1, 1, 1, 1, 0, 0, 0, 0, 0, 1];
+        let mut reader = BitReader::new(&compressed);
+        let actual = decompress_bitplane(1, 1, PacketType::RLE, &mut reader).unwrap();
+        assert_eq!(
+            expected.len(),
+            actual.len(),
+            "Didn't write as much data as in original"
+        );
+        assert_eq!(actual, expected);
+        assert_eq!(compressed.len(), reader.pos, "Didn't read entire input");
+    }
+
+    /// Test pattern: 1 tile, all 1s.
+    #[test]
+    fn decompress_solid_1() {
+        let expected = bitvec![Msb0, u8; 1; 64];
+        let compressed = bitvec![Msb0, u8;
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 0, 0,
+        ];
+        let mut reader = BitReader::new(&compressed);
+        let actual = decompress_bitplane(1, 1, PacketType::Data, &mut reader).unwrap();
+        assert_eq!(
+            expected.len(),
+            actual.len(),
+            "Didn't write as much data as in original"
+        );
+        assert_eq!(actual, expected);
+        assert_eq!(compressed.len(), reader.pos, "Didn't read entire input");
+    }
+
+    /// Test pattern: 1-tile checkerboard where upper left and bottom right quadrants are 0s and other quadrants are 1s.
+    #[test]
+    fn decompress_checkerboard() {
+        let expected = bitvec![Msb0, u8;
+            0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1,
+            1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1,
+            1, 1, 0, 0, 0, 0,
+        ];
+        assert_eq!(64, expected.len());
+        let compressed = bitvec![Msb0, u8;
+            0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1,
+            0, 0, 0, 1,
+        ];
+        let mut reader = BitReader::new(&compressed);
+        let actual = decompress_bitplane(1, 1, PacketType::RLE, &mut reader).unwrap();
+        assert_eq!(
+            expected.len(),
+            actual.len(),
+            "Didn't write as much data as in original"
+        );
+        assert_eq!(actual, expected);
+        assert_eq!(compressed.len(), reader.pos, "Didn't read entire input");
     }
 }
 
