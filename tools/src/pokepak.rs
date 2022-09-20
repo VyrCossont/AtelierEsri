@@ -133,7 +133,6 @@ impl BitReader<'_> {
     {
         let slice = &self.bits[self.pos..];
         let (rest, val) = T::read(slice, ())?;
-        assert_eq!(1, slice.len() - rest.len());
         self.pos += slice.len() - rest.len();
         Ok(val)
     }
@@ -308,7 +307,10 @@ fn compress_bitplane(
         }
     }
 
-    assert_eq!(bits_expected, bits_read);
+    assert_eq!(
+        bits_expected, bits_read,
+        "Didn't read the expected amount of input"
+    );
 
     Ok(())
 }
@@ -316,8 +318,8 @@ fn compress_bitplane(
 #[cfg(test)]
 mod tests {
     use crate::pokepak::{
-        decompress_bitplane, read_rle_count, write_rle_count, BitReader, BitWriter, EncodingMethod,
-        PacketType,
+        compress_bitplane, decompress_bitplane, read_rle_count, write_rle_count, BitReader,
+        BitWriter, EncodingMethod, PacketType,
     };
     use deku::bitvec::*;
     use deku::prelude::*;
@@ -430,7 +432,7 @@ mod tests {
         assert_eq!(actual, expected);
     }
 
-    /// Test patterm: 0x0 tiles.
+    /// Test pattern: 0x0 tiles.
     /// It'd be weird to actually use this corner case,
     /// but now it doesn't break the decoder.
     #[test]
@@ -507,6 +509,92 @@ mod tests {
         );
         assert_eq!(actual, expected);
         assert_eq!(compressed.len(), reader.pos, "Didn't read entire input");
+    }
+
+    /// Test pattern: 0x0 tiles.
+    /// It'd be weird to actually use this corner case,
+    /// but it shouldn't break the encoder either.
+    #[test]
+    fn compress_empty() {
+        let expected = bitvec![Msb0, u8; 1, 0, 0];
+        let data = bitvec![Msb0, u8; 0; 0];
+        let mut reader = BitReader::new(&data);
+        let mut writer = BitWriter::new();
+        compress_bitplane(0, 0, &mut reader, &mut writer).unwrap();
+        let actual = writer.bits;
+        assert_eq!(
+            expected.len(),
+            actual.len(),
+            "Didn't write as much data as in original"
+        );
+        assert_eq!(actual, expected);
+        assert_eq!(data.len(), reader.pos, "Didn't read entire input");
+    }
+
+    /// Test pattern: 1x1 tiles, all 0s.
+    #[test]
+    fn compress_solid_0() {
+        let expected = bitvec![Msb0, u8; 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1];
+        let data = bitvec![Msb0, u8; 0; 64];
+        let mut reader = BitReader::new(&data);
+        let mut writer = BitWriter::new();
+        compress_bitplane(1, 1, &mut reader, &mut writer).unwrap();
+        let actual = writer.bits;
+        assert_eq!(
+            expected.len(),
+            actual.len(),
+            "Didn't write as much data as in original"
+        );
+        assert_eq!(actual, expected);
+        assert_eq!(data.len(), reader.pos, "Didn't read entire input");
+    }
+
+    /// Test pattern: 1x1 tiles, all 0s.
+    #[test]
+    fn compress_solid_1() {
+        let expected = bitvec![Msb0, u8;
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 0, 0,
+        ];
+        let data = bitvec![Msb0, u8; 1; 64];
+        let mut reader = BitReader::new(&data);
+        let mut writer = BitWriter::new();
+        compress_bitplane(1, 1, &mut reader, &mut writer).unwrap();
+        let actual = writer.bits;
+        assert_eq!(
+            expected.len(),
+            actual.len(),
+            "Didn't write as much data as in original"
+        );
+        assert_eq!(actual, expected);
+        assert_eq!(data.len(), reader.pos, "Didn't read entire input");
+    }
+
+    /// Test pattern: 1x1-tile checkerboard where upper left and bottom right quadrants are 0s and other quadrants are 1s.
+    #[test]
+    fn compress_checkerboard() {
+        let expected = bitvec![Msb0, u8;
+            0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1,
+            1, 0, 0, 0, 1,
+        ];
+        let data = bitvec![Msb0, u8;
+            0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1,
+            1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1,
+            1, 1, 0, 0, 0, 0,
+        ];
+        let mut reader = BitReader::new(&data);
+        let mut writer = BitWriter::new();
+        compress_bitplane(1, 1, &mut reader, &mut writer).unwrap();
+        let actual = writer.bits;
+        assert_eq!(
+            expected.len(),
+            actual.len(),
+            "Didn't write as much data as in original"
+        );
+        assert_eq!(actual, expected);
+        assert_eq!(data.len(), reader.pos, "Didn't read entire input");
     }
 }
 
