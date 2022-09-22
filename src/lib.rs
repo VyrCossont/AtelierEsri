@@ -1,3 +1,4 @@
+mod alchemy;
 #[cfg(feature = "buddy-alloc")]
 mod alloc;
 mod asset_data;
@@ -13,17 +14,19 @@ mod walkaround;
 mod wasm4;
 
 enum Mode {
-    Intro,
+    // Intro,
     // Walkaround,
+    Alchemy,
 }
 
-static mut MODE: Mode = Mode::Intro;
+static mut MODE: Mode = Mode::Alchemy;
 
 #[no_mangle]
 fn start() {
     // audio::init();
     // audio::music(0);
-    intro::init();
+    // intro::init();
+    alchemy::update();
 }
 
 #[no_mangle]
@@ -32,12 +35,14 @@ fn update() {
 
     unsafe {
         match MODE {
-            Mode::Intro => {
-                let continue_intro = intro::update();
-                // if !continue_intro {
-                //     MODE = Mode::Walkaround;
-                // }
-            } // Mode::Walkaround => walkaround::update(),
+            // Mode::Intro => {
+            //     let continue_intro = intro::update();
+            //     if !continue_intro {
+            //         MODE = Mode::Walkaround;
+            //     }
+            // }
+            // Mode::Walkaround => walkaround::update(),
+            Mode::Alchemy => alchemy::update(),
         }
     }
 }
