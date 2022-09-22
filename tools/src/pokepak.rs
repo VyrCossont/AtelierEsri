@@ -1,3 +1,11 @@
+//! Implements Pokémon sprite compression algorithm
+//! described by https://youtu.be/ZI50XUeN6QE
+//! and https://youtu.be/aF1Yw_wu2cM.
+//! TODO: confirm that typical compression ratio is around 1.5:1.
+//! TODO: implement delta coding
+//! TODO: implement bitplane XOR modes
+//! TODO: implement PNG import/export.
+
 use anyhow;
 use bitvec::mem::BitMemory;
 use deku::bitvec::*;
@@ -27,16 +35,17 @@ struct SecondBitplaneHeader {
     encoding_method: EncodingMethod,
 }
 
+/// See https://youtu.be/aF1Yw_wu2cM?t=1352
 #[derive(Debug, PartialEq, DekuRead, DekuWrite)]
 #[deku(type = "u8", bits = "1")]
 enum PrimaryBuffer {
     #[deku(id = "0")]
-    A,
-    #[deku(id = "1")]
     B,
+    #[deku(id = "1")]
+    C,
 }
 
-/// Packet types: see https://youtu.be/aF1Yw_wu2cM?t=585
+/// See https://youtu.be/aF1Yw_wu2cM?t=585
 /// and https://youtu.be/aF1Yw_wu2cM?t=981
 #[derive(Debug, PartialEq, DekuRead, DekuWrite)]
 #[deku(type = "u8", bits = "1")]
@@ -58,6 +67,7 @@ impl Not for PacketType {
     }
 }
 
+/// See https://youtu.be/aF1Yw_wu2cM?t=1331
 #[derive(Debug, PartialEq, DekuRead, DekuWrite)]
 #[deku(type = "u8", bits = "1")]
 enum EncodingMethod {
@@ -253,6 +263,9 @@ fn decode_data_packet(reader: &mut BitReader, writer: &mut BitWriter) -> anyhow:
     Ok(())
 }
 
+/// TODO: implicit data packet termination when sprite is full
+///     See https://youtu.be/aF1Yw_wu2cM?t=1463
+///     Should break current `empty` tests
 fn compress_bitplane(
     w_tiles: u8,
     h_tiles: u8,
