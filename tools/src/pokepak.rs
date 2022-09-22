@@ -328,11 +328,39 @@ fn compress_bitplane(
     Ok(())
 }
 
+/// See https://youtu.be/aF1Yw_wu2cM?t=1227
+fn delta_encode(input: &BitSlice<Msb0, u8>) -> BitVec<Msb0, u8> {
+    let mut output = bitvec![Msb0, u8;];
+    let mut prev: bool = false;
+    for bit in input {
+        if *bit == prev {
+            output.push(false);
+        } else {
+            output.push(true);
+            prev = *bit;
+        }
+    }
+    output
+}
+
+/// See https://youtu.be/aF1Yw_wu2cM?t=1250
+fn delta_decode(input: &BitSlice<Msb0, u8>) -> BitVec<Msb0, u8> {
+    let mut output = bitvec![Msb0, u8;];
+    let mut prev: bool = false;
+    for bit in input {
+        if *bit {
+            prev = !prev;
+        }
+        output.push(prev);
+    }
+    output
+}
+
 #[cfg(test)]
 mod tests {
     use crate::pokepak::{
-        compress_bitplane, decompress_bitplane, read_rle_count, write_rle_count, BitReader,
-        BitWriter, EncodingMethod, PacketType,
+        compress_bitplane, decompress_bitplane, delta_decode, delta_encode, read_rle_count,
+        write_rle_count, BitReader, BitWriter, EncodingMethod, PacketType,
     };
     use deku::bitvec::*;
     use deku::prelude::*;
@@ -661,6 +689,28 @@ mod tests {
         );
         assert_eq!(actual, expected);
         assert_eq!(data.len(), reader.pos, "Didn't read entire input");
+    }
+
+    /// See https://youtu.be/aF1Yw_wu2cM?t=1272
+    #[test]
+    fn delta_encode_example() {
+        let expected = bitvec![Msb0, u8;
+            0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0];
+        let data = bitvec![Msb0, u8;
+            0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0];
+        let actual = delta_encode(&data);
+        assert_eq!(actual, expected);
+    }
+
+    /// See https://youtu.be/aF1Yw_wu2cM?t=1272
+    #[test]
+    fn delta_decode_example() {
+        let expected = bitvec![Msb0, u8;
+            0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0];
+        let delta_data = bitvec![Msb0, u8;
+            0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0];
+        let actual = delta_decode(&delta_data);
+        assert_eq!(actual, expected);
     }
 }
 
