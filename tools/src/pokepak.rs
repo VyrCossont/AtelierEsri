@@ -259,8 +259,14 @@ fn decompress_bitplane(
             PacketType::Data => decode_data_packet(reader, &mut writer)?,
         }
         packet_type = !packet_type;
-        if writer.len() >= bits_expected {
+        if writer.len() == bits_expected {
             break;
+        } else if writer.len() > bits_expected {
+            anyhow::bail!(
+                "Too much data: expected {}, got {}",
+                bits_expected,
+                writer.len()
+            );
         }
     }
     Ok(writer.bits)
@@ -360,6 +366,7 @@ fn delta_encode(input: &BitSlice<Msb0, u8>) -> BitVec<Msb0, u8> {
             prev = *bit;
         }
     }
+    assert_eq!(input.len(), output.len());
     output
 }
 
@@ -373,6 +380,7 @@ fn delta_decode(input: &BitSlice<Msb0, u8>) -> BitVec<Msb0, u8> {
         }
         output.push(prev);
     }
+    assert_eq!(input.len(), output.len());
     output
 }
 
@@ -755,7 +763,7 @@ impl Image2Bit {
         // Check palette preconditions
         match info.color_type {
             ColorType::Grayscale => match info.bit_depth {
-                BitDepth::Two => (),
+                BitDepth::One | BitDepth::Two => (),
                 bit_depth => {
                     anyhow::bail!("Illegal bit depth for 4 greys: {:?}", bit_depth)
                 }
@@ -771,7 +779,7 @@ impl Image2Bit {
                     }
                 }
                 match info.bit_depth {
-                    BitDepth::Two | BitDepth::Four | BitDepth::Eight => (),
+                    BitDepth::One | BitDepth::Two | BitDepth::Four | BitDepth::Eight => (),
                     bit_depth => {
                         anyhow::bail!("Illegal palette bit depth for 4 colors: {:?}", bit_depth)
                     }
@@ -794,10 +802,16 @@ impl Image2Bit {
                         // Past end of last partial byte of the scanline
                         break;
                     }
+                    if bit_depth == 1 {
+                        // MSB is always zero
+                        bits.push(false);
+                    }
                     bits.extend(&byte[(p * bit_depth)..((p + 1) * bit_depth)]);
                 }
             }
         }
+
+        assert_eq!(width * height * 2, bits.len());
 
         Ok(Image2Bit {
             width,
@@ -867,12 +881,15 @@ pub fn encode(input_path: &Path, output_path: &Path) -> anyhow::Result<()> {
     // Try all 6 encoding options.
     for primary_buffer in [
         PrimaryBuffer::MostSignificantBitplane,
-        PrimaryBuffer::LeastSignificantBitplane,
+        // PrimaryBuffer::LeastSignificantBitplane,
     ] {
-        let (bp0, bp1) = if primary_buffer == PrimaryBuffer::MostSignificantBitplane {
-            (&most_significant_bitplane, &least_significant_bitplane)
-        } else {
-            (&least_significant_bitplane, &most_significant_bitplane)
+        let (bp0, bp1) = match primary_buffer {
+            PrimaryBuffer::MostSignificantBitplane => {
+                (&most_significant_bitplane, &least_significant_bitplane)
+            }
+            PrimaryBuffer::LeastSignificantBitplane => {
+                (&least_significant_bitplane, &most_significant_bitplane)
+            }
         };
 
         let sprite_header = SpriteHeader {
@@ -883,8 +900,8 @@ pub fn encode(input_path: &Path, output_path: &Path) -> anyhow::Result<()> {
 
         for encoding_method in [
             EncodingMethod::MODE_1,
-            EncodingMethod::MODE_2,
-            EncodingMethod::MODE_3,
+            // EncodingMethod::MODE_2,
+            // EncodingMethod::MODE_3,
         ] {
             let second_bitplane_header = SecondBitplaneHeader { encoding_method };
 
@@ -892,17 +909,24 @@ pub fn encode(input_path: &Path, output_path: &Path) -> anyhow::Result<()> {
 
             let xored_bp1 = if encoding_method.xor_bp1_with_bp0() {
                 // All the bitvec bit-ops traits require a mutable reference to the left-hand side, which is not how non-assignment bit ops are supposed to work!
-                Some(bp1.clone() ^ bp0.iter().by_val())
+                let xored_bp1 = bp1.clone() ^ bp0.iter().by_val();
+                assert_eq!(bp1.len(), xored_bp1.len());
+                assert_eq!(bp0.len(), xored_bp1.len());
+                Some(xored_bp1)
             } else {
                 None
             };
+            let bp1_stage1 = xored_bp1.as_ref().unwrap_or(&bp1);
+
             let encoded_bp1 = if encoding_method.delta_encode_bp1() {
-                Some(delta_encode(xored_bp1.as_ref().unwrap_or(bp1)))
+                Some(delta_encode(bp1_stage1))
             } else {
                 None
             };
+            let bp1_stage2 = encoded_bp1.as_ref().unwrap_or(bp1_stage1);
 
             let mut writer = BitWriter::new();
+
             writer.deku_write(&sprite_header)?;
             compress_bitplane(
                 w_tiles,
@@ -910,11 +934,12 @@ pub fn encode(input_path: &Path, output_path: &Path) -> anyhow::Result<()> {
                 &mut BitReader::new(&encoded_bp0),
                 &mut writer,
             )?;
+
             writer.deku_write(&second_bitplane_header)?;
             compress_bitplane(
                 w_tiles,
                 h_tiles,
-                &mut BitReader::new(encoded_bp1.as_ref().unwrap_or(bp1)),
+                &mut BitReader::new(bp1_stage2),
                 &mut writer,
             )?;
 
@@ -935,10 +960,68 @@ pub fn encode(input_path: &Path, output_path: &Path) -> anyhow::Result<()> {
 pub fn decode(input_path: &Path, output_path: &Path) -> anyhow::Result<()> {
     let bytes = fs::read(input_path)?;
     let mut reader = BitReader::new(bytes.view_bits());
+
     let sprite_header: SpriteHeader = reader.deku_read()?;
-    let bp0 = decompress_bitplane(sprite_header.w_tiles, sprite_header.h_tiles, &mut reader)?;
+    let encoded_bp0 =
+        decompress_bitplane(sprite_header.w_tiles, sprite_header.h_tiles, &mut reader)?;
+    println!("encoded_bp0.len = {}", encoded_bp0.len());
+
+    let bp0 = delta_decode(&encoded_bp0);
+    println!("bp0.len = {}", bp0.len());
+
     let second_bitplane_header: SecondBitplaneHeader = reader.deku_read()?;
-    let bp1 = decompress_bitplane(sprite_header.w_tiles, sprite_header.h_tiles, &mut reader)?;
+    let bp1_stage2 =
+        decompress_bitplane(sprite_header.w_tiles, sprite_header.h_tiles, &mut reader)?;
+    println!("bp1_stage2.len = {}", bp1_stage2.len());
+
+    let decoded_bp1 = if second_bitplane_header.encoding_method.delta_encode_bp1() {
+        Some(delta_decode(&bp1_stage2))
+    } else {
+        None
+    };
+    let bp1_stage1 = decoded_bp1.as_ref().unwrap_or(&bp1_stage2);
+    println!("bp1_stage1.len = {}", bp1_stage1.len());
+
+    let xored_bp1 = if second_bitplane_header.encoding_method.xor_bp1_with_bp0() {
+        Some(bp1_stage1.clone() ^ bp0.iter().by_val())
+    } else {
+        None
+    };
+    let bp1 = xored_bp1.as_ref().unwrap_or(bp1_stage1);
+    println!("bp1.len = {}", bp1.len());
+
+    if bp0.len() != bp1.len() {
+        anyhow::bail!(
+            "Bitplane length mismatch: bp0 = {} bits, bp1 = {} bits, delta_encode_bp1 = {}, xor_bp1_with_bp0 = {}",
+            bp0.len(),
+            bp1.len(),
+            second_bitplane_header.encoding_method.delta_encode_bp1(),
+            second_bitplane_header.encoding_method.xor_bp1_with_bp0()
+        )
+    }
+
+    let (most_significant_bitplane, least_significant_bitplane) = match sprite_header.primary_buffer
+    {
+        PrimaryBuffer::MostSignificantBitplane => (&bp0, bp1),
+        PrimaryBuffer::LeastSignificantBitplane => (bp1, &bp0),
+    };
+
+    let mut bits = bitvec![Msb0, u8;];
+    for (m, l) in most_significant_bitplane
+        .iter()
+        .by_val()
+        .zip(least_significant_bitplane.iter().by_val())
+    {
+        bits.push(m);
+        bits.push(l);
+    }
+
+    let img = Image2Bit {
+        width: sprite_header.w_tiles as usize * 8,
+        height: sprite_header.h_tiles as usize * 8,
+        bits,
+    };
+    img.write(output_path)?;
 
     Ok(())
 }
