@@ -12,7 +12,7 @@ use deku::bitvec::*;
 use deku::prelude::*;
 use png::{BitDepth, ColorType, Decoder, Encoder};
 use std::fs;
-use std::fs::File;
+use std::fs::{read, File};
 use std::io::BufWriter;
 use std::ops::Not;
 use std::path::Path;
@@ -384,11 +384,12 @@ fn delta_decode(input: &BitSlice<Msb0, u8>) -> BitVec<Msb0, u8> {
     output
 }
 
+// TODO: too much copypasta, do we really not have table-driven subtests in Rust?
 #[cfg(test)]
 mod tests {
     use crate::pokepak::{
         compress_bitplane, decompress_bitplane, delta_decode, delta_encode, read_rle_count,
-        write_rle_count, BitReader, BitWriter, EncodingMethod, PacketType,
+        write_rle_count, BitReader, BitWriter, EncodingMethod,
     };
     use deku::bitvec::*;
     use deku::prelude::*;
@@ -717,6 +718,39 @@ mod tests {
         );
         assert_eq!(actual, expected);
         assert_eq!(data.len(), reader.pos, "Didn't read entire input");
+    }
+
+    #[test]
+    fn roundtrip_1() {
+        let expected = bitvec![Msb0, u8;
+            1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0,
+            1, 0, 0, 0, 0, 0,
+        ];
+        let mut reader = BitReader::new(&expected);
+        let mut writer = BitWriter::new();
+        compress_bitplane(1, 1, &mut reader, &mut writer).unwrap();
+        println!("compressed bitplane = {}", writer.bits);
+        let mut compressed_reader = BitReader::new(&writer.bits);
+        let actual = decompress_bitplane(1, 1, &mut compressed_reader).unwrap();
+        assert_eq!(expected.len(), actual.len());
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn roundtrip_2() {
+        let expected = bitvec![Msb0, u8;
+            1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0,
+            1, 0, 1, 1, 0, 0,
+        ];
+        let mut reader = BitReader::new(&expected);
+        let mut writer = BitWriter::new();
+        compress_bitplane(1, 1, &mut reader, &mut writer).unwrap();
+        let mut compressed_reader = BitReader::new(&writer.bits);
+        let actual = decompress_bitplane(1, 1, &mut compressed_reader).unwrap();
+        // assert_eq!(expected.len(), actual.len());
+        assert_eq!(expected, actual);
     }
 
     /// See https://youtu.be/aF1Yw_wu2cM?t=1272
