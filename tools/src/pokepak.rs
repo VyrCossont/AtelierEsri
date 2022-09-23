@@ -10,8 +10,8 @@ use anyhow;
 use bitvec::mem::BitMemory;
 use deku::bitvec::*;
 use deku::prelude::*;
-use divrem::DivCeil;
 use png::{BitDepth, ColorType, Decoder, Encoder};
+use std::fs;
 use std::fs::File;
 use std::io::BufWriter;
 use std::ops::Not;
@@ -39,18 +39,19 @@ struct SecondBitplaneHeader {
 }
 
 /// See https://youtu.be/aF1Yw_wu2cM?t=1352
-#[derive(Debug, PartialEq, DekuRead, DekuWrite)]
+/// Controls which bitplane goes first and thus modifies which one the encoding methods modify most.
+#[derive(Debug, PartialEq, DekuRead, DekuWrite, Copy, Clone)]
 #[deku(type = "u8", bits = "1")]
 enum PrimaryBuffer {
     #[deku(id = "0")]
-    B,
+    MostSignificantBitplane,
     #[deku(id = "1")]
-    C,
+    LeastSignificantBitplane,
 }
 
 /// See https://youtu.be/aF1Yw_wu2cM?t=585
 /// and https://youtu.be/aF1Yw_wu2cM?t=981
-#[derive(Debug, PartialEq, DekuRead, DekuWrite)]
+#[derive(Debug, PartialEq, DekuRead, DekuWrite, Copy, Clone)]
 #[deku(type = "u8", bits = "1")]
 enum PacketType {
     #[deku(id = "0")]
@@ -71,7 +72,7 @@ impl Not for PacketType {
 }
 
 /// See https://youtu.be/aF1Yw_wu2cM?t=1331
-#[derive(Debug, PartialEq, DekuRead, DekuWrite)]
+#[derive(Debug, PartialEq, DekuRead, DekuWrite, Copy, Clone)]
 #[deku(type = "u8", bits = "1")]
 enum EncodingMethod {
     #[deku(id = "0")]
@@ -80,7 +81,7 @@ enum EncodingMethod {
     Mode2Or3(EncodingMode2Or3),
 }
 
-#[derive(Debug, PartialEq, DekuRead, DekuWrite)]
+#[derive(Debug, PartialEq, DekuRead, DekuWrite, Copy, Clone)]
 #[deku(type = "u8", bits = "1")]
 enum EncodingMode2Or3 {
     #[deku(id = "0")]
@@ -740,6 +741,7 @@ struct Image2Bit {
     bits: BitVec<Msb0, u8>,
 }
 
+// TODO: we should be able to treat any image type as an input so long as it has the right number of colors.
 impl Image2Bit {
     fn read(path: &Path) -> anyhow::Result<Self> {
         let decoder = Decoder::new(File::open(path)?);
@@ -843,10 +845,100 @@ impl Image2Bit {
 
 pub fn encode(input_path: &Path, output_path: &Path) -> anyhow::Result<()> {
     let img = Image2Bit::read(input_path)?;
-    img.write(output_path)?;
+
+    if img.width % 8 != 0 || img.height % 8 != 0 {
+        anyhow::bail!("Image size must be a multiple of 8 in each direction (for now)")
+    }
+    let w_tiles = (img.width / 8) as u8;
+    let h_tiles = (img.height / 8) as u8;
+
+    // Most significant bitplane
+    let mut most_significant_bitplane = bitvec![Msb0, u8;];
+    // Least significant bitplane
+    let mut least_significant_bitplane = bitvec![Msb0, u8;];
+    for c in img.bits.chunks(2) {
+        most_significant_bitplane.push(c[0]);
+        least_significant_bitplane.push(c[1]);
+    }
+
+    let mut best_len: Option<usize> = None;
+    let mut best_bytes: Option<Vec<u8>> = None;
+
+    // Try all 6 encoding options.
+    for primary_buffer in [
+        PrimaryBuffer::MostSignificantBitplane,
+        PrimaryBuffer::LeastSignificantBitplane,
+    ] {
+        let (bp0, bp1) = if primary_buffer == PrimaryBuffer::MostSignificantBitplane {
+            (&most_significant_bitplane, &least_significant_bitplane)
+        } else {
+            (&least_significant_bitplane, &most_significant_bitplane)
+        };
+
+        let sprite_header = SpriteHeader {
+            w_tiles,
+            h_tiles,
+            primary_buffer,
+        };
+
+        for encoding_method in [
+            EncodingMethod::MODE_1,
+            EncodingMethod::MODE_2,
+            EncodingMethod::MODE_3,
+        ] {
+            let second_bitplane_header = SecondBitplaneHeader { encoding_method };
+
+            let encoded_bp0 = delta_encode(bp0);
+
+            let xored_bp1 = if encoding_method.xor_bp1_with_bp0() {
+                // All the bitvec bit-ops traits require a mutable reference to the left-hand side, which is not how non-assignment bit ops are supposed to work!
+                Some(bp1.clone() ^ bp0.iter().by_val())
+            } else {
+                None
+            };
+            let encoded_bp1 = if encoding_method.delta_encode_bp1() {
+                Some(delta_encode(xored_bp1.as_ref().unwrap_or(bp1)))
+            } else {
+                None
+            };
+
+            let mut writer = BitWriter::new();
+            writer.deku_write(&sprite_header)?;
+            compress_bitplane(
+                w_tiles,
+                h_tiles,
+                &mut BitReader::new(&encoded_bp0),
+                &mut writer,
+            )?;
+            writer.deku_write(&second_bitplane_header)?;
+            compress_bitplane(
+                w_tiles,
+                h_tiles,
+                &mut BitReader::new(encoded_bp1.as_ref().unwrap_or(bp1)),
+                &mut writer,
+            )?;
+
+            let bytes = writer.bits.as_raw_slice();
+            let len = bytes.len();
+            if best_len.is_none() || len < best_len.unwrap() {
+                best_len = Some(len);
+                best_bytes = Some(Vec::from(bytes));
+            }
+        }
+    }
+
+    fs::write(output_path, best_bytes.unwrap())?;
+
     Ok(())
 }
 
 pub fn decode(input_path: &Path, output_path: &Path) -> anyhow::Result<()> {
-    todo!()
+    let bytes = fs::read(input_path)?;
+    let mut reader = BitReader::new(bytes.view_bits());
+    let sprite_header: SpriteHeader = reader.deku_read()?;
+    let bp0 = decompress_bitplane(sprite_header.w_tiles, sprite_header.h_tiles, &mut reader)?;
+    let second_bitplane_header: SecondBitplaneHeader = reader.deku_read()?;
+    let bp1 = decompress_bitplane(sprite_header.w_tiles, sprite_header.h_tiles, &mut reader)?;
+
+    Ok(())
 }
