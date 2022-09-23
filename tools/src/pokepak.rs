@@ -329,7 +329,7 @@ fn compress_bitplane(
                 }
                 rle_count += 1;
             } else {
-                if rle_count > 1 {
+                if rle_count > 0 {
                     // End RLE packet.
                     write_rle_count(rle_count, writer);
                     rle_count = 0;
@@ -720,8 +720,9 @@ mod tests {
         assert_eq!(data.len(), reader.pos, "Didn't read entire input");
     }
 
+    /// Exercised a bad boundary in the compressor.
     #[test]
-    fn roundtrip_1() {
+    fn roundtrip() {
         let expected = bitvec![Msb0, u8;
             1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0,
@@ -730,26 +731,8 @@ mod tests {
         let mut reader = BitReader::new(&expected);
         let mut writer = BitWriter::new();
         compress_bitplane(1, 1, &mut reader, &mut writer).unwrap();
-        println!("compressed bitplane = {}", writer.bits);
         let mut compressed_reader = BitReader::new(&writer.bits);
         let actual = decompress_bitplane(1, 1, &mut compressed_reader).unwrap();
-        assert_eq!(expected.len(), actual.len());
-        assert_eq!(expected, actual);
-    }
-
-    #[test]
-    fn roundtrip_2() {
-        let expected = bitvec![Msb0, u8;
-            1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0,
-            1, 0, 1, 1, 0, 0,
-        ];
-        let mut reader = BitReader::new(&expected);
-        let mut writer = BitWriter::new();
-        compress_bitplane(1, 1, &mut reader, &mut writer).unwrap();
-        let mut compressed_reader = BitReader::new(&writer.bits);
-        let actual = decompress_bitplane(1, 1, &mut compressed_reader).unwrap();
-        // assert_eq!(expected.len(), actual.len());
         assert_eq!(expected, actual);
     }
 
@@ -915,7 +898,7 @@ pub fn encode(input_path: &Path, output_path: &Path) -> anyhow::Result<()> {
     // Try all 6 encoding options.
     for primary_buffer in [
         PrimaryBuffer::MostSignificantBitplane,
-        // PrimaryBuffer::LeastSignificantBitplane,
+        PrimaryBuffer::LeastSignificantBitplane,
     ] {
         let (bp0, bp1) = match primary_buffer {
             PrimaryBuffer::MostSignificantBitplane => {
@@ -934,8 +917,8 @@ pub fn encode(input_path: &Path, output_path: &Path) -> anyhow::Result<()> {
 
         for encoding_method in [
             EncodingMethod::MODE_1,
-            // EncodingMethod::MODE_2,
-            // EncodingMethod::MODE_3,
+            EncodingMethod::MODE_2,
+            EncodingMethod::MODE_3,
         ] {
             let second_bitplane_header = SecondBitplaneHeader { encoding_method };
 
@@ -998,15 +981,12 @@ pub fn decode(input_path: &Path, output_path: &Path) -> anyhow::Result<()> {
     let sprite_header: SpriteHeader = reader.deku_read()?;
     let encoded_bp0 =
         decompress_bitplane(sprite_header.w_tiles, sprite_header.h_tiles, &mut reader)?;
-    println!("encoded_bp0.len = {}", encoded_bp0.len());
 
     let bp0 = delta_decode(&encoded_bp0);
-    println!("bp0.len = {}", bp0.len());
 
     let second_bitplane_header: SecondBitplaneHeader = reader.deku_read()?;
     let bp1_stage2 =
         decompress_bitplane(sprite_header.w_tiles, sprite_header.h_tiles, &mut reader)?;
-    println!("bp1_stage2.len = {}", bp1_stage2.len());
 
     let decoded_bp1 = if second_bitplane_header.encoding_method.delta_encode_bp1() {
         Some(delta_decode(&bp1_stage2))
@@ -1014,7 +994,6 @@ pub fn decode(input_path: &Path, output_path: &Path) -> anyhow::Result<()> {
         None
     };
     let bp1_stage1 = decoded_bp1.as_ref().unwrap_or(&bp1_stage2);
-    println!("bp1_stage1.len = {}", bp1_stage1.len());
 
     let xored_bp1 = if second_bitplane_header.encoding_method.xor_bp1_with_bp0() {
         Some(bp1_stage1.clone() ^ bp0.iter().by_val())
@@ -1022,7 +1001,6 @@ pub fn decode(input_path: &Path, output_path: &Path) -> anyhow::Result<()> {
         None
     };
     let bp1 = xored_bp1.as_ref().unwrap_or(bp1_stage1);
-    println!("bp1.len = {}", bp1.len());
 
     if bp0.len() != bp1.len() {
         anyhow::bail!(
