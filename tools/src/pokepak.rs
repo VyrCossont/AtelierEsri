@@ -10,7 +10,10 @@ use anyhow;
 use bitvec::mem::BitMemory;
 use deku::bitvec::*;
 use deku::prelude::*;
-use png;
+use divrem::DivCeil;
+use png::{BitDepth, ColorType, Decoder, Encoder};
+use std::fs::File;
+use std::io::BufWriter;
 use std::ops::Not;
 use std::path::Path;
 
@@ -90,6 +93,22 @@ impl EncodingMethod {
     const MODE_1: Self = Self::Mode1;
     const MODE_2: Self = Self::Mode2Or3(EncodingMode2Or3::Mode2);
     const MODE_3: Self = Self::Mode2Or3(EncodingMode2Or3::Mode3);
+
+    fn delta_encode_bp1(&self) -> bool {
+        match self {
+            Self::Mode1 => true,
+            Self::Mode2Or3(EncodingMode2Or3::Mode2) => false,
+            Self::Mode2Or3(EncodingMode2Or3::Mode3) => true,
+        }
+    }
+
+    fn xor_bp1_with_bp0(&self) -> bool {
+        match self {
+            Self::Mode1 => false,
+            Self::Mode2Or3(EncodingMode2Or3::Mode2) => true,
+            Self::Mode2Or3(EncodingMode2Or3::Mode3) => true,
+        }
+    }
 }
 
 struct BitReader<'a> {
@@ -714,10 +733,120 @@ mod tests {
     }
 }
 
+/// 2-bit image packed to 4 bits per pixel.
+struct Image2Bit {
+    width: usize,
+    height: usize,
+    bits: BitVec<Msb0, u8>,
+}
+
+impl Image2Bit {
+    fn read(path: &Path) -> anyhow::Result<Self> {
+        let decoder = Decoder::new(File::open(path)?);
+        let mut reader = decoder.read_info()?;
+
+        let info = reader.info();
+        let width = info.width as usize;
+        let height = info.height as usize;
+        let bit_depth = info.bit_depth as usize;
+
+        // Check palette preconditions
+        match info.color_type {
+            ColorType::Grayscale => match info.bit_depth {
+                BitDepth::Two => (),
+                bit_depth => {
+                    anyhow::bail!("Illegal bit depth for 4 greys: {:?}", bit_depth)
+                }
+            },
+            ColorType::Indexed => {
+                if let Some(palette) = info.palette.as_ref() {
+                    if palette.len() % 3 != 0 {
+                        anyhow::bail!("Malformed palette");
+                    }
+                    let num_colors = palette.len() / 3;
+                    if num_colors != 4 {
+                        anyhow::bail!("Expected exactly 4 colors, found {}", num_colors);
+                    }
+                }
+                match info.bit_depth {
+                    BitDepth::Two | BitDepth::Four | BitDepth::Eight => (),
+                    bit_depth => {
+                        anyhow::bail!("Illegal palette bit depth for 4 colors: {:?}", bit_depth)
+                    }
+                }
+            }
+            color_type => {
+                anyhow::bail!("Unsupported bit depth for 4 of anything: {:?}", color_type)
+            }
+        }
+
+        // Read input image into a single bitvec, scanline by scanline
+        let png_pixels_per_byte = 8 / bit_depth;
+        let mut bits = bitvec![Msb0, u8;];
+        while let Some(row) = reader.next_row()? {
+            for (i, byte) in row.data().iter().enumerate() {
+                let byte = byte.view_bits::<Msb0>();
+                for p in 0..png_pixels_per_byte {
+                    let x = i * png_pixels_per_byte + p;
+                    if x >= width {
+                        // Past end of last partial byte of the scanline
+                        break;
+                    }
+                    bits.extend(&byte[(p * bit_depth)..((p + 1) * bit_depth)]);
+                }
+            }
+        }
+
+        Ok(Image2Bit {
+            width,
+            height,
+            bits,
+        })
+    }
+
+    fn write(&self, path: &Path) -> anyhow::Result<()> {
+        let mut bytes = vec![];
+
+        let mut x = 0usize;
+        let mut packed = 0u8;
+        for c in self.bits.chunks(2) {
+            packed <<= 2;
+            packed |= c.load_be::<u8>();
+            if x % 4 == 4 - 1 {
+                // Byte full
+                bytes.push(packed);
+            } else if x % self.width == self.width - 1 {
+                // Pad partial byte at end of scanline
+                packed <<= 2 * (4 - (self.width % 4));
+                bytes.push(packed);
+            }
+            x += 1;
+        }
+
+        let mut encoder = Encoder::new(
+            BufWriter::new(File::create(path)?),
+            self.width as u32,
+            self.height as u32,
+        );
+        encoder.set_color(ColorType::Indexed);
+        encoder.set_depth(BitDepth::Two);
+        // Default WASM-4 palette
+        encoder.set_palette(vec![
+            0xe0, 0xf8, 0xcf, 0x86, 0xc0, 0x6c, 0x30, 0x68, 0x50, 0x07, 0x18, 0x21,
+        ]);
+        let mut writer = encoder.write_header()?;
+        writer.write_image_data(&bytes)?;
+
+        Ok(())
+    }
+}
+
 pub fn encode(input_path: &Path, output_path: &Path) -> anyhow::Result<()> {
-    todo!();
+    let img = Image2Bit::read(input_path)?;
+    img.write(output_path)?;
+    Ok(())
 }
 
 pub fn decode(input_path: &Path, output_path: &Path) -> anyhow::Result<()> {
-    todo!();
+    todo!()
 }

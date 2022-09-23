@@ -112,6 +112,7 @@ pub fn convert(input_path: &Path, output_path: &Path) -> anyhow::Result<()> {
         _ if c < input_transparent_color_index => c + 1,
         _ => c,
     };
+    // TODO: this buffer size might be wrong for images where scanlines don't end on byte boundaries
     let mut lo4_buf =
         vec![0u8; <usize as DivCeil>::div_ceil(num_pixels * BitDepth::Two as usize, 8)];
     let mut lo4_packed = 0u8;
@@ -127,6 +128,7 @@ pub fn convert(input_path: &Path, output_path: &Path) -> anyhow::Result<()> {
         _ if c == last_color_index => 1u8,
         _ => 0u8,
     };
+    // TODO: this one too
     let mut hi2_buf =
         vec![0u8; <usize as DivCeil>::div_ceil(num_pixels * BitDepth::One as usize, 8)];
     let mut hi2_packed = 0u8;
