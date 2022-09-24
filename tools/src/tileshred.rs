@@ -304,4 +304,24 @@ mod test {
         let palette = quantizer.palette_and_remapping_table().0;
         assert_eq!(vec![2, 4], palette);
     }
+
+    /// Should yield 2 colors but one should be close to the most common input color.
+    #[test]
+    fn test_11111234_reduce_2() {
+        let mut quantizer = ImplicitTree::<ColorNode>::init();
+        assert_eq!(0, quantizer.num_colors());
+        quantizer.count_pixel(1);
+        quantizer.count_pixel(1);
+        quantizer.count_pixel(1);
+        quantizer.count_pixel(1);
+        quantizer.count_pixel(1);
+        quantizer.count_pixel(2);
+        quantizer.count_pixel(3);
+        quantizer.count_pixel(4);
+        assert_eq!(4, quantizer.num_colors());
+        quantizer.reduce(2);
+        assert_eq!(2, quantizer.num_colors());
+        let palette = quantizer.palette_and_remapping_table().0;
+        assert_eq!(vec![1, 3], palette);
+    }
 }
