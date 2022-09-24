@@ -1,3 +1,5 @@
+mod grey_quantizer;
+mod implicit_tree;
 mod lo5;
 mod pokepak;
 mod tileshred;
