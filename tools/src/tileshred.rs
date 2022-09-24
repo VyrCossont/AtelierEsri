@@ -3,6 +3,7 @@ use std::ops::{Index, IndexMut};
 use std::path::Path;
 
 use image::io::Reader as ImageReader;
+use image::Luma;
 
 pub fn convert(
     input_path: &Path,
@@ -10,8 +11,17 @@ pub fn convert(
     tile_height: u32,
     output_path: &Path,
 ) -> anyhow::Result<()> {
-    let input_img = ImageReader::open(input_path)?.decode()?;
-    todo!()
+    let mut img = ImageReader::open(input_path)?.decode()?.into_luma8();
+    let mut quantizer = ImplicitTree::<ColorNode>::init();
+    for Luma([c]) in img.pixels().cloned() {
+        quantizer.count_pixel(c);
+    }
+    quantizer.reduce(4);
+    let (palette, table) = quantizer.palette_and_remapping_table();
+    for (i, c) in palette.into_iter().enumerate() {
+        println!("{i:<3}: #{c:02x}{c:02x}{c:02x}");
+    }
+    Ok(())
 }
 
 /// See https://opendatastructures.org/ods-cpp/10_1_Implicit_Binary_Tree.html
