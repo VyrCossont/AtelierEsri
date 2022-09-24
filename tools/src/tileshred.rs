@@ -119,6 +119,7 @@ impl ImplicitTree<ColorNode> {
         }
     }
 
+    /// Does this node have two children with pixels?
     fn is_reducible(&self, index: usize) -> bool {
         if self[index].leaf {
             return false;
@@ -127,7 +128,7 @@ impl ImplicitTree<ColorNode> {
     }
 
     fn reduce_at(&mut self, index: usize) {
-        self[index].leaf = true;
+        self[index].leaf = self[Self::left(index)].leaf || self[Self::right(index)].leaf;
         self[index].count = self[Self::left(index)].count + self[Self::right(index)].count;
     }
 
@@ -154,6 +155,22 @@ impl ImplicitTree<ColorNode> {
                 reduce_state.num_colors -= 1;
                 return;
             }
+
+            // If we can't reduce any colors, we can promote nodes with one child to this level, making them candidates for the next round of merges.
+            for index in
+                Self::first_at_depth(reduce_state.depth)..=Self::last_at_depth(reduce_state.depth)
+            {
+                if self[index].leaf {
+                    // Product of a previous reduction. Skip it.
+                    continue;
+                }
+                // `.reduce_at` can also promote.
+                // Reducing a node with one child results in a promotion.
+                // Reducing a node with no children results in another empty node.
+                self.reduce_at(index);
+            }
+
+            // Then we go one level closer to the root and repeat.
             if reduce_state.depth == 0 {
                 panic!("Can't reduce to zero colors");
             }
@@ -167,6 +184,7 @@ impl ImplicitTree<ColorNode> {
     /// This version is adapted to grayscale,
     /// uses an implicit binary tree instead of an explicit octree,
     /// and breaks ties by merging the colors with the smallest numbers of pixels.
+    /// Okay, it's more "inspired by" than actually based on the original.
     fn reduce(&mut self, num_colors: usize) {
         let mut reduce_state = ReduceState {
             depth: 7,
@@ -206,9 +224,13 @@ impl ImplicitTree<ColorNode> {
             let mut count_total = 0usize;
             let mut color_total = 0f64;
             for child_index in leftmost_deepest_child..=rightmost_deepest_child {
+                if !self[child_index].leaf {
+                    // No pixels with this color.
+                    continue;
+                }
                 count_total += self[child_index].count;
                 let color = child_index - Self::first_at_depth(8);
-                color_total += color as f64;
+                color_total += self[child_index].count as f64 * color as f64;
             }
             let replacement_color = (color_total / count_total as f64) as u8;
             palette.push(replacement_color);
@@ -280,6 +302,6 @@ mod test {
         quantizer.reduce(2);
         assert_eq!(2, quantizer.num_colors());
         let palette = quantizer.palette_and_remapping_table().0;
-        assert_eq!(vec![1, 3], palette);
+        assert_eq!(vec![2, 4], palette);
     }
 }
