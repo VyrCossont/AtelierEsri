@@ -2,9 +2,9 @@ use anyhow;
 use std::path::Path;
 
 use crate::grey_quantizer::GreyQuantizer;
-use crate::image2bit::{Image2Bit, PixelAccess2Bit, Subimage2Bit, WriteMode2Bit};
+use crate::image2bit::{Image2Bit, PixelAccess2Bit, Subimage2Bit};
 use image::io::Reader as ImageReader;
-use image::{GenericImageView, ImageBuffer, Luma, SubImage};
+use image::{GenericImageView, ImageBuffer, LumaA, Rgba, RgbaImage, SubImage};
 
 pub fn convert(
     tile_width: u32,
@@ -12,7 +12,7 @@ pub fn convert(
     input_path: &Path,
     output_path: &Path,
 ) -> anyhow::Result<()> {
-    let input_img = ImageReader::open(input_path)?.decode()?.into_luma8();
+    let input_img = ImageReader::open(input_path)?.decode()?.into_luma_alpha8();
 
     let width = input_img.width();
     let height = input_img.height();
@@ -29,15 +29,43 @@ pub fn convert(
         }
     }
 
-    output_img.write(output_path, WriteMode2Bit::WASM4Palette)?;
+    // Default WASM-4 palette.
+    let wasm4_colors: [Rgba<u8>; 4] = [
+        Rgba([0x07, 0x18, 0x21, 0xff]),
+        Rgba([0x30, 0x68, 0x50, 0xff]),
+        Rgba([0x86, 0xc0, 0x6c, 0xff]),
+        Rgba([0xe0, 0xf8, 0xcf, 0xff]),
+    ];
+
+    // Copy alpha from original image and use output image as index into palette.
+    let mut rgba_output_img = RgbaImage::new(width, height);
+    for y in 0..height {
+        for x in 0..width {
+            let LumaA([_, a]) = input_img.get_pixel(x, y);
+            *rgba_output_img.get_pixel_mut(x, y) = if *a < u8::MAX {
+                Rgba([0x00, 0x00, 0x00, 0x00])
+            } else {
+                wasm4_colors[output_img.get_pixel(x, y) as usize]
+            };
+        }
+    }
+
+    rgba_output_img.save(output_path)?;
 
     Ok(())
 }
 
-fn recolor(input_tile: &SubImage<&ImageBuffer<Luma<u8>, Vec<u8>>>, output_tile: &mut Subimage2Bit) {
+fn recolor(
+    input_tile: &SubImage<&ImageBuffer<LumaA<u8>, Vec<u8>>>,
+    output_tile: &mut Subimage2Bit,
+) {
     let mut quantizer = GreyQuantizer::new();
-    for (_, _, Luma([c])) in input_tile.pixels() {
-        quantizer.count_pixel(c);
+    for (_, _, LumaA([l, a])) in input_tile.pixels() {
+        if a < u8::MAX {
+            // Treat all transparency as full transparency.
+            continue;
+        }
+        quantizer.count_pixel(l);
     }
     quantizer.reduce(4);
     let (palette, mut table) = quantizer.palette_and_mapping_table();
@@ -59,7 +87,10 @@ fn recolor(input_tile: &SubImage<&ImageBuffer<Luma<u8>, Vec<u8>>>, output_tile: 
 
     // let wasm4_greys: [u8; 4] = [0x42, 0x7c, 0xb2, 0xdc];
 
-    for (x, y, Luma([c])) in input_tile.pixels() {
-        output_tile.set_pixel(x, y, table[c as usize]);
+    for (x, y, LumaA([l, a])) in input_tile.pixels() {
+        if a < u8::MAX {
+            continue;
+        }
+        output_tile.set_pixel(x, y, table[l as usize]);
     }
 }
