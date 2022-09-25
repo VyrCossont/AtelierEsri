@@ -1,4 +1,5 @@
 mod grey_quantizer;
+mod image2bit;
 mod implicit_tree;
 mod lo5;
 mod pokepak;

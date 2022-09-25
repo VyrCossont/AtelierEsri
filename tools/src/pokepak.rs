@@ -1,19 +1,13 @@
 //! Implements Pokémon sprite compression algorithm
 //! described by https://youtu.be/ZI50XUeN6QE
 //! and https://youtu.be/aF1Yw_wu2cM.
-//! TODO: confirm that typical compression ratio is around 1.5:1.
-//! TODO: implement delta coding
-//! TODO: implement bitplane XOR modes
-//! TODO: implement PNG import/export.
 
+use crate::image2bit::Image2Bit;
 use anyhow;
 use bitvec::mem::BitMemory;
 use deku::bitvec::*;
 use deku::prelude::*;
-use png::{BitDepth, ColorType, Decoder, Encoder};
 use std::fs;
-use std::fs::{read, File};
-use std::io::BufWriter;
 use std::ops::Not;
 use std::path::Path;
 
@@ -759,135 +753,20 @@ mod tests {
     }
 }
 
-/// 2-bit image packed to 4 bits per pixel.
-struct Image2Bit {
-    width: usize,
-    height: usize,
-    bits: BitVec<Msb0, u8>,
-}
-
-// TODO: we should be able to treat any image type as an input so long as it has the right number of colors.
-impl Image2Bit {
-    fn read(path: &Path) -> anyhow::Result<Self> {
-        let decoder = Decoder::new(File::open(path)?);
-        let mut reader = decoder.read_info()?;
-
-        let info = reader.info();
-        let width = info.width as usize;
-        let height = info.height as usize;
-        let bit_depth = info.bit_depth as usize;
-
-        // Check palette preconditions
-        match info.color_type {
-            ColorType::Grayscale => match info.bit_depth {
-                BitDepth::One | BitDepth::Two => (),
-                bit_depth => {
-                    anyhow::bail!("Illegal bit depth for 4 greys: {:?}", bit_depth)
-                }
-            },
-            ColorType::Indexed => {
-                if let Some(palette) = info.palette.as_ref() {
-                    if palette.len() % 3 != 0 {
-                        anyhow::bail!("Malformed palette");
-                    }
-                    let num_colors = palette.len() / 3;
-                    if num_colors != 4 {
-                        anyhow::bail!("Expected exactly 4 colors, found {}", num_colors);
-                    }
-                }
-                match info.bit_depth {
-                    BitDepth::One | BitDepth::Two | BitDepth::Four | BitDepth::Eight => (),
-                    bit_depth => {
-                        anyhow::bail!("Illegal palette bit depth for 4 colors: {:?}", bit_depth)
-                    }
-                }
-            }
-            color_type => {
-                anyhow::bail!("Unsupported bit depth for 4 of anything: {:?}", color_type)
-            }
-        }
-
-        // Read input image into a single bitvec, scanline by scanline
-        let png_pixels_per_byte = 8 / bit_depth;
-        let mut bits = bitvec![Msb0, u8;];
-        while let Some(row) = reader.next_row()? {
-            for (i, byte) in row.data().iter().enumerate() {
-                let byte = byte.view_bits::<Msb0>();
-                for p in 0..png_pixels_per_byte {
-                    let x = i * png_pixels_per_byte + p;
-                    if x >= width {
-                        // Past end of last partial byte of the scanline
-                        break;
-                    }
-                    if bit_depth == 1 {
-                        // MSB is always zero
-                        bits.push(false);
-                    }
-                    bits.extend(&byte[(p * bit_depth)..((p + 1) * bit_depth)]);
-                }
-            }
-        }
-
-        assert_eq!(width * height * 2, bits.len());
-
-        Ok(Image2Bit {
-            width,
-            height,
-            bits,
-        })
-    }
-
-    fn write(&self, path: &Path) -> anyhow::Result<()> {
-        let mut bytes = vec![];
-
-        let mut x = 0usize;
-        let mut packed = 0u8;
-        for c in self.bits.chunks(2) {
-            packed <<= 2;
-            packed |= c.load_be::<u8>();
-            if x % 4 == 4 - 1 {
-                // Byte full
-                bytes.push(packed);
-            } else if x % self.width == self.width - 1 {
-                // Pad partial byte at end of scanline
-                packed <<= 2 * (4 - (self.width % 4));
-                bytes.push(packed);
-            }
-            x += 1;
-        }
-
-        let mut encoder = Encoder::new(
-            BufWriter::new(File::create(path)?),
-            self.width as u32,
-            self.height as u32,
-        );
-        encoder.set_color(ColorType::Indexed);
-        encoder.set_depth(BitDepth::Two);
-        // Default WASM-4 palette
-        encoder.set_palette(vec![
-            0xe0, 0xf8, 0xcf, 0x86, 0xc0, 0x6c, 0x30, 0x68, 0x50, 0x07, 0x18, 0x21,
-        ]);
-        let mut writer = encoder.write_header()?;
-        writer.write_image_data(&bytes)?;
-
-        Ok(())
-    }
-}
-
 pub fn encode(input_path: &Path, output_path: &Path) -> anyhow::Result<()> {
     let img = Image2Bit::read(input_path)?;
 
-    if img.width % 8 != 0 || img.height % 8 != 0 {
+    if img.width() % 8 != 0 || img.height() % 8 != 0 {
         anyhow::bail!("Image size must be a multiple of 8 in each direction (for now)")
     }
-    let w_tiles = (img.width / 8) as u8;
-    let h_tiles = (img.height / 8) as u8;
+    let w_tiles = (img.width() / 8) as u8;
+    let h_tiles = (img.height() / 8) as u8;
 
     // Most significant bitplane
     let mut most_significant_bitplane = bitvec![Msb0, u8;];
     // Least significant bitplane
     let mut least_significant_bitplane = bitvec![Msb0, u8;];
-    for c in img.bits.chunks(2) {
+    for c in img.bits().chunks(2) {
         most_significant_bitplane.push(c[0]);
         least_significant_bitplane.push(c[1]);
     }
@@ -1028,11 +907,11 @@ pub fn decode(input_path: &Path, output_path: &Path) -> anyhow::Result<()> {
         bits.push(l);
     }
 
-    let img = Image2Bit {
-        width: sprite_header.w_tiles as usize * 8,
-        height: sprite_header.h_tiles as usize * 8,
+    let img = Image2Bit::from_bits(
+        sprite_header.w_tiles as usize * 8,
+        sprite_header.h_tiles as usize * 8,
         bits,
-    };
+    );
     img.write(output_path)?;
 
     Ok(())
