@@ -4,25 +4,41 @@ use std::fs::File;
 use std::io::BufWriter;
 use std::path::Path;
 
-/// 2-bit image packed to 4 bits per pixel.
+/// 2-bit image packed to 4 bits per pixel in memory.
+/// Stored this way so it can be passed to compressors like Poképak.
 pub struct Image2Bit {
-    width: usize,
-    height: usize,
+    width: u32,
+    height: u32,
     bits: BitVec<Msb0, u8>,
+}
+
+pub enum WriteMode2Bit {
+    Grayscale,
+    WASM4Palette,
+}
+
+pub trait PixelAccess2Bit {
+    fn width(&self) -> u32;
+
+    fn height(&self) -> u32;
+
+    fn get_pixel(&self, x: u32, y: u32) -> u8;
+
+    fn set_pixel(&mut self, x: u32, y: u32, pixel: u8);
 }
 
 // TODO: we should be able to treat any image type as an input so long as it has the right number of colors.
 impl Image2Bit {
-    pub fn new(width: usize, height: usize) -> Self {
+    pub fn new(width: u32, height: u32) -> Self {
         Self {
             width,
             height,
-            bits: bitvec![Msb0, u8; 0; 2 * width * height],
+            bits: bitvec![Msb0, u8; 0; (2 * width * height) as usize],
         }
     }
 
-    pub fn from_bits(width: usize, height: usize, bits: BitVec<Msb0, u8>) -> Self {
-        assert_eq!(2 * width * height, bits.len());
+    pub fn from_bits(width: u32, height: u32, bits: BitVec<Msb0, u8>) -> Self {
+        assert_eq!(2 * width * height, bits.len() as u32);
         Self {
             width,
             height,
@@ -30,16 +46,44 @@ impl Image2Bit {
         }
     }
 
-    pub fn width(&self) -> usize {
-        self.width
-    }
-
-    pub fn height(&self) -> usize {
-        self.height
-    }
-
     pub fn bits(&self) -> &BitSlice<Msb0, u8> {
         &self.bits
+    }
+
+    fn pixel_offset(&self, x: u32, y: u32) -> usize {
+        assert!(
+            x < self.width,
+            "x out of bounds: {x} ≥ {width}",
+            width = self.width
+        );
+        assert!(
+            y < self.height,
+            "y out of bounds: {y} ≥ {height}",
+            height = self.height
+        );
+        (2 * (y * self.width + x)) as usize
+    }
+
+    pub fn subimage<'a>(&'a mut self, x: u32, y: u32, width: u32, height: u32) -> Subimage2Bit<'a> {
+        assert!(
+            x + width <= self.width,
+            "x + width out of bounds: {x_plus_width} > {width}",
+            x_plus_width = x + width,
+            width = self.width
+        );
+        assert!(
+            y + height <= self.height,
+            "y + height out of bounds: {y_plus_height} > {height}",
+            y_plus_height = y + height,
+            height = self.height
+        );
+        Subimage2Bit::<'a> {
+            x,
+            y,
+            width,
+            height,
+            parent: self,
+        }
     }
 
     pub fn read(path: &Path) -> anyhow::Result<Self> {
@@ -47,9 +91,9 @@ impl Image2Bit {
         let mut reader = decoder.read_info()?;
 
         let info = reader.info();
-        let width = info.width as usize;
-        let height = info.height as usize;
-        let bit_depth = info.bit_depth as usize;
+        let width = info.width;
+        let height = info.height;
+        let bit_depth = info.bit_depth as u8;
 
         // Check palette preconditions
         match info.color_type {
@@ -88,7 +132,7 @@ impl Image2Bit {
             for (i, byte) in row.data().iter().enumerate() {
                 let byte = byte.view_bits::<Msb0>();
                 for p in 0..png_pixels_per_byte {
-                    let x = i * png_pixels_per_byte + p;
+                    let x = (i as u32 * png_pixels_per_byte as u32) + p as u32;
                     if x >= width {
                         // Past end of last partial byte of the scanline
                         break;
@@ -97,12 +141,12 @@ impl Image2Bit {
                         // MSB is always zero
                         bits.push(false);
                     }
-                    bits.extend(&byte[(p * bit_depth)..((p + 1) * bit_depth)]);
+                    bits.extend(&byte[(p * bit_depth) as usize..((p + 1) * bit_depth) as usize]);
                 }
             }
         }
 
-        assert_eq!(width * height * 2, bits.len());
+        assert_eq!(width * height * 2, bits.len() as u32);
 
         Ok(Image2Bit {
             width,
@@ -111,10 +155,10 @@ impl Image2Bit {
         })
     }
 
-    pub fn write(&self, path: &Path) -> anyhow::Result<()> {
+    pub fn write(&self, path: &Path, write_mode: WriteMode2Bit) -> anyhow::Result<()> {
         let mut bytes = vec![];
 
-        let mut x = 0usize;
+        let mut x = 0u32;
         let mut packed = 0u8;
         for c in self.bits.chunks(2) {
             packed <<= 2;
@@ -130,20 +174,72 @@ impl Image2Bit {
             x += 1;
         }
 
-        let mut encoder = Encoder::new(
-            BufWriter::new(File::create(path)?),
-            self.width as u32,
-            self.height as u32,
-        );
-        encoder.set_color(ColorType::Indexed);
+        let mut encoder =
+            Encoder::new(BufWriter::new(File::create(path)?), self.width, self.height);
         encoder.set_depth(BitDepth::Two);
-        // Default WASM-4 palette
-        encoder.set_palette(vec![
-            0xe0, 0xf8, 0xcf, 0x86, 0xc0, 0x6c, 0x30, 0x68, 0x50, 0x07, 0x18, 0x21,
-        ]);
+        match write_mode {
+            WriteMode2Bit::Grayscale => {
+                encoder.set_color(ColorType::Grayscale);
+            }
+            WriteMode2Bit::WASM4Palette => {
+                encoder.set_color(ColorType::Indexed);
+                // Default WASM-4 palette
+                encoder.set_palette(vec![
+                    0x07, 0x18, 0x21, 0x30, 0x68, 0x50, 0x86, 0xc0, 0x6c, 0xe0, 0xf8, 0xcf,
+                ]);
+            }
+        }
+
         let mut writer = encoder.write_header()?;
         writer.write_image_data(&bytes)?;
 
         Ok(())
+    }
+}
+
+impl PixelAccess2Bit for Image2Bit {
+    fn width(&self) -> u32 {
+        self.width
+    }
+
+    fn height(&self) -> u32 {
+        self.height
+    }
+
+    fn get_pixel(&self, x: u32, y: u32) -> u8 {
+        let offset = self.pixel_offset(x, y);
+        self.bits[offset..offset + 2].load_be()
+    }
+
+    fn set_pixel(&mut self, x: u32, y: u32, pixel: u8) {
+        assert!(pixel < 4, "pixel value out of bounds: {pixel} ≥ 4");
+        let offset = self.pixel_offset(x, y);
+        self.bits[offset..offset + 2].store_be(pixel)
+    }
+}
+
+pub struct Subimage2Bit<'a> {
+    x: u32,
+    y: u32,
+    width: u32,
+    height: u32,
+    parent: &'a mut Image2Bit,
+}
+
+impl PixelAccess2Bit for Subimage2Bit<'_> {
+    fn width(&self) -> u32 {
+        self.width
+    }
+
+    fn height(&self) -> u32 {
+        self.height
+    }
+
+    fn get_pixel(&self, x: u32, y: u32) -> u8 {
+        self.parent.get_pixel(x + self.x, y + self.y)
+    }
+
+    fn set_pixel(&mut self, x: u32, y: u32, pixel: u8) {
+        self.parent.set_pixel(x + self.x, y + self.y, pixel)
     }
 }

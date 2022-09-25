@@ -30,6 +30,11 @@ impl GreyQuantizer {
         self.0.count_pixel(color)
     }
 
+    /// Get total number of pixels counted with a given color.
+    pub fn total_pixels_with_color(&self, color: u8) -> usize {
+        self.0.total_pixels_with_color(color)
+    }
+
     /// Get the current number of colors.
     pub fn num_colors(&self) -> usize {
         self.0.num_colors()
@@ -74,6 +79,11 @@ impl ImplicitTree<ColorNode> {
         let index = Self::first_at_depth(8) + color as usize;
         self[index].leaf = true;
         self[index].count += 1;
+    }
+
+    fn total_pixels_with_color(&self, color: u8) -> usize {
+        let index = Self::first_at_depth(8) + color as usize;
+        self[index].count
     }
 
     fn num_colors(&self) -> usize {

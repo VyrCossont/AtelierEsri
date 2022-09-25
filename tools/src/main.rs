@@ -48,16 +48,16 @@ enum Commands {
     },
     /// Color-quantize a sprite sheet, tile by tile.
     /// Intended for items, not tile maps.
-    TileShred {
-        /// Input image.
-        #[clap(value_parser)]
-        input: PathBuf,
+    Tileshred {
         /// Tile width.
         #[clap(value_parser)]
         tile_width: u32,
         /// Tile height.
         #[clap(value_parser)]
         tile_height: u32,
+        /// Input image.
+        #[clap(value_parser)]
+        input: PathBuf,
         /// Output directory. Output filenames will be generated from the input filename.
         #[clap(value_parser)]
         output: PathBuf,
@@ -74,12 +74,12 @@ fn main() -> anyhow::Result<()> {
         Commands::PokepakDecode { input, output } => {
             pokepak::decode(input.as_path(), output.as_path())?
         }
-        Commands::TileShred {
-            input,
+        Commands::Tileshred {
             tile_width,
             tile_height,
+            input,
             output,
-        } => tileshred::convert(input.as_path(), tile_width, tile_height, output.as_path())?,
+        } => tileshred::convert(tile_width, tile_height, input.as_path(), output.as_path())?,
     }
     Ok(())
 }

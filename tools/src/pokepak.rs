@@ -2,7 +2,7 @@
 //! described by https://youtu.be/ZI50XUeN6QE
 //! and https://youtu.be/aF1Yw_wu2cM.
 
-use crate::image2bit::Image2Bit;
+use crate::image2bit::{Image2Bit, PixelAccess2Bit, WriteMode2Bit};
 use anyhow;
 use bitvec::mem::BitMemory;
 use deku::bitvec::*;
@@ -908,11 +908,11 @@ pub fn decode(input_path: &Path, output_path: &Path) -> anyhow::Result<()> {
     }
 
     let img = Image2Bit::from_bits(
-        sprite_header.w_tiles as usize * 8,
-        sprite_header.h_tiles as usize * 8,
+        sprite_header.w_tiles as u32 * 8,
+        sprite_header.h_tiles as u32 * 8,
         bits,
     );
-    img.write(output_path)?;
+    img.write(output_path, WriteMode2Bit::WASM4Palette)?;
 
     Ok(())
 }
