@@ -5,6 +5,7 @@ use crate::grey_quantizer::GreyQuantizer;
 use crate::image2bit::{Image2Bit, PixelAccess2Bit, Subimage2Bit};
 use image::io::Reader as ImageReader;
 use image::{GenericImageView, ImageBuffer, LumaA, Rgba, RgbaImage, SubImage};
+use itertools::Itertools;
 
 pub fn convert(
     tile_width: u32,
@@ -68,24 +69,58 @@ fn recolor(
         quantizer.count_pixel(l);
     }
     quantizer.reduce(4);
-    let (palette, mut table) = quantizer.palette_and_mapping_table();
+    let (mut palette, mut table) = quantizer.palette_and_mapping_table();
     for (i, c) in palette.iter().enumerate() {
         println!("{i:>3}: #{c:02x}{c:02x}{c:02x}");
     }
     println!();
 
-    // Replace the replacement colors with best-match WASM-4 palette indexes.
-    // if palette.len() == 4 {
-    // Palette length is an exact match.
-    // Map the darkest grey to the darkest WASM-4 color, etc., 1:1.
-    // }
+    // If the palette length is an exact match to the target palette length, we map the darkest grey to the darkest target color, etc., 1:1.
+    // Otherwise, find the best fit between the palette and a target palette.
+    // For example, if the input image uses only bright greys,
+    // we want to map those lumas to bright colors in the target palette.
+    if palette.len() < 4 {
+        // Default WASM-4 palette converted to greyscale.
+        let wasm4_greys: [u8; 4] = [0x42, 0x7c, 0xb2, 0xdc];
+        let mut best_squared_error: Option<i32> = None;
+        let mut best_palette: Option<Vec<u8>> = None;
+        for candidate_palette_indexes in [0usize, 1, 2, 3].into_iter().combinations(palette.len()) {
+            let mut candidate_palette: [Option<u8>; 4] = [None; 4];
+            // Insert the quantizer-generated palette in order into
+            // these indexes on a 4-entry palette.
+            let mut p = 0;
+            for i in candidate_palette_indexes {
+                candidate_palette[i] = Some(palette[p]);
+                p += 1;
+            }
+            // Compare the palette to the target palette,
+            // looking only at entries that the image will use.
+            let squared_error: i32 = wasm4_greys
+                .iter()
+                .cloned()
+                .zip(candidate_palette)
+                .filter_map(|(w, maybe_c)| maybe_c.map(|c| c as i32 - w as i32))
+                .map(|e| e * e)
+                .sum();
+            println!("{squared_error} {candidate_palette:?}");
+            if best_squared_error.is_none() || squared_error < best_squared_error.unwrap() {
+                best_squared_error = Some(squared_error);
+                // We can fill in the unused entries with 0
+                // since the input image won't use them.
+                best_palette = Some(
+                    candidate_palette
+                        .into_iter()
+                        .map(|maybe_c| maybe_c.unwrap_or(0))
+                        .collect::<Vec<_>>(),
+                );
+            }
+        }
+        palette = best_palette.unwrap();
+    }
     for replacement_color in table.iter_mut() {
         let palette_index = palette.binary_search(replacement_color).unwrap_or(0) as u8;
         *replacement_color = palette_index;
     }
-    // }
-
-    // let wasm4_greys: [u8; 4] = [0x42, 0x7c, 0xb2, 0xdc];
 
     for (x, y, LumaA([l, a])) in input_tile.pixels() {
         if a < u8::MAX {
