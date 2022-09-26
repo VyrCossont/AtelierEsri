@@ -49,6 +49,7 @@ In both cases, the Pixaki and Aseprite files will contain the AI-generated refer
 ## Sprites
 
 - [`gungirl.png`](assets/gungirl.png): [Gun Girl + Riflemen + Shielded Rifleman + Tiles](https://opengameart.org/content/gun-girl-riflemen-shielded-rifleman-tiles) by [Spring Spring](https://opengameart.org/users/spring-spring) (CC-BY-3.0)
+- [`roguelikeitems.aseprite`](asset_originals/roguelikeitems.aseprite): [Roguelike/RPG Items](https://opengameart.org/content/roguelikerpg-items) by [@JoeCreates](https://twitter.com/joecreates) (CC-BY-SA-3.0)
 
 ## Fonts
 
