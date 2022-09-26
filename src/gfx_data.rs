@@ -48,3 +48,45 @@ pub const GUNGIRL: CharacterSprite = CharacterSprite {
         (8, asset_data::GUNGIRL_FLAGS),
     ],
 };
+
+pub const BAR_COPPER: Lo5SplitSprite = Lo5SplitSprite {
+    w: asset_data::ITEM_BAR_COPPER_LO4_WIDTH,
+    h: asset_data::ITEM_BAR_COPPER_LO4_HEIGHT,
+    lo4: &asset_data::ITEM_BAR_COPPER_LO4,
+    hi2: &asset_data::ITEM_BAR_COPPER_HI2,
+};
+
+pub const ORE_COPPER: Lo5SplitSprite = Lo5SplitSprite {
+    w: asset_data::ITEM_ORE_COPPER_LO4_WIDTH,
+    h: asset_data::ITEM_ORE_COPPER_LO4_HEIGHT,
+    lo4: &asset_data::ITEM_ORE_COPPER_LO4,
+    hi2: &asset_data::ITEM_ORE_COPPER_HI2,
+};
+
+pub const WOOD: Lo5SplitSprite = Lo5SplitSprite {
+    w: asset_data::ITEM_WOOD_LO4_WIDTH,
+    h: asset_data::ITEM_WOOD_LO4_HEIGHT,
+    lo4: &asset_data::ITEM_WOOD_LO4,
+    hi2: &asset_data::ITEM_WOOD_HI2,
+};
+
+pub const RUBY: Lo5SplitSprite = Lo5SplitSprite {
+    w: asset_data::ITEM_RUBY_LO4_WIDTH,
+    h: asset_data::ITEM_RUBY_LO4_HEIGHT,
+    lo4: &asset_data::ITEM_RUBY_LO4,
+    hi2: &asset_data::ITEM_RUBY_HI2,
+};
+
+pub const SCROLL: Lo5SplitSprite = Lo5SplitSprite {
+    w: asset_data::ITEM_SCROLL_LO4_WIDTH,
+    h: asset_data::ITEM_SCROLL_LO4_HEIGHT,
+    lo4: &asset_data::ITEM_SCROLL_LO4,
+    hi2: &asset_data::ITEM_SCROLL_HI2,
+};
+
+pub const SAND: Lo5SplitSprite = Lo5SplitSprite {
+    w: asset_data::ITEM_SAND_LO4_WIDTH,
+    h: asset_data::ITEM_SAND_LO4_HEIGHT,
+    lo4: &asset_data::ITEM_SAND_LO4,
+    hi2: &asset_data::ITEM_SAND_HI2,
+};

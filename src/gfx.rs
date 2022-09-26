@@ -56,9 +56,90 @@ impl Lo5SplitSprite<'_> {
     pub fn blit(&self, x: i32, y: i32, flags: u32) {
         self.blit_sub(x, y, self.w, self.h, 0, 0, flags);
     }
+
+    // TODO: this produces obvious edge artifacts on 45° diagonals.
+    //  Try using a color + mask representation instead.
+    pub fn blit2x(&self, x: i32, y: i32) {
+        unsafe {
+            SCALE_BUFFER.fill(0);
+            scale2x(self.lo4, self.w, self.h, 2, SCALE_BUFFER);
+            unsafe { *wasm4::DRAW_COLORS = 0x2340 }
+            wasm4::blit(SCALE_BUFFER, x, y, self.w * 2, self.h * 2, wasm4::BLIT_2BPP);
+            SCALE_BUFFER.fill(0);
+            scale2x(self.hi2, self.w, self.h, 1, SCALE_BUFFER);
+            unsafe { *wasm4::DRAW_COLORS = 0x0010 }
+            wasm4::blit(SCALE_BUFFER, x, y, self.w * 2, self.h * 2, wasm4::BLIT_1BPP);
+        }
+    }
 }
 
 // endregion split sprites
+
+// region sprite scaling
+
+static mut SCALE_BUFFER: &mut [u8] = &mut [0; (64 * 3 * 64 * 3) / 4];
+
+fn pixel_offset(w: u32, bit_depth: u32, x: u32, y: u32) -> (usize, u8, u8) {
+    let bit_offset = bit_depth * (w * y + x);
+    let byte_offset = (bit_offset / u8::BITS) as usize;
+    let shift = ((u8::BITS - bit_depth) - bit_offset % u8::BITS) as u8;
+    let mask: u8 = if bit_depth == 2 { 0b11 } else { 0b1 };
+    (byte_offset, shift, mask)
+}
+
+fn get_pixel(data: &[u8], w: u32, bit_depth: u32, x: u32, y: u32) -> u8 {
+    let (byte_offset, shift, mask) = pixel_offset(w, bit_depth, x, y);
+    (data[byte_offset] >> shift) & mask
+}
+
+fn set_pixel(data: &mut [u8], w: u32, bit_depth: u32, x: u32, y: u32, pixel: u8) {
+    let (byte_offset, shift, mask) = pixel_offset(w, bit_depth, x, y);
+    data[byte_offset] |= (pixel & mask) << shift;
+}
+
+/// See https://en.wikipedia.org/wiki/Pixel-art_scaling_algorithms#EPX/Scale2%C3%97/AdvMAME2%C3%97
+fn scale2x(data: &[u8], w: u32, h: u32, bit_depth: u32, scale_buffer: &mut [u8]) {
+    let buf_num_bytes = 1 + pixel_offset(2 * w, bit_depth, 2 * w, 2 * h).0;
+    if buf_num_bytes >= scale_buffer.len() {
+        wasm4::trace("Ran out of room in the scale buffer");
+        panic!("Ran out of room in the scale buffer");
+    }
+    for y in 0..h {
+        for x in 0..w {
+            let p = get_pixel(data, w, bit_depth, x, y);
+            let a = if y == 0 {
+                0
+            } else {
+                get_pixel(data, w, bit_depth, x, y - 1)
+            };
+            let b = if x == w - 1 {
+                0
+            } else {
+                get_pixel(data, w, bit_depth, x + 1, y)
+            };
+            let c = if x == 0 {
+                0
+            } else {
+                get_pixel(data, w, bit_depth, x - 1, y)
+            };
+            let d = if y == h - 1 {
+                0
+            } else {
+                get_pixel(data, w, bit_depth, x, y + 1)
+            };
+            let p1 = if c == a && c != d && a != b { a } else { p };
+            let p2 = if a == b && a != c && b != d { b } else { p };
+            let p3 = if d == c && d != b && c != a { c } else { p };
+            let p4 = if b == d && b != a && d != c { d } else { p };
+            set_pixel(scale_buffer, 2 * w, bit_depth, 2 * x, 2 * y, p1);
+            set_pixel(scale_buffer, 2 * w, bit_depth, 2 * x + 1, 2 * y, p2);
+            set_pixel(scale_buffer, 2 * w, bit_depth, 2 * x, 2 * y + 1, p3);
+            set_pixel(scale_buffer, 2 * w, bit_depth, 2 * x + 1, 2 * y + 1, p4);
+        }
+    }
+}
+
+// endregion sprite scaling
 
 // region character sprites
 

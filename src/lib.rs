@@ -26,7 +26,7 @@ fn start() {
     // audio::init();
     // audio::music(0);
     // intro::init();
-    alchemy::update();
+    alchemy::init();
 }
 
 #[no_mangle]
