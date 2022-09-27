@@ -1,0 +1,64 @@
+{
+  "materials": {
+    "ore_copper": {
+      "categories": [
+        "ore"
+      ]
+    },
+    "sand": {
+      "categories": [
+        "sand"
+      ]
+    },
+    "bomb": {
+      "categories": ["bombs"],
+      "recipe": {
+        "nodes": {
+          "fire_dmg_1": {
+            "input": {
+              "material": "ore_copper"
+            },
+            "effects": [
+              {
+                "id": "fire_dmg",
+                "level": 1,
+                "count": 1
+              },
+              {
+                "id": "fire_dmg",
+                "level": 2,
+                "count": 2
+              },
+              {
+                "id": "fire_dmg",
+                "level": 3,
+                "count": 3
+              }
+            ],
+            "element": "fire"
+          },
+          "fire_dmg_2": {
+            "input": {
+              "category": "sand"
+            },
+            "elemental_requirement": {
+              "element": "fire",
+              "count": 6
+            },
+            "effects": [
+              {
+                "id": "fire_dmg",
+                "level": 4,
+                "count": 3
+              }
+            ],
+            "element": "fire"
+          }
+        },
+        "links": [
+          ["fire_dmg_1", "fire_dmg_2"]
+        ]
+      }
+    }
+  }
+}

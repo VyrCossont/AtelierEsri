@@ -1,3 +1,4 @@
 /target
 /tools/target
 *.tiled-session
+/asset_originals/items.schema.json

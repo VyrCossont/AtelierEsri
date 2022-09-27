@@ -180,12 +180,35 @@ dependencies = [
 
 [[package]]
 name = "darling"
+version = "0.13.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a01d95850c592940db9b8194bc39f4bc0e89dee5c4265e4b1807c34a9aba453c"
+dependencies = [
+ "darling_core 0.13.4",
+ "darling_macro 0.13.4",
+]
+
+[[package]]
+name = "darling"
 version = "0.14.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4529658bdda7fd6769b8614be250cdcfc3aeb0ee72fe66f9e41e5e5eb73eac02"
 dependencies = [
- "darling_core",
- "darling_macro",
+ "darling_core 0.14.1",
+ "darling_macro 0.14.1",
+]
+
+[[package]]
+name = "darling_core"
+version = "0.13.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "859d65a907b6852c9361e3185c862aae7fafd2887876799fa55f5f99dc40d610"
+dependencies = [
+ "fnv",
+ "ident_case",
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -204,11 +227,22 @@ dependencies = [
 
 [[package]]
 name = "darling_macro"
+version = "0.13.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9c972679f83bdf9c42bd905396b6c3588a843a17f0f16dfcfa3e2c5d57441835"
+dependencies = [
+ "darling_core 0.13.4",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "darling_macro"
 version = "0.14.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ddfc69c5bfcbd2fc09a0f38451d2daf0e372e367986a83906d1b0dbc88134fb5"
 dependencies = [
- "darling_core",
+ "darling_core 0.14.1",
  "quote",
  "syn",
 ]
@@ -229,7 +263,7 @@ version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4dfb4274ccd1c87a598e98b398b4b630aecb2e8a32fd7c88ffa190fb73870f72"
 dependencies = [
- "darling",
+ "darling 0.14.1",
  "proc-macro-crate",
  "proc-macro2",
  "quote",
@@ -243,10 +277,38 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "69dde51e8fef5e12c1d65e0929b03d66e4c0c18282bc30ed2ca050ad6f44dd82"
 
 [[package]]
+name = "dyn-clone"
+version = "1.0.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4f94fa09c2aeea5b8839e414b7b841bf429fd25b9c522116ac97ee87856d88b2"
+
+[[package]]
 name = "either"
 version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "90e5c1c8368803113bf0c9584fc495a58b86dc8a29edbf8fe877d21d9507e797"
+
+[[package]]
+name = "enumset"
+version = "1.0.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4799cdb24d48f1f8a7a98d06b7fde65a85a2d1e42b25a889f5406aa1fbefe074"
+dependencies = [
+ "enumset_derive",
+ "serde",
+]
+
+[[package]]
+name = "enumset_derive"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ea83a3fbdc1d999ccfbcbee717eab36f8edf2d71693a23ce0d7cca19e085304c"
+dependencies = [
+ "darling 0.13.4",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
 
 [[package]]
 name = "exr"
@@ -393,6 +455,7 @@ checksum = "10a35a97730320ffe8e2d410b5d3b69279b98d2c14bdb8b70ea89ecf7888d41e"
 dependencies = [
  "autocfg",
  "hashbrown",
+ "serde",
 ]
 
 [[package]]
@@ -403,6 +466,12 @@ checksum = "b0fd2260e829bddf4cb6ea802289de2f86d6a7a690192fbe91b3f46e0f2c8473"
 dependencies = [
  "either",
 ]
+
+[[package]]
+name = "itoa"
+version = "1.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6c8af84674fe1f223a982c933a0ee1086ac4d4052aa0fb8060c12c6ad838e754"
 
 [[package]]
 name = "jpeg-decoder"
@@ -648,6 +717,38 @@ dependencies = [
 ]
 
 [[package]]
+name = "ryu"
+version = "1.0.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4501abdff3ae82a1c1b477a17252eb69cee9e66eb915c1abaa4f44d873df9f09"
+
+[[package]]
+name = "schemars"
+version = "0.8.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1847b767a3d62d95cbf3d8a9f0e421cf57a0d8aa4f411d4b16525afb0284d4ed"
+dependencies = [
+ "dyn-clone",
+ "enumset",
+ "indexmap",
+ "schemars_derive",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "schemars_derive"
+version = "0.8.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "af4d7e1b012cb3d9129567661a63755ea4b8a7386d339dc945ae187e403c6743"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "serde_derive_internals",
+ "syn",
+]
+
+[[package]]
 name = "scoped_threadpool"
 version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -661,9 +762,45 @@ checksum = "d29ab0c6d3fc0ee92fe66e2d99f700eab17a8d57d1c1d3b748380fb20baa78cd"
 
 [[package]]
 name = "serde"
-version = "1.0.144"
+version = "1.0.145"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0f747710de3dcd43b88c9168773254e809d8ddbdf9653b84e2554ab219f17860"
+checksum = "728eb6351430bccb993660dfffc5a72f91ccc1295abaa8ce19b27ebe4f75568b"
+dependencies = [
+ "serde_derive",
+]
+
+[[package]]
+name = "serde_derive"
+version = "1.0.145"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81fa1584d3d1bcacd84c277a0dfe21f5b0f6accf4a23d04d4c6d61f1af522b4c"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "serde_derive_internals"
+version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "85bf8229e7920a9f636479437026331ce11aa132b4dde37d121944a44d6e5f3c"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "serde_json"
+version = "1.0.85"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e55a28e3aaef9d5ce0506d0a14dbba8054ddc7e499ef522dd8b26859ec9d4a44"
+dependencies = [
+ "itoa",
+ "ryu",
+ "serde",
+]
 
 [[package]]
 name = "smallvec"
@@ -776,9 +913,14 @@ dependencies = [
  "clap",
  "deku",
  "divrem",
+ "enumset",
  "image",
+ "indexmap",
  "itertools",
  "png",
+ "schemars",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

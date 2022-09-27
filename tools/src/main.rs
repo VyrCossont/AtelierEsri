@@ -1,6 +1,7 @@
 mod grey_quantizer;
 mod image2bit;
 mod implicit_tree;
+mod items;
 mod lo5;
 mod pokepak;
 mod tileshred;
@@ -33,7 +34,7 @@ enum Commands {
         /// Input image.
         #[clap(value_parser)]
         input: PathBuf,
-        /// Output directory. Output filenames will be generated from the input filename.
+        /// Output image.
         #[clap(value_parser)]
         output: PathBuf,
     },
@@ -42,7 +43,7 @@ enum Commands {
         /// Input image.
         #[clap(value_parser)]
         input: PathBuf,
-        /// Output directory. Output filenames will be generated from the input filename.
+        /// Output image.
         #[clap(value_parser)]
         output: PathBuf,
     },
@@ -58,7 +59,22 @@ enum Commands {
         /// Input image.
         #[clap(value_parser)]
         input: PathBuf,
-        /// Output directory. Output filenames will be generated from the input filename.
+        /// Output image.
+        #[clap(value_parser)]
+        output: PathBuf,
+    },
+    /// Generate a JSON schema for items structures.
+    ItemsSchema {
+        /// Output JSON file.
+        #[clap(value_parser)]
+        output: PathBuf,
+    },
+    /// Generate Rust code from an items JSON file.
+    ItemsCode {
+        /// Input JSON file.
+        #[clap(value_parser)]
+        input: PathBuf,
+        /// Output Rust file.
         #[clap(value_parser)]
         output: PathBuf,
     },
@@ -80,6 +96,8 @@ fn main() -> anyhow::Result<()> {
             input,
             output,
         } => tileshred::convert(tile_width, tile_height, input.as_path(), output.as_path())?,
+        Commands::ItemsSchema { output } => items::schema(output.as_path())?,
+        Commands::ItemsCode { input, output } => items::code(input.as_path(), output.as_path())?,
     }
     Ok(())
 }
