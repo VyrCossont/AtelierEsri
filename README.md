@@ -50,8 +50,12 @@ In both cases, the Pixaki and Aseprite files will contain the AI-generated refer
 
 - [`gungirl.png`](assets/gungirl.png): [Gun Girl + Riflemen + Shielded Rifleman + Tiles](https://opengameart.org/content/gun-girl-riflemen-shielded-rifleman-tiles) by [Spring Spring](https://opengameart.org/users/spring-spring) (CC-BY-3.0)
 - [`roguelikeitems.aseprite`](asset_originals/roguelikeitems.aseprite): [Roguelike/RPG Items](https://opengameart.org/content/roguelikerpg-items) by [@JoeCreates](https://twitter.com/joecreates) (CC-BY-SA-3.0)
+- [`fantasy-tileset.aseprite`](asset_originals/fantasy-tileset.aseprite): [32x32 fantasy tileset](https://opengameart.org/content/32x32-fantasy-tileset) by [@jeromBD](https://twitter.com/jeromBD) (CC-BY-SA-3.0)
 
 ## Fonts
 
 - [`tiny_font.png`](assets/tiny_font.png): [Tiny Bitmap Font](https://opengameart.org/content/tiny-bitmap-font) by [Binary Moon](https://www.binarymoon.co.uk/) (CC0)
+
+## Tiles
+
 - [`Kenney_MonochromeRPG_extended.png`](asset_originals/Kenney_monochromerpg_extended.png), [`Village.tmx`](asset_originals/Village.tmx): [Monochrome RPG](https://opengameart.org/content/monochrome-rpg) by [Kenney](https://kenney.nl/) and extended by me (CC0)
