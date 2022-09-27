@@ -52,10 +52,14 @@ In both cases, the Pixaki and Aseprite files will contain the AI-generated refer
 - [`roguelikeitems.aseprite`](asset_originals/roguelikeitems.aseprite): [Roguelike/RPG Items](https://opengameart.org/content/roguelikerpg-items) by [@JoeCreates](https://twitter.com/joecreates) (CC-BY-SA-3.0)
 - [`fantasy-tileset.aseprite`](asset_originals/fantasy-tileset.aseprite): [32x32 fantasy tileset](https://opengameart.org/content/32x32-fantasy-tileset) by [@jeromBD](https://twitter.com/jeromBD) (CC-BY-SA-3.0)
 
+## Tiles
+
+- [`Kenney_MonochromeRPG_extended.png`](asset_originals/Kenney_monochromerpg_extended.png), [`Village.tmx`](asset_originals/Village.tmx): [Monochrome RPG](https://opengameart.org/content/monochrome-rpg) by [Kenney](https://kenney.nl/) and extended by me (CC0)
+
 ## Fonts
 
 - [`tiny_font.png`](assets/tiny_font.png): [Tiny Bitmap Font](https://opengameart.org/content/tiny-bitmap-font) by [Binary Moon](https://www.binarymoon.co.uk/) (CC0)
 
-## Tiles
+## UI
 
-- [`Kenney_MonochromeRPG_extended.png`](asset_originals/Kenney_monochromerpg_extended.png), [`Village.tmx`](asset_originals/Village.tmx): [Monochrome RPG](https://opengameart.org/content/monochrome-rpg) by [Kenney](https://kenney.nl/) and extended by me (CC0)
+- [`cursor.aseprite`](asset_originals/cursor.aseprite): [Cursor Pack](https://opengameart.org/content/cursor-pack) by [Ivan Voirol](https://playdonttell.itch.io/) (CC0)
