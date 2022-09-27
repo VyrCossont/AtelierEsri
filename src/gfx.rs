@@ -308,3 +308,22 @@ pub fn thick_line(x1: i32, y1: i32, x2: i32, y2: i32, w: i32, h: i32) {
 }
 
 // endregion thick lines
+
+// region cursors
+
+pub struct Cursor<'a> {
+    pub sprite: &'a Lo5SplitSprite<'a>,
+    pub hotspot: (u8, u8),
+}
+
+impl Cursor<'_> {
+    pub fn draw(&self, pos: (i32, i32)) {
+        self.sprite.blit(
+            pos.0 - self.hotspot.0 as i32,
+            pos.1 - self.hotspot.1 as i32,
+            0,
+        );
+    }
+}
+
+// endregion cursors

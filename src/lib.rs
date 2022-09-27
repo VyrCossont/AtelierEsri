@@ -8,6 +8,7 @@ mod font;
 mod font_data;
 mod gfx;
 mod gfx_data;
+mod input;
 mod intro;
 mod map_data;
 mod walkaround;

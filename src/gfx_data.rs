@@ -1,5 +1,5 @@
 use crate::asset_data;
-use crate::gfx::{CharacterSprite, Lo5SplitSprite};
+use crate::gfx::{CharacterSprite, Cursor, Lo5SplitSprite};
 use crate::wasm4;
 
 pub const ESRI: Lo5SplitSprite = Lo5SplitSprite {
@@ -89,4 +89,24 @@ pub const SAND: Lo5SplitSprite = Lo5SplitSprite {
     h: asset_data::ITEM_SAND_LO4_HEIGHT,
     lo4: &asset_data::ITEM_SAND_LO4,
     hi2: &asset_data::ITEM_SAND_HI2,
+};
+
+pub const CURSOR_POINT: &Cursor = &Cursor {
+    sprite: &Lo5SplitSprite {
+        w: asset_data::CURSOR_POINT_LO4_WIDTH,
+        h: asset_data::CURSOR_POINT_LO4_HEIGHT,
+        lo4: &asset_data::CURSOR_POINT_LO4,
+        hi2: &asset_data::CURSOR_POINT_HI2,
+    },
+    hotspot: (1, 1),
+};
+
+pub const CURSOR_TOUCH: &Cursor = &Cursor {
+    sprite: &Lo5SplitSprite {
+        w: asset_data::CURSOR_TOUCH_LO4_WIDTH,
+        h: asset_data::CURSOR_TOUCH_LO4_HEIGHT,
+        lo4: &asset_data::CURSOR_TOUCH_LO4,
+        hi2: &asset_data::CURSOR_TOUCH_HI2,
+    },
+    hotspot: (3, 1),
 };
