@@ -19,7 +19,6 @@ pub fn convert(input_path: &Path, output_path: &Path) -> anyhow::Result<()> {
     let info = reader.info();
     let width = info.width;
     let height = info.height;
-    let num_pixels = (width * height) as usize;
 
     // Check palette preconditions
     if info.color_type != ColorType::Indexed {
@@ -112,9 +111,8 @@ pub fn convert(input_path: &Path, output_path: &Path) -> anyhow::Result<()> {
         _ if c < input_transparent_color_index => c + 1,
         _ => c,
     };
-    // TODO: this buffer size might be wrong for images where scanlines don't end on byte boundaries
-    let mut lo4_buf =
-        vec![0u8; <usize as DivCeil>::div_ceil(num_pixels * BitDepth::Two as usize, 8)];
+    let lo4_buf_size = height * <u32 as DivCeil>::div_ceil(width * BitDepth::Two as u32, 8);
+    let mut lo4_buf = vec![0u8; lo4_buf_size as usize];
     let mut lo4_packed = 0u8;
     let mut lo4_write = |i: usize, c: u8| {
         lo4_packed <<= 2;
@@ -128,9 +126,8 @@ pub fn convert(input_path: &Path, output_path: &Path) -> anyhow::Result<()> {
         _ if c == last_color_index => 1u8,
         _ => 0u8,
     };
-    // TODO: this one too
-    let mut hi2_buf =
-        vec![0u8; <usize as DivCeil>::div_ceil(num_pixels * BitDepth::One as usize, 8)];
+    let hi2_buf_size = height * <u32 as DivCeil>::div_ceil(width * BitDepth::One as u32, 8);
+    let mut hi2_buf = vec![0u8; hi2_buf_size as usize];
     let mut hi2_packed = 0u8;
     let mut hi2_write = |i: usize, c: u8| {
         hi2_packed <<= 1;
