@@ -3,7 +3,6 @@ mod material_data;
 use crate::font_data::TINY;
 use crate::gfx::{ngon, thick_line, Lo5SplitSprite};
 use crate::gfx_data::CURSOR_POINT;
-use crate::wasm4::rect;
 use crate::{input, wasm4};
 use enumset::{EnumSet, EnumSetType};
 
@@ -33,7 +32,7 @@ pub struct RecipeNode<'a> {
     effects: &'a [RecipeNodeEffect],
     elemental_requirement: Option<RecipeNodeElementalRequirement>,
     quality_requirement: Option<Quality>,
-    linked: &'a [usize],
+    parent: Option<usize>,
 }
 
 pub enum Effect {
@@ -156,7 +155,7 @@ impl SynthesisNode<'_> {
         }
     }
 
-    fn pos(&self, grid_origin: (i32, i32)) -> (i32, i32) {
+    fn center(&self, grid_origin: (i32, i32)) -> (i32, i32) {
         (
             grid_origin.0 + (self.recipe_node.grid_pos.0 as f32 * SPACE * H_SPACE_MUL) as i32,
             grid_origin.1
@@ -171,19 +170,32 @@ impl SynthesisNode<'_> {
     }
 
     fn draw(&self, grid_origin: (i32, i32)) {
-        let pos = self.pos(grid_origin);
-        ngon(pos, 12, 6, 0.0, 3, 3);
+        // Draw shape (normally a hexagon)
+        let center = self.center(grid_origin);
+        ngon(center, 13, 6, 0.0, 3, 4);
         unsafe { *wasm4::DRAW_COLORS = 0x22 };
-        wasm4::oval(pos.0 - 10, pos.1 - 10, 20, 20);
+        wasm4::oval(center.0 - 11, center.1 - 11, 21, 21);
+
+        // Draw material icon or category name
         match &self.recipe_node.input {
-            RecipeNodeInput::Material(material) => material.icon.blit(pos.0 - 8, pos.1 - 8, 0),
+            RecipeNodeInput::Material(material) => {
+                material.icon.blit(center.0 - 8, center.1 - 8, 0)
+            }
             RecipeNodeInput::Category(category) => {
                 let metrics = TINY.metrics(category.name());
+                let shadow_metrics = (metrics.0 + 2, metrics.1 + 2);
+                unsafe { *wasm4::DRAW_COLORS = 0x22 };
+                wasm4::rect(
+                    center.0 - shadow_metrics.0 as i32 / 2,
+                    center.1 - shadow_metrics.1 as i32 / 2,
+                    shadow_metrics.0,
+                    shadow_metrics.1,
+                );
                 unsafe { *wasm4::DRAW_COLORS = 0x340 };
                 TINY.text(
                     category.name(),
-                    pos.0 - metrics.0 as i32 / 2,
-                    pos.1 - metrics.1 as i32 / 2,
+                    center.0 - metrics.0 as i32 / 2,
+                    center.1 - metrics.1 as i32 / 2,
                 );
             }
         }
@@ -218,14 +230,14 @@ impl SynthesisState<'_> {
         banner_text.push_str(self.material.name);
         let metrics = TINY.metrics(banner_text.as_str());
         unsafe { *wasm4::DRAW_COLORS = 0x22 };
-        rect(4, 4, 160 - 8, metrics.1 + 2);
+        wasm4::rect(4 - 1, 4 - 1, 160 - 8, metrics.1 + 2);
         unsafe { *wasm4::DRAW_COLORS = 0x340 };
         TINY.text(banner_text.as_str(), 4, 4);
 
         for node in &self.nodes {
-            let node_pos = node.pos(grid_origin);
-            for linked_node_index in node.recipe_node.linked {
-                let linked_pos = self.nodes[*linked_node_index].pos(grid_origin);
+            let node_pos = node.center(grid_origin);
+            if let Some(parent_node_index) = node.recipe_node.parent {
+                let linked_pos = self.nodes[parent_node_index].center(grid_origin);
                 unsafe { *wasm4::DRAW_COLORS = 0x2 };
                 thick_line(node_pos.0, node_pos.1, linked_pos.0, linked_pos.1, 3, 3);
             }

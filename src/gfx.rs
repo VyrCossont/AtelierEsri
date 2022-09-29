@@ -343,7 +343,7 @@ pub fn ngon(center: (i32, i32), radius: i32, n: i32, theta: f32, color: u16, thi
         (center.1 as f32 + radius as f32 * theta.sin()) as i32,
     );
     for i in 1..=n {
-        let theta_i = (theta + ((2.0 * PI) * i as f32) / n as f32);
+        let theta_i = theta + ((2.0 * PI) * i as f32) / n as f32;
         let curr = (
             (center.0 as f32 + radius as f32 * theta_i.cos()) as i32,
             (center.1 as f32 + radius as f32 * theta_i.sin()) as i32,
