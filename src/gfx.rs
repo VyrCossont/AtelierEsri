@@ -1,5 +1,6 @@
 use crate::wasm4;
 use std::cmp::{max, min};
+use std::f32::consts::PI;
 
 // region split sprites
 
@@ -327,3 +328,37 @@ impl Cursor<'_> {
 }
 
 // endregion cursors
+
+// region shapes
+
+pub fn ngon(center: (i32, i32), radius: i32, n: i32, theta: f32, color: u16, thickness: i32) {
+    if n < 3 {
+        return;
+    }
+    unsafe {
+        *wasm4::DRAW_COLORS = color;
+    }
+    let mut prev = (
+        (center.0 as f32 + radius as f32 * theta.cos()) as i32,
+        (center.1 as f32 + radius as f32 * theta.sin()) as i32,
+    );
+    for i in 1..=n {
+        let theta_i = (theta + ((2.0 * PI) * i as f32) / n as f32);
+        let curr = (
+            (center.0 as f32 + radius as f32 * theta_i.cos()) as i32,
+            (center.1 as f32 + radius as f32 * theta_i.sin()) as i32,
+        );
+        let half_t = thickness / 2;
+        thick_line(
+            prev.0 - half_t,
+            prev.1 - half_t,
+            curr.0 - half_t,
+            curr.1 - half_t,
+            thickness,
+            thickness,
+        );
+        prev = curr;
+    }
+}
+
+// endregion shapes

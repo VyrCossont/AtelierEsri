@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use serde_json;
 use std::fs::File;
 use std::io::Write;
+use std::num::{NonZeroU16, NonZeroU8};
 use std::path::Path;
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -13,10 +14,14 @@ struct Items {
     materials: IndexMap<MaterialId, Material>,
 }
 
+type Lo5AssetId = String;
+
 type MaterialId = String;
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 struct Material {
+    name: String,
+    icon: Lo5AssetId,
     categories: EnumSet<Category>,
     #[serde(default)]
     recipe: Option<Recipe>,
@@ -30,12 +35,13 @@ struct Recipe {
     links: Vec<(RecipeNodeId, RecipeNodeId)>,
 }
 
-type Quality = u16;
+type Quality = NonZeroU16;
 
-type ElementCount = u8;
+type ElementCount = NonZeroU8;
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 struct RecipeNode {
+    grid_pos: (i8, i8),
     /// Element used for display and for effect levels.
     element: Element,
     input: RecipeNodeInput,
@@ -46,13 +52,19 @@ struct RecipeNode {
     quality_requirement: Option<Quality>,
 }
 
-type EffectId = String;
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+enum Effect {
+    Quality,
+    SynthQuantity,
+    FireDmg,
+}
 
-type EffectLevel = u8;
+type EffectLevel = NonZeroU8;
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 struct RecipeNodeEffect {
-    id: EffectId,
+    id: Effect,
     level: EffectLevel,
     count: ElementCount,
 }
