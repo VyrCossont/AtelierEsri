@@ -62,13 +62,11 @@ impl Lo5SplitSprite<'_> {
     //  Try using a color + mask representation instead.
     pub fn blit2x(&self, x: i32, y: i32) {
         unsafe {
-            SCALE_BUFFER.fill(0);
             scale2x(self.lo4, self.w, self.h, 2, SCALE_BUFFER);
-            unsafe { *wasm4::DRAW_COLORS = 0x2340 }
+            *wasm4::DRAW_COLORS = 0x2340;
             wasm4::blit(SCALE_BUFFER, x, y, self.w * 2, self.h * 2, wasm4::BLIT_2BPP);
-            SCALE_BUFFER.fill(0);
             scale2x(self.hi2, self.w, self.h, 1, SCALE_BUFFER);
-            unsafe { *wasm4::DRAW_COLORS = 0x0010 }
+            *wasm4::DRAW_COLORS = 0x0010;
             wasm4::blit(SCALE_BUFFER, x, y, self.w * 2, self.h * 2, wasm4::BLIT_1BPP);
         }
     }
@@ -95,7 +93,12 @@ fn get_pixel(data: &[u8], w: u32, bit_depth: u32, x: u32, y: u32) -> u8 {
 
 fn set_pixel(data: &mut [u8], w: u32, bit_depth: u32, x: u32, y: u32, pixel: u8) {
     let (byte_offset, shift, mask) = pixel_offset(w, bit_depth, x, y);
-    data[byte_offset] |= (pixel & mask) << shift;
+    let mut byte = data[byte_offset];
+    // Clear previous value in that field.
+    byte &= (!mask) << shift;
+    // Replace it with new value.
+    byte |= (pixel & mask) << shift;
+    data[byte_offset] = byte;
 }
 
 /// See https://en.wikipedia.org/wiki/Pixel-art_scaling_algorithms#EPX/Scale2%C3%97/AdvMAME2%C3%97
