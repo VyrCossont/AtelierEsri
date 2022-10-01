@@ -3,8 +3,10 @@ mod image2bit;
 mod implicit_tree;
 mod items;
 mod lo5;
+mod palettes;
 mod pokepak;
 mod tileshred;
+mod unisprite;
 
 use anyhow;
 use clap::{Parser, Subcommand};
@@ -40,6 +42,24 @@ enum Commands {
     },
     /// Decode a Poképak image to a 4-color PNG.
     PokepakDecode {
+        /// Input image.
+        #[clap(value_parser)]
+        input: PathBuf,
+        /// Output image.
+        #[clap(value_parser)]
+        output: PathBuf,
+    },
+    /// Encode an image with up to 2 bits of color and 1 bit of alpha to Unisprite.
+    UnispriteEncode {
+        /// Input image.
+        #[clap(value_parser)]
+        input: PathBuf,
+        /// Output image.
+        #[clap(value_parser)]
+        output: PathBuf,
+    },
+    /// Decode a Unisprite image to an indexed-color PNG.
+    UnispriteDecode {
         /// Input image.
         #[clap(value_parser)]
         input: PathBuf,
@@ -89,6 +109,12 @@ fn main() -> anyhow::Result<()> {
         }
         Commands::PokepakDecode { input, output } => {
             pokepak::decode(input.as_path(), output.as_path())?
+        }
+        Commands::UnispriteEncode { input, output } => {
+            unisprite::encode(input.as_path(), output.as_path())?
+        }
+        Commands::UnispriteDecode { input, output } => {
+            unisprite::decode(input.as_path(), output.as_path())?
         }
         Commands::Tileshred {
             tile_width,

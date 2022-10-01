@@ -46,8 +46,9 @@ impl GreyQuantizer {
     }
 
     /// Palette will be in sorted order.
-    /// Remapping table may not be valid for colors not in the input image.
-    pub fn palette_and_mapping_table(&mut self) -> (Vec<u8>, [u8; 256]) {
+    /// Table maps input colors to palette indexes,
+    /// and may not be valid for colors not in the input image.
+    pub fn palette_and_mapping_table(&mut self) -> (Vec<u8>, [Option<u8>; 256]) {
         self.0.palette_and_mapping_table()
     }
 }
@@ -169,9 +170,9 @@ impl ImplicitTree<ColorNode> {
         }
     }
 
-    fn palette_and_mapping_table(&mut self) -> (Vec<u8>, [u8; 256]) {
+    fn palette_and_mapping_table(&mut self) -> (Vec<u8>, [Option<u8>; 256]) {
         let mut palette = vec![0u8; 0];
-        let mut table = [0u8; 256];
+        let mut table = [None; 256];
 
         let mut visit_colors = |index| {
             if !self[index].leaf {
@@ -209,8 +210,9 @@ impl ImplicitTree<ColorNode> {
             palette.push(replacement_color);
 
             // In the reduction table, use the replacement color for all colors in the range merged to produce it.
+            let palette_index = Some((palette.len() - 1) as u8);
             for color in color_min..=color_max {
-                table[color] = replacement_color;
+                table[color] = palette_index;
             }
 
             // Don't visit nodes lower than this one.
