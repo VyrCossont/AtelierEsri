@@ -1,6 +1,7 @@
 use crate::wasm4;
 use std::cmp::{max, min};
 use std::f32::consts::PI;
+use vector2d::Vector2D;
 
 // region split sprites
 
@@ -334,6 +335,26 @@ impl Cursor<'_> {
 
 // region shapes
 
+pub trait FromPolar<T> {
+    fn from_polar(r: T, theta: T) -> Vector2D<T>;
+}
+
+impl FromPolar<f32> for Vector2D<f32> {
+    fn from_polar(r: f32, theta: f32) -> Vector2D<f32> {
+        Vector2D::new(r * theta.cos(), r * theta.sin())
+    }
+}
+
+pub fn ngon_points(n: i32, center: Vector2D<i32>, radius: i32, theta: f32) -> Vec<Vector2D<i32>> {
+    let mut points = Vec::with_capacity(n as usize);
+    for i in 0..n {
+        let theta_i = theta + ((2.0 * PI) * i as f32) / n as f32;
+        points.push(center + Vector2D::from_polar(radius as f32, theta_i).as_i32s());
+    }
+    points
+}
+
+// TODO: rewrite to use `ngon_points`
 pub fn ngon(center: (i32, i32), radius: i32, n: i32, theta: f32, color: u16, thickness: i32) {
     if n < 3 {
         return;

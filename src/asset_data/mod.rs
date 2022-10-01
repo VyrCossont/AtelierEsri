@@ -3,5 +3,7 @@
 
 include!(concat!(env!("OUT_DIR"), "/assets.rs"));
 
+// TODO: refactor these so we generate a whole module tree in `OUT_DIR`.
 pub mod cursor;
+pub mod element;
 pub mod item;

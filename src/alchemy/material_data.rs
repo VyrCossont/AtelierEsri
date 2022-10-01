@@ -1,5 +1,6 @@
 use crate::alchemy::{
-    Category, Effect, Element, Material, Recipe, RecipeNode, RecipeNodeEffect, RecipeNodeInput,
+    Category, Effect, Element, Material, Recipe, RecipeNode, RecipeNodeEffect,
+    RecipeNodeElementalRequirement, RecipeNodeInput,
 };
 use crate::asset_data;
 use enumset::enum_set;
@@ -25,6 +26,13 @@ pub const WATER: &Material = &Material {
     recipe: None,
 };
 
+pub const GASOLINE: &Material = &Material {
+    name: "Gasoline",
+    icon: asset_data::item::POTION_DARK,
+    categories: enum_set!(Category::Water | Category::Fuel),
+    recipe: None,
+};
+
 pub const RED_FLOWER: &Material = &Material {
     name: "Red Flower",
     icon: asset_data::item::FLOWER1,
@@ -41,13 +49,24 @@ pub const RED_NEUTRALIZER: &Material = &Material {
             RecipeNode {
                 grid_pos: (0, 0),
                 element: Element::Ice,
-                // input: RecipeNodeInput::Category(Category::Water),
                 input: RecipeNodeInput::Material(WATER),
-                effects: &[RecipeNodeEffect {
-                    id: Effect::Quality,
-                    level: 1,
-                    count: 2,
-                }],
+                effects: &[
+                    RecipeNodeEffect {
+                        id: Effect::Quality,
+                        level: 1,
+                        count: 1,
+                    },
+                    RecipeNodeEffect {
+                        id: Effect::Quality,
+                        level: 2,
+                        count: 2,
+                    },
+                    RecipeNodeEffect {
+                        id: Effect::Quality,
+                        level: 3,
+                        count: 3,
+                    },
+                ],
                 elemental_requirement: None,
                 quality_requirement: None,
                 parent: None,
@@ -56,15 +75,30 @@ pub const RED_NEUTRALIZER: &Material = &Material {
                 grid_pos: (1, 0),
                 element: Element::Fire,
                 input: RecipeNodeInput::Category(Category::Flowers),
-                // input: RecipeNodeInput::Material(RED_FLOWER),
                 effects: &[RecipeNodeEffect {
-                    id: Effect::Quality,
+                    id: Effect::FireDmg,
                     level: 2,
                     count: 2,
                 }],
                 elemental_requirement: None,
                 quality_requirement: None,
                 parent: Some(0),
+            },
+            RecipeNode {
+                grid_pos: (2, 0),
+                element: Element::Fire,
+                input: RecipeNodeInput::Category(Category::Fuel),
+                effects: &[RecipeNodeEffect {
+                    id: Effect::FireDmg,
+                    level: 2,
+                    count: 2,
+                }],
+                elemental_requirement: Some(RecipeNodeElementalRequirement {
+                    element: Element::Fire,
+                    count: 2,
+                }),
+                quality_requirement: None,
+                parent: Some(1),
             },
         ],
     }),

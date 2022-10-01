@@ -11,8 +11,9 @@ license = "MIT"
 crate-type = ["cdylib"]
 
 [dependencies]
-enumset = "1.0.11"
 buddy-alloc = { version = "0.4.1", optional = true }
+enumset = "1.0.11"
+vector2d = "2.2.0"
 
 [profile.release]
 opt-level = "z"
