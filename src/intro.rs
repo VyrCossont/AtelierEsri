@@ -3,7 +3,7 @@ use crate::gfx::{Unisprite, UnispriteData};
 const UNISPRITE: &Unisprite = &Unisprite {
     w: 16,
     h: 16,
-    data: UnispriteData::L0 { color: 2 },
+    data: UnispriteData::L0 { fill: 2 },
 };
 
 pub fn init() {}

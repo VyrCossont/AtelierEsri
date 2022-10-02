@@ -86,7 +86,7 @@ impl Unisprite<'_> {
         let screen_y0 = y;
         let framebuffer = unsafe { &mut *wasm4::FRAMEBUFFER };
         match self.data {
-            UnispriteData::L0 { color } => {
+            UnispriteData::L0 { fill } => {
                 for sprite_y in 0..self.h {
                     let screen_y = screen_y0 + sprite_y;
                     if screen_y < 0 || screen_y >= wasm4::SCREEN_SIZE as i32 {
@@ -101,9 +101,10 @@ impl Unisprite<'_> {
                             framebuffer,
                             wasm4::SCREEN_SIZE,
                             2,
+                            true,
                             screen_x as u32,
                             screen_y as u32,
-                            color,
+                            fill,
                         );
                     }
                 }
@@ -114,31 +115,42 @@ impl Unisprite<'_> {
 }
 
 type WASM4PaletteIndex = u8;
+type U8Packed8Pixels = u8;
+type U8Packed4Pixels = u8;
 
 pub enum UnispriteData<'a> {
     L0 {
-        color: WASM4PaletteIndex,
+        fill: WASM4PaletteIndex,
     },
     L0A1 {
-        color: WASM4PaletteIndex,
-        alpha: &'a [u8],
+        fill: WASM4PaletteIndex,
+        alpha: &'a [U8Packed8Pixels],
     },
     L1 {
-        colors: [WASM4PaletteIndex; 2],
-        indexes: &'a [u8],
+        palette: UnispriteDataL1Palette,
+        indexes: &'a [U8Packed8Pixels],
     },
     L1A1 {
-        colors: [WASM4PaletteIndex; 2],
-        indexes: &'a [u8],
-        alpha: &'a [u8],
+        palette: UnispriteDataL1Palette,
+        indexes: &'a [U8Packed8Pixels],
+        alpha: &'a [U8Packed8Pixels],
     },
     L2 {
-        luma: &'a [u8],
+        luma: &'a [U8Packed4Pixels],
     },
     L2A1 {
-        luma: &'a [u8],
-        alpha: &'a [u8],
+        luma: &'a [U8Packed4Pixels],
+        alpha: &'a [U8Packed8Pixels],
     },
+}
+
+pub enum UnispriteDataL1Palette {
+    P01,
+    P02,
+    P03,
+    P12,
+    P13,
+    P23,
 }
 
 // endregion split sprites
@@ -146,6 +158,29 @@ pub enum UnispriteData<'a> {
 // region sprite scaling
 
 static mut SCALE_BUFFER: &mut [u8] = &mut [0; (64 * 3 * 64 * 3) / 4];
+
+// TODO: this isn't necessary if assets are stored/unpacked pre-swizzled
+fn reverse_fields(bit_depth: u32, swizzle: bool, byte: u8) -> u8 {
+    if !swizzle {
+        return byte;
+    }
+
+    if bit_depth == 2 {
+        ((byte & 0b11) << 6)
+            | ((byte & 0b11_00) << 2)
+            | ((byte & 0b11_00_00) >> 2)
+            | ((byte & 0b11_00_00_00) >> 6)
+    } else {
+        ((byte & 0b1) << 7)
+            | ((byte & 0b10) << 5)
+            | ((byte & 0b100) << 3)
+            | ((byte & 0b1000) << 1)
+            | ((byte & 0b10000) >> 1)
+            | ((byte & 0b100000) >> 3)
+            | ((byte & 0b1000000) >> 5)
+            | ((byte & 0b10000000) >> 7)
+    }
+}
 
 fn pixel_offset(w: u32, bit_depth: u32, x: u32, y: u32) -> (usize, u8, u8) {
     let bit_offset = bit_depth * (w * y + x);
@@ -155,18 +190,22 @@ fn pixel_offset(w: u32, bit_depth: u32, x: u32, y: u32) -> (usize, u8, u8) {
     (byte_offset, shift, mask)
 }
 
-fn get_pixel(data: &[u8], w: u32, bit_depth: u32, x: u32, y: u32) -> u8 {
-    let (byte_offset, shift, mask) = pixel_offset(w, bit_depth, x, y);
-    (data[byte_offset] >> shift) & mask
-}
-
-fn set_pixel(data: &mut [u8], w: u32, bit_depth: u32, x: u32, y: u32, pixel: u8) {
+fn get_pixel(data: &[u8], w: u32, bit_depth: u32, swizzle: bool, x: u32, y: u32) -> u8 {
     let (byte_offset, shift, mask) = pixel_offset(w, bit_depth, x, y);
     let mut byte = data[byte_offset];
+    byte = reverse_fields(bit_depth, swizzle, byte);
+    (byte >> shift) & mask
+}
+
+fn set_pixel(data: &mut [u8], w: u32, bit_depth: u32, swizzle: bool, x: u32, y: u32, pixel: u8) {
+    let (byte_offset, shift, mask) = pixel_offset(w, bit_depth, x, y);
+    let mut byte = data[byte_offset];
+    byte = reverse_fields(bit_depth, swizzle, byte);
     // Clear previous value in that field.
     byte &= (!mask) << shift;
     // Replace it with new value.
     byte |= (pixel & mask) << shift;
+    byte = reverse_fields(bit_depth, swizzle, byte);
     data[byte_offset] = byte;
 }
 
@@ -179,35 +218,43 @@ fn scale2x(data: &[u8], w: u32, h: u32, bit_depth: u32, scale_buffer: &mut [u8])
     }
     for y in 0..h {
         for x in 0..w {
-            let p = get_pixel(data, w, bit_depth, x, y);
+            let p = get_pixel(data, w, bit_depth, false, x, y);
             let a = if y == 0 {
                 0
             } else {
-                get_pixel(data, w, bit_depth, x, y - 1)
+                get_pixel(data, w, bit_depth, false, x, y - 1)
             };
             let b = if x == w - 1 {
                 0
             } else {
-                get_pixel(data, w, bit_depth, x + 1, y)
+                get_pixel(data, w, bit_depth, false, x + 1, y)
             };
             let c = if x == 0 {
                 0
             } else {
-                get_pixel(data, w, bit_depth, x - 1, y)
+                get_pixel(data, w, bit_depth, false, x - 1, y)
             };
             let d = if y == h - 1 {
                 0
             } else {
-                get_pixel(data, w, bit_depth, x, y + 1)
+                get_pixel(data, w, bit_depth, false, x, y + 1)
             };
             let p1 = if c == a && c != d && a != b { a } else { p };
             let p2 = if a == b && a != c && b != d { b } else { p };
             let p3 = if d == c && d != b && c != a { c } else { p };
             let p4 = if b == d && b != a && d != c { d } else { p };
-            set_pixel(scale_buffer, 2 * w, bit_depth, 2 * x, 2 * y, p1);
-            set_pixel(scale_buffer, 2 * w, bit_depth, 2 * x + 1, 2 * y, p2);
-            set_pixel(scale_buffer, 2 * w, bit_depth, 2 * x, 2 * y + 1, p3);
-            set_pixel(scale_buffer, 2 * w, bit_depth, 2 * x + 1, 2 * y + 1, p4);
+            set_pixel(scale_buffer, 2 * w, bit_depth, false, 2 * x, 2 * y, p1);
+            set_pixel(scale_buffer, 2 * w, bit_depth, false, 2 * x + 1, 2 * y, p2);
+            set_pixel(scale_buffer, 2 * w, bit_depth, false, 2 * x, 2 * y + 1, p3);
+            set_pixel(
+                scale_buffer,
+                2 * w,
+                bit_depth,
+                false,
+                2 * x + 1,
+                2 * y + 1,
+                p4,
+            );
         }
     }
 }
