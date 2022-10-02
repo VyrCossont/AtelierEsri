@@ -1,6 +1,6 @@
 mod material_data;
 
-use crate::font_data::TINY;
+use crate::font::TINY;
 use crate::gfx::{ngon, ngon_points, thick_line, Lo5SplitSprite};
 use crate::gfx_data::CURSOR_POINT;
 use crate::{asset_data, input, wasm4};

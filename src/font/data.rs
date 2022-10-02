@@ -1,5 +1,5 @@
 use crate::asset_data;
-use crate::font::{Font, ProportionalFont};
+use crate::font::font::{Font, ProportionalFont};
 
 pub const BUILTIN: &Font = &Font::BuiltIn;
 
