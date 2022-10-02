@@ -73,6 +73,74 @@ impl Lo5SplitSprite<'_> {
     }
 }
 
+pub struct Unisprite<'a> {
+    pub w: i32,
+    pub h: i32,
+    pub data: UnispriteData<'a>,
+}
+
+impl Unisprite<'_> {
+    /// This version of Unisprite does not attempt to optimize blits in any way.
+    pub fn draw(&self, x: i32, y: i32) {
+        let screen_x0 = x;
+        let screen_y0 = y;
+        let framebuffer = unsafe { &mut *wasm4::FRAMEBUFFER };
+        match self.data {
+            UnispriteData::L0 { color } => {
+                for sprite_y in 0..self.h {
+                    let screen_y = screen_y0 + sprite_y;
+                    if screen_y < 0 || screen_y >= wasm4::SCREEN_SIZE as i32 {
+                        continue;
+                    }
+                    for sprite_x in 0..self.w {
+                        let screen_x = screen_x0 + sprite_x;
+                        if screen_x < 0 || screen_x >= wasm4::SCREEN_SIZE as i32 {
+                            continue;
+                        }
+                        set_pixel(
+                            framebuffer,
+                            wasm4::SCREEN_SIZE,
+                            2,
+                            screen_x as u32,
+                            screen_y as u32,
+                            color,
+                        );
+                    }
+                }
+            }
+            _ => todo!(),
+        }
+    }
+}
+
+type WASM4PaletteIndex = u8;
+
+pub enum UnispriteData<'a> {
+    L0 {
+        color: WASM4PaletteIndex,
+    },
+    L0A1 {
+        color: WASM4PaletteIndex,
+        alpha: &'a [u8],
+    },
+    L1 {
+        colors: [WASM4PaletteIndex; 2],
+        indexes: &'a [u8],
+    },
+    L1A1 {
+        colors: [WASM4PaletteIndex; 2],
+        indexes: &'a [u8],
+        alpha: &'a [u8],
+    },
+    L2 {
+        luma: &'a [u8],
+    },
+    L2A1 {
+        luma: &'a [u8],
+        alpha: &'a [u8],
+    },
+}
+
 // endregion split sprites
 
 // region sprite scaling

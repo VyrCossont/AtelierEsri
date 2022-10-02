@@ -14,19 +14,18 @@ mod walkaround;
 mod wasm4;
 
 enum Mode {
-    // Intro,
-    // Walkaround,
+    Intro,
     Alchemy,
 }
 
-static mut MODE: Mode = Mode::Alchemy;
+static mut MODE: Mode = Mode::Intro;
 
 #[no_mangle]
 fn start() {
     // audio::init();
     // audio::music(0);
-    // intro::init();
-    alchemy::init();
+    intro::init();
+    // alchemy::init();
 }
 
 #[no_mangle]
@@ -35,13 +34,12 @@ fn update() {
 
     unsafe {
         match MODE {
-            // Mode::Intro => {
-            //     let continue_intro = intro::update();
-            //     if !continue_intro {
-            //         MODE = Mode::Walkaround;
-            //     }
-            // }
-            // Mode::Walkaround => walkaround::update(),
+            Mode::Intro => {
+                let continue_intro = intro::update();
+                if !continue_intro {
+                    MODE = Mode::Alchemy;
+                }
+            }
             Mode::Alchemy => alchemy::update(),
         }
     }
