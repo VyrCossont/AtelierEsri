@@ -1,4 +1,5 @@
 use crate::wasm4;
+use aesprite::{Unisprite, UnispriteData};
 use std::cmp::{max, min};
 use std::f32::consts::PI;
 use vector2d::Vector2D;
@@ -73,15 +74,19 @@ impl Lo5SplitSprite<'_> {
     }
 }
 
-pub struct Unisprite<'a> {
-    pub w: i32,
-    pub h: i32,
-    pub data: UnispriteData<'a>,
+pub trait Sprite {
+    fn draw(&self, x: i32, y: i32);
 }
 
-impl Unisprite<'_> {
+impl Sprite for Lo5SplitSprite<'_> {
+    fn draw(&self, x: i32, y: i32) {
+        self.blit(x, y, 0);
+    }
+}
+
+impl Sprite for Unisprite<'_> {
     /// This version of Unisprite does not attempt to optimize blits in any way.
-    pub fn draw(&self, x: i32, y: i32) {
+    fn draw(&self, x: i32, y: i32) {
         let screen_x0 = x;
         let screen_y0 = y;
         let framebuffer = unsafe { &mut *wasm4::FRAMEBUFFER };
@@ -112,45 +117,6 @@ impl Unisprite<'_> {
             _ => todo!(),
         }
     }
-}
-
-type WASM4PaletteIndex = u8;
-type U8Packed8Pixels = u8;
-type U8Packed4Pixels = u8;
-
-pub enum UnispriteData<'a> {
-    L0 {
-        fill: WASM4PaletteIndex,
-    },
-    L0A1 {
-        fill: WASM4PaletteIndex,
-        alpha: &'a [U8Packed8Pixels],
-    },
-    L1 {
-        palette: UnispriteDataL1Palette,
-        indexes: &'a [U8Packed8Pixels],
-    },
-    L1A1 {
-        palette: UnispriteDataL1Palette,
-        indexes: &'a [U8Packed8Pixels],
-        alpha: &'a [U8Packed8Pixels],
-    },
-    L2 {
-        luma: &'a [U8Packed4Pixels],
-    },
-    L2A1 {
-        luma: &'a [U8Packed4Pixels],
-        alpha: &'a [U8Packed8Pixels],
-    },
-}
-
-pub enum UnispriteDataL1Palette {
-    P01,
-    P02,
-    P03,
-    P12,
-    P13,
-    P23,
 }
 
 // endregion split sprites

@@ -1,5 +1,4 @@
-/target
-/aetools/target
+target
 *.tiled-session
 /asset_originals/items.schema.json
 /build

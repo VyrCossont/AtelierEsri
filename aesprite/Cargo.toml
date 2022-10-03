@@ -1,0 +1,9 @@
+[package]
+name = "aesprite"
+version = "0.1.0"
+edition = "2021"
+description = "Sprite data structures shared between the Atelier Esri game and its tooling"
+repository = "https://github.com/VyrCossont/AtelierEsri"
+license = "MIT"
+
+[dependencies]

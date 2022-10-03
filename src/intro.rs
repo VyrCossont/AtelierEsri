@@ -1,4 +1,5 @@
-use crate::gfx::{Unisprite, UnispriteData};
+use crate::gfx::Sprite;
+use aesprite::{Unisprite, UnispriteData};
 
 const UNISPRITE: &Unisprite = &Unisprite {
     w: 16,

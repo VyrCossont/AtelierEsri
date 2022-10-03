@@ -3,9 +3,14 @@
 version = 3
 
 [[package]]
+name = "aesprite"
+version = "0.1.0"
+
+[[package]]
 name = "atelier_esri"
 version = "0.1.0"
 dependencies = [
+ "aesprite",
  "buddy-alloc",
  "enumset",
  "glob",

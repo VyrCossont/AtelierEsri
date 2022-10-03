@@ -2,7 +2,7 @@
 name = "aetools"
 version = "0.1.0"
 edition = "2021"
-
+description = "Asset pipeline tools for the Atelier Esri game"
 repository = "https://github.com/VyrCossont/AtelierEsri"
 license = "MIT"
 
@@ -21,3 +21,4 @@ serde_json = "1.0.85"
 schemars = { version = "0.8.10", features = ["enumset", "preserve_order"] }
 enumset = { version = "1.0.11", features = ["serde"] }
 indexmap = { version = "1.9.1", features = ["serde"] }
+aesprite = { path = "../aesprite" }

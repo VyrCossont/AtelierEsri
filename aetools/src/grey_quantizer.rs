@@ -240,7 +240,7 @@ mod tests {
         let (palette, table) = quantizer.palette_and_mapping_table();
         assert_eq!(vec![1, 2, 3, 4], palette);
         for c in 1..=4 {
-            assert!(palette.contains(&table[c]));
+            assert!(palette.contains(&table[c].unwrap()));
         }
     }
 
@@ -256,7 +256,7 @@ mod tests {
         let (palette, table) = quantizer.palette_and_mapping_table();
         assert_eq!(vec![1, 2, 3, 4], palette);
         for c in 1..=4 {
-            assert!(palette.contains(&table[c]));
+            assert!(palette.contains(&table[c].unwrap()));
         }
     }
 
@@ -272,7 +272,7 @@ mod tests {
         let (palette, table) = quantizer.palette_and_mapping_table();
         assert_eq!(vec![2, 4], palette);
         for c in 1..=4 {
-            assert!(palette.contains(&table[c]));
+            assert!(palette.contains(&table[c].unwrap()));
         }
     }
 
@@ -288,7 +288,7 @@ mod tests {
         let (palette, table) = quantizer.palette_and_mapping_table();
         assert_eq!(vec![1, 3, 4], palette);
         for c in 1..=4 {
-            assert!(palette.contains(&table[c]));
+            assert!(palette.contains(&table[c].unwrap()));
         }
     }
 
@@ -307,7 +307,7 @@ mod tests {
         let (palette, table) = quantizer.palette_and_mapping_table();
         assert_eq!(vec![1, 4], palette);
         for c in 1..=4 {
-            assert!(palette.contains(&table[c]));
+            assert!(palette.contains(&table[c].unwrap()));
         }
     }
 }
