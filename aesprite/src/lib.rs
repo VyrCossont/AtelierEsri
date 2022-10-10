@@ -19,7 +19,7 @@ impl UnispriteData for &[u8] {
 }
 
 #[cfg(feature = "std")]
-impl<I: std::ops::Index<usize, Output = u8>> UnispriteData for I {
+impl UnispriteData for std::vec::Vec<u8> {
     fn get(&self, i: usize) -> u8 {
         self[i]
     }
