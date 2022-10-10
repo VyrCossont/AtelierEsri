@@ -77,7 +77,11 @@ const ASEPRITE_ASSETS: &[AsepriteAssetGroup] = &[
     },
     AsepriteAssetGroup {
         name: "item",
-        srcs: &["fantasy-tileset.aseprite", "roguelikeitems.aseprite"],
+        srcs: &[
+            "fantasy-tileset.aseprite",
+            "roguelikeitems.aseprite",
+            "items/*.aseprite",
+        ],
     },
 ];
 
