@@ -62,6 +62,7 @@ where
 
 struct AsepriteAssetGroup<'a> {
     name: &'a str,
+    /// These can be globs.
     srcs: &'a [&'a str],
 }
 
@@ -146,7 +147,9 @@ fn aseprite_assets() {
 
         // Export sprite slices from each Aseprite project.
         for src in group.srcs {
-            aseprite_export_slices(&asset_base_dir.join(src), &group_dir);
+            for glob_result in glob(&asset_base_dir.join(src).to_string_lossy()).unwrap() {
+                aseprite_export_slices(&glob_result.unwrap(), &group_dir);
+            }
         }
 
         // Collect sprite names so we can generate structs.
