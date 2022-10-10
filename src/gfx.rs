@@ -84,37 +84,51 @@ impl Sprite for Lo5SplitSprite<'_> {
     }
 }
 
-impl Sprite for Unisprite<'_> {
+impl Sprite for Unisprite<&[u8]> {
     /// This version of Unisprite does not attempt to optimize blits in any way.
     fn draw(&self, x: i32, y: i32) {
         let screen_x0 = x;
         let screen_y0 = y;
         let framebuffer = unsafe { &mut *wasm4::FRAMEBUFFER };
-        match self.data {
-            UnispriteData::L0 { fill } => {
-                for sprite_y in 0..self.h {
-                    let screen_y = screen_y0 + sprite_y;
-                    if screen_y < 0 || screen_y >= wasm4::SCREEN_SIZE as i32 {
-                        continue;
-                    }
-                    for sprite_x in 0..self.w {
-                        let screen_x = screen_x0 + sprite_x;
-                        if screen_x < 0 || screen_x >= wasm4::SCREEN_SIZE as i32 {
-                            continue;
-                        }
-                        set_pixel(
-                            framebuffer,
-                            wasm4::SCREEN_SIZE,
-                            2,
-                            true,
-                            screen_x as u32,
-                            screen_y as u32,
-                            fill,
-                        );
-                    }
-                }
+        for sprite_y in 0..self.h {
+            let screen_y = screen_y0 + sprite_y;
+            if screen_y < 0 || screen_y >= wasm4::SCREEN_SIZE as i32 {
+                continue;
             }
-            _ => todo!(),
+            for sprite_x in 0..self.w {
+                let screen_x = screen_x0 + sprite_x;
+                if screen_x < 0 || screen_x >= wasm4::SCREEN_SIZE as i32 {
+                    continue;
+                }
+                let alpha = get_pixel(
+                    self.alpha,
+                    self.w as u32,
+                    1,
+                    false,
+                    sprite_x as u32,
+                    sprite_y as u32,
+                );
+                if alpha < 1 {
+                    continue;
+                }
+                let luma = get_pixel(
+                    self.luma,
+                    self.w as u32,
+                    2,
+                    false,
+                    sprite_x as u32,
+                    sprite_y as u32,
+                );
+                set_pixel(
+                    framebuffer,
+                    wasm4::SCREEN_SIZE,
+                    2,
+                    true,
+                    screen_x as u32,
+                    screen_y as u32,
+                    luma,
+                );
+            }
         }
     }
 }

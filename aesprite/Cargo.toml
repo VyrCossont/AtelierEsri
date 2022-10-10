@@ -7,3 +7,6 @@ repository = "https://github.com/VyrCossont/AtelierEsri"
 license = "MIT"
 
 [dependencies]
+
+[features]
+std = []

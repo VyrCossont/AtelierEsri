@@ -1,10 +1,11 @@
 use crate::gfx::Sprite;
-use aesprite::{Unisprite, UnispriteData};
+use aesprite::Unisprite;
 
-const UNISPRITE: &Unisprite = &Unisprite {
+const UNISPRITE: &Unisprite<&[u8]> = &Unisprite {
     w: 16,
     h: 16,
-    data: UnispriteData::L0 { fill: 2 },
+    luma: &[],
+    alpha: &[],
 };
 
 pub fn init() {}
