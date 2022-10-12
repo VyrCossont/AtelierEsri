@@ -148,20 +148,24 @@ fn reverse_fields(bit_depth: u32, swizzle: bool, byte: u8) -> u8 {
         return byte;
     }
 
-    if bit_depth == 2 {
-        ((byte & 0b11) << 6)
-            | ((byte & 0b11_00) << 2)
-            | ((byte & 0b11_00_00) >> 2)
-            | ((byte & 0b11_00_00_00) >> 6)
-    } else {
-        ((byte & 0b1) << 7)
-            | ((byte & 0b10) << 5)
-            | ((byte & 0b100) << 3)
-            | ((byte & 0b1000) << 1)
-            | ((byte & 0b10000) >> 1)
-            | ((byte & 0b100000) >> 3)
-            | ((byte & 0b1000000) >> 5)
-            | ((byte & 0b10000000) >> 7)
+    match bit_depth {
+        2 => {
+            ((byte & 0b11) << 6)
+                | ((byte & 0b11_00) << 2)
+                | ((byte & 0b11_00_00) >> 2)
+                | ((byte & 0b11_00_00_00) >> 6)
+        }
+        1 => {
+            ((byte & 0b1) << 7)
+                | ((byte & 0b10) << 5)
+                | ((byte & 0b100) << 3)
+                | ((byte & 0b1000) << 1)
+                | ((byte & 0b10000) >> 1)
+                | ((byte & 0b100000) >> 3)
+                | ((byte & 0b1000000) >> 5)
+                | ((byte & 0b10000000) >> 7)
+        }
+        _ => panic!("Unimplemented bit depth for reverse_fields"),
     }
 }
 
@@ -185,7 +189,7 @@ fn set_pixel(data: &mut [u8], w: u32, bit_depth: u32, swizzle: bool, x: u32, y: 
     let mut byte = data[byte_offset];
     byte = reverse_fields(bit_depth, swizzle, byte);
     // Clear previous value in that field.
-    byte &= (!mask) << shift;
+    byte &= !(mask << shift);
     // Replace it with new value.
     byte |= (pixel & mask) << shift;
     byte = reverse_fields(bit_depth, swizzle, byte);
