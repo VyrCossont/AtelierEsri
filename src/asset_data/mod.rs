@@ -7,3 +7,4 @@ include!(concat!(env!("OUT_DIR"), "/assets.rs"));
 pub mod cursor;
 pub mod element;
 pub mod item;
+pub mod item_unisprite;

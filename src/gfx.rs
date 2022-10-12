@@ -1,4 +1,5 @@
 use crate::wasm4;
+use crate::wasm4::DRAW_COLORS;
 use aesprite::{Unisprite, UnispriteData};
 use std::cmp::{max, min};
 use std::f32::consts::PI;
@@ -126,7 +127,9 @@ impl Sprite for Unisprite<&[u8]> {
                     true,
                     screen_x as u32,
                     screen_y as u32,
-                    luma,
+                    // Invert color to match WASM-4's backwards default palette
+                    // TODO: set things up so we don't have to do this
+                    (4 - 1) - luma,
                 );
             }
         }

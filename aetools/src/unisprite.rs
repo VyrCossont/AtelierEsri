@@ -38,11 +38,6 @@ fn encode_image(image: &GrayAlphaImage) -> Unisprite<Vec<u8>> {
 pub fn encode(input_path: &Path, output_path: &Path) -> anyhow::Result<()> {
     let input_image = image::open(input_path)?.to_luma_alpha8();
     let output_image = encode_image(&input_image);
-    let name = output_path
-        .file_stem()
-        .ok_or(anyhow::anyhow!("Couldn't get stem from {:?}", output_path))?
-        .to_string_lossy()
-        .to_uppercase();
     let output_src = format!(
         "Unisprite{{ w: {w}, h: {h}, luma: &{luma:#?}, alpha: &{alpha:#?}, }};\n",
         w = output_image.w,
