@@ -6,7 +6,8 @@ pub fn init() {}
 
 /// Returns whether we should keep running the intro.
 pub fn update() -> bool {
-    AXE.draw(80, 80);
+    // Test scaling
+    AXE.draw2x(80, 80);
 
     // Test transparency
     unsafe { *wasm4::DRAW_COLORS = 0x0022 };

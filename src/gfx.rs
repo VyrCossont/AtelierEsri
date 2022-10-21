@@ -1,6 +1,5 @@
 use crate::wasm4;
-use crate::wasm4::DRAW_COLORS;
-use aesprite::{Unisprite, UnispriteData};
+use aesprite::Unisprite;
 use std::cmp::{max, min};
 use std::f32::consts::PI;
 use vector2d::Vector2D;
@@ -65,23 +64,42 @@ impl Lo5SplitSprite<'_> {
     //  Try using a color + mask representation instead.
     pub fn blit2x(&self, x: i32, y: i32) {
         unsafe {
-            scale2x(self.lo4, self.w, self.h, 2, SCALE_BUFFER);
+            scale2x(self.lo4, self.w, self.h, 2, LUMA_SCALE_BUFFER);
             *wasm4::DRAW_COLORS = 0x2340;
-            wasm4::blit(SCALE_BUFFER, x, y, self.w * 2, self.h * 2, wasm4::BLIT_2BPP);
-            scale2x(self.hi2, self.w, self.h, 1, SCALE_BUFFER);
+            wasm4::blit(
+                LUMA_SCALE_BUFFER,
+                x,
+                y,
+                self.w * 2,
+                self.h * 2,
+                wasm4::BLIT_2BPP,
+            );
+            scale2x(self.hi2, self.w, self.h, 1, ALPHA_SCALE_BUFFER);
             *wasm4::DRAW_COLORS = 0x0010;
-            wasm4::blit(SCALE_BUFFER, x, y, self.w * 2, self.h * 2, wasm4::BLIT_1BPP);
+            wasm4::blit(
+                ALPHA_SCALE_BUFFER,
+                x,
+                y,
+                self.w * 2,
+                self.h * 2,
+                wasm4::BLIT_1BPP,
+            );
         }
     }
 }
 
 pub trait Sprite {
     fn draw(&self, x: i32, y: i32);
+    fn draw2x(&self, x: i32, y: i32);
 }
 
 impl Sprite for Lo5SplitSprite<'_> {
     fn draw(&self, x: i32, y: i32) {
         self.blit(x, y, 0);
+    }
+
+    fn draw2x(&self, x: i32, y: i32) {
+        self.blit2x(x, y);
     }
 }
 
@@ -134,13 +152,41 @@ impl Sprite for Unisprite<&[u8]> {
             }
         }
     }
+
+    fn draw2x(&self, x: i32, y: i32) {
+        unsafe {
+            scale2x(
+                self.luma,
+                self.w as u32,
+                self.h as u32,
+                2,
+                LUMA_SCALE_BUFFER,
+            );
+            LUMA_SCALE_BUFFER.fill(0b10101010);
+            scale2x(
+                self.alpha,
+                self.w as u32,
+                self.h as u32,
+                1,
+                ALPHA_SCALE_BUFFER,
+            );
+        }
+        let temp_2x = Unisprite {
+            w: self.w * 2,
+            h: self.h * 2,
+            luma: unsafe { &*LUMA_SCALE_BUFFER },
+            alpha: unsafe { &*ALPHA_SCALE_BUFFER },
+        };
+        temp_2x.draw(x, y);
+    }
 }
 
 // endregion split sprites
 
 // region sprite scaling
 
-static mut SCALE_BUFFER: &mut [u8] = &mut [0; (64 * 3 * 64 * 3) / 4];
+static mut LUMA_SCALE_BUFFER: &mut [u8] = &mut [0; (64 * 3 * 64 * 3) / 4];
+static mut ALPHA_SCALE_BUFFER: &mut [u8] = &mut [0; (64 * 3 * 64 * 3) / 8];
 
 // TODO: this isn't necessary if assets are stored/unpacked pre-swizzled
 fn reverse_fields(bit_depth: u32, swizzle: bool, byte: u8) -> u8 {
