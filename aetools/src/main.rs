@@ -3,6 +3,7 @@ mod image2bit;
 mod implicit_tree;
 mod items;
 mod lo5;
+mod mac_assets;
 mod palettes;
 mod pokepak;
 mod tileshred;
@@ -98,6 +99,15 @@ enum Commands {
         #[clap(value_parser)]
         output: PathBuf,
     },
+    /// Generate Mac header and resource file for assets.
+    MacAssets {
+        /// Input assets directory.
+        #[clap(value_parser)]
+        input: PathBuf,
+        /// Output assets build directory.
+        #[clap(value_parser)]
+        output: PathBuf,
+    },
 }
 
 fn main() -> anyhow::Result<()> {
@@ -124,6 +134,9 @@ fn main() -> anyhow::Result<()> {
         } => tileshred::convert(tile_width, tile_height, input.as_path(), output.as_path())?,
         Commands::ItemsSchema { output } => items::schema(output.as_path())?,
         Commands::ItemsCode { input, output } => items::code(input.as_path(), output.as_path())?,
+        Commands::MacAssets { input, output } => {
+            mac_assets::generate(input.as_path(), output.as_path())?
+        }
     }
     Ok(())
 }
