@@ -4,9 +4,11 @@ project(AtelierEsri)
 set(CMAKE_CXX_STANDARD 17)
 
 add_application(AtelierEsri
-    # CONSOLE
-    main.cpp
-    AtelierEsri.r
+        # CONSOLE
+        main.cpp
+        AppResources.r
+        App.cpp
+        Alert.cpp
 )
 
 # make the result as small as possible
@@ -14,8 +16,8 @@ add_application(AtelierEsri
 # and by removing macsbug function names on 68K
 # (don't do this when debugging...)
 set_target_properties(AtelierEsri PROPERTIES COMPILE_OPTIONS -ffunction-sections)
-if(CMAKE_SYSTEM_NAME MATCHES Retro68)
+if (CMAKE_SYSTEM_NAME MATCHES Retro68)
     set_target_properties(AtelierEsri PROPERTIES LINK_FLAGS "-Wl,-gc-sections -Wl,--mac-strip-macsbug")
-else()
+else ()
     set_target_properties(AtelierEsri PROPERTIES LINK_FLAGS "-Wl,-gc-sections")
-endif()
+endif ()

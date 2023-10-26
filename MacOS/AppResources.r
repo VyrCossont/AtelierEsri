@@ -1,6 +1,10 @@
+/** Manually managed resources (as opposed to game assets). */
+
 #include "Dialogs.r"
 
-resource 'ALRT' (128, purgeable) {
+#include "AppResources.h"
+
+resource 'ALRT' (helloALRTResourceID, purgeable) {
 	{50, 30, 170, 410},
 	128,
 	{	/* array: 4 elements */
@@ -16,7 +20,7 @@ resource 'ALRT' (128, purgeable) {
 	alertPositionMainScreen
 };
 
-resource 'DITL' (128, purgeable) {
+resource 'DITL' (helloDITLResourceID, purgeable) {
 	{	/* array DITLarray: 2 elements */
 		/* [1] */
 		{80, 290, 100, 358},
