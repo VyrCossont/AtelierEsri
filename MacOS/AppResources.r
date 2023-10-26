@@ -1,6 +1,7 @@
 /** Manually managed resources (as opposed to game assets). */
 
 #include "Dialogs.r"
+#include "MacWindows.r"
 
 #include "AppResources.h"
 
@@ -35,4 +36,14 @@ resource 'DITL' (helloDITLResourceID, purgeable) {
 			"Hello World, this is Retro68!"
 		}
 	}
+};
+
+resource 'WIND' (gameWINDResourceID, "game window", purgeable) {
+    {43, 6, 203, 166},
+    noGrowDocProc,
+    visible,
+    noGoAway,
+    0x0, /* refCon */
+    "Atelier Esri",
+    noAutoCenter
 };

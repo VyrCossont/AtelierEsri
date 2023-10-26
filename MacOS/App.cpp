@@ -12,7 +12,9 @@
 
 namespace AtelierEsri {
 
-App::App() : helloAlert(helloALRTResourceID) { Initialize(); }
+App::App() : helloAlert(helloALRTResourceID), gameWindow(gameWINDResourceID) {
+  Initialize();
+}
 
 void App::Initialize() {
 #if !TARGET_API_MAC_CARBON
@@ -32,7 +34,7 @@ void App::Run() {
   EventRecord event;
   /// Ticks (approx. 1/60th of a second)
   UInt32 sleepTime;
-  bool alertShown = false;
+  int demoState = 0;
 
   // Sleep less than the text caret blinking interval so we can animate it
   // properly. (PSKM p. 165)
@@ -45,11 +47,19 @@ void App::Run() {
     WaitNextEvent(everyEvent, &event, sleepTime, nil);
     switch (event.what) {
     case keyDown:
-      if (alertShown) {
-        return;
-      } else {
-        alertShown = true;
+      switch (demoState) {
+      case 0:
         helloAlert.Show();
+        demoState++;
+        break;
+
+      case 1:
+        gameWindow.Present();
+        demoState++;
+        break;
+
+      default:
+        return;
       }
       break;
 

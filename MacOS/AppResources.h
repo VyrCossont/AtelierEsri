@@ -7,4 +7,6 @@
 #define helloALRTResourceID 128
 #define helloDITLResourceID helloALRTResourceID
 
+#define gameWINDResourceID 128
+
 #endif /* ATELIERESRI_APPRESOURCES_H */

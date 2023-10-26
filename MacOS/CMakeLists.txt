@@ -9,6 +9,7 @@ add_application(AtelierEsri
         AppResources.r
         App.cpp
         Alert.cpp
+        Window.cpp
 )
 
 # make the result as small as possible

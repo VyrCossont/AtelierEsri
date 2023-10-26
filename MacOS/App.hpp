@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Alert.hpp"
+#include "Window.hpp"
 
 namespace AtelierEsri {
 
@@ -12,6 +13,7 @@ public:
 
 private:
   AtelierEsri::Alert helloAlert;
+  AtelierEsri::Window gameWindow;
   void Initialize();
 };
 
