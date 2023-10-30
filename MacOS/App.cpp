@@ -35,7 +35,7 @@ void App::Initialize() {
   FlushEvents(everyEvent, 0);
 }
 
-void Draw(GWorld &&gWorld) {
+void Draw(GWorld &gWorld) {
   Result<GWorldLockPixelsGuard, OSErr> lockResult = gWorld.LockPixels();
   if (lockResult.is_err()) {
     SysError(lockResult.err_value());
@@ -58,13 +58,13 @@ void Draw(GWorld &&gWorld) {
   FillRect(&rect, &pattern);
 }
 
-void Copy(GWorld &&gWorld, Window &window) {
+void Copy(GWorld &gWorld, Window &window) {
   Result<GWorldLockPixelsGuard, OSErr> lockResult = gWorld.LockPixels();
   if (lockResult.is_err()) {
     SysError(__LINE__);
     ExitToShell();
   }
-  GWorldLockPixelsGuard lockPixelsGuard = lockResult.ok_value();
+  GWorldLockPixelsGuard lockPixelsGuard = lockResult.take_ok_value();
 
   Rect gWorldRect = gWorld.Bounds();
   const BitMap *gWorldBits = lockPixelsGuard.Bits();
@@ -102,7 +102,7 @@ void App::Run() {
   /// Ticks (approx. 1/60th of a second)
   UInt32 sleepTime;
   int demoState = 0;
-  Result<GWorld, OSErr> gWorldResult = Err((OSErr)noErr);
+  std::optional<GWorld> offscreenGWorld;
 
   // Sleep less than the text caret blinking interval so we can animate it
   // properly. (PSKM p. 165)
@@ -129,22 +129,27 @@ void App::Run() {
         demoState++;
         break;
 
-      case 2:
-        gWorldResult = gameWindow.FastGWorld();
+      case 2: {
+        Result<GWorld, OSErr> gWorldResult = gameWindow.FastGWorld();
+        Debug::Printfln("Past FastGWorld call");
         if (gWorldResult.is_err()) {
-          SysError(gWorldResult.err_value());
+          SysError(gWorldResult.take_err_value());
           ExitToShell();
         }
+        Debug::Printfln("Past gWorldResult error handling");
+        offscreenGWorld = gWorldResult.take_ok_value();
+        Debug::Printfln("Past gWorldResult take_ok_value call");
+      }
         demoState++;
         break;
 
       case 3:
-        Draw(gWorldResult.take_ok_value());
+        Draw(offscreenGWorld.value());
         demoState++;
         break;
 
       case 4:
-        Copy(gWorldResult.take_ok_value(), gameWindow);
+        Copy(offscreenGWorld.value(), gameWindow);
         demoState++;
         break;
 

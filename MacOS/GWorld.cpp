@@ -6,14 +6,21 @@
 
 namespace AtelierEsri {
 
-GWorld::GWorld(GWorldPtr ptr) {
-  Debug::Printfln("Constructing GWorld with ptr %#08x", ptr);
-  this->ptr = ptr;
+GWorld::GWorld(GWorld &&src) noexcept {
+  ptr = src.ptr;
+  src.ptr = nullptr;
+}
+
+GWorld &GWorld::operator=(GWorld &&src) noexcept {
+  ptr = src.ptr;
+  src.ptr = nullptr;
+  return *this;
 }
 
 GWorld::~GWorld() {
-  Debug::Printfln("Destroying GWorld with ptr %#08x", ptr);
-  DisposeGWorld(ptr);
+  if (ptr) {
+    DisposeGWorld(ptr);
+  }
 }
 
 Result<GWorldLockPixelsGuard, OSErr> GWorld::LockPixels() {

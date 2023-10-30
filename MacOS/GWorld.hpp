@@ -13,7 +13,11 @@ class GWorldActiveGuard;
 
 class GWorld {
 public:
-  explicit GWorld(GWorldPtr ptr);
+  explicit GWorld(GWorldPtr ptr) : ptr(ptr){};
+  GWorld(GWorld &&src) noexcept;
+  GWorld &operator=(GWorld &&src) noexcept;
+  GWorld(const GWorld &src) = delete;
+  GWorld &operator=(const GWorld &src) = delete;
   ~GWorld();
   Result<GWorldLockPixelsGuard, OSErr> LockPixels();
   GWorldActiveGuard MakeActive();
