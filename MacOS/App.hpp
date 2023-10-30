@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Alert.hpp"
+#include "Result.hpp"
 #include "Window.hpp"
 
 namespace AtelierEsri {

@@ -1,0 +1,58 @@
+/// Copied from https://yegor.pomortsev.com/post/result-type/
+
+#pragma once
+
+#include <variant>
+
+namespace AtelierEsri {
+template <typename T> class Ok {
+public:
+  explicit constexpr Ok(T value) : value(std::move(value)) {}
+
+  constexpr T &&take_value() { return std::move(value); }
+
+  T value;
+};
+
+template <typename T> class Err {
+public:
+  explicit constexpr Err(T value) : value(std::move(value)) {}
+
+  constexpr T &&take_value() { return std::move(value); }
+
+  T value;
+};
+
+template <typename OkT, typename ErrT> class Result {
+public:
+  using VariantT = std::variant<Ok<OkT>, Err<ErrT>>;
+
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "google-explicit-constructor"
+  constexpr Result(Ok<OkT> value) : variant(std::move(value)) {}
+  constexpr Result(Err<ErrT> value) : variant(std::move(value)) {}
+#pragma clang diagnostic pop
+
+  [[nodiscard]] constexpr bool is_ok() const {
+    return std::holds_alternative<Ok<OkT>>(variant);
+  }
+  [[nodiscard]] constexpr bool is_err() const {
+    return std::holds_alternative<Err<ErrT>>(variant);
+  }
+
+  constexpr OkT ok_value() const { return std::get<Ok<OkT>>(variant).value; }
+  constexpr ErrT err_value() const {
+    return std::get<Err<ErrT>>(variant).value;
+  }
+
+  constexpr OkT &&take_ok_value() {
+    return std::get<Ok<OkT>>(variant).take_value();
+  }
+  constexpr ErrT &&take_err_value() {
+    return std::get<Err<ErrT>>(variant).take_value();
+  }
+
+  VariantT variant;
+};
+
+} // namespace AtelierEsri

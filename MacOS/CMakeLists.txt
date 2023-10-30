@@ -9,6 +9,9 @@ add_application(AtelierEsri
         AppResources.r
         App.cpp
         Alert.cpp
+        Debug.cpp
+        Env.cpp
+        GWorld.cpp
         Window.cpp
 )
 
