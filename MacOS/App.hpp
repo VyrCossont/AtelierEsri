@@ -10,7 +10,7 @@ namespace AtelierEsri {
 class App {
 public:
   App();
-  void Run();
+  [[noreturn]] void Run();
 
 private:
   AtelierEsri::Alert helloAlert;

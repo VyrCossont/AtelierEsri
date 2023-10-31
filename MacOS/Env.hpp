@@ -11,6 +11,7 @@ namespace AtelierEsri {
 
 class Env {
 public:
+  static uint64_t Microseconds() noexcept;
   static Result<bool, OSErr> HasColorQuickDraw();
 
 private:
