@@ -8,71 +8,58 @@
 
 namespace AtelierEsri {
 
-Window::Window(SInt16 resourceID) {
-  this->resourceID = resourceID;
-  this->windowRef = nil;
-}
+Window::Window(int16_t resourceID) : resourceID(resourceID) {}
 
 Window::~Window() { Dismiss(); }
 
-const WindowRef Window::inFrontOfAllOtherWindows = (WindowRef)-1;
+const WindowRef Window::allOtherWindows = (WindowRef)-1;
 
-Result<std::monostate, OSErr> Window::Present() {
-  Result<bool, OSErr> result = Env::HasColorQuickDraw();
-  if (result.is_err()) {
-    return Err(result.err_value());
-  }
-  bool hasColorQuickDraw = result.ok_value();
+Result<std::monostate, Error> Window::Present(WindowRef inFrontOf) {
+  GUARD_LET_TRY(bool, hasColorQuickDraw, Env::HasColorQuickDraw());
 
   if (hasColorQuickDraw) {
-    windowRef = GetNewCWindow(resourceID, nil, inFrontOfAllOtherWindows);
+    windowRef = GetNewCWindow(resourceID, nullptr, inFrontOf);
   } else {
-    windowRef = GetNewWindow(resourceID, nil, inFrontOfAllOtherWindows);
+    windowRef = GetNewWindow(resourceID, nullptr, inFrontOf);
   }
 
   return Ok(std::monostate());
 }
 
 void Window::Dismiss() {
-  if (windowRef != nil) {
+  if (!windowRef) {
     DisposeWindow(windowRef);
   }
 }
 
-Result<GWorld, OSErr> Window::FastGWorld() {
-  if (windowRef == nil) {
-    return Err((OSErr)__LINE__);
+Result<GWorld> Window::FastGWorld() {
+  REQUIRE_NOT_NULL(windowRef);
+
+  // Create a GWorld matching the window device, color table, alignment, etc.
+  Rect portRect;
+  GetWindowPortBounds(windowRef, &portRect);
+  GWorldPtr gWorldPtr;
+  OS_CHECKED(NewGWorld(&gWorldPtr, 0, &portRect, nullptr, nullptr, 0),
+             "Couldn't create offscreen GWorld");
+  if (!gWorldPtr) {
+    BAIL("Couldn't create offscreen GWorld: gWorldPtr is null");
   }
 
-  Rect portRect;
-  GWorldPtr gWorldPtr;
-  // Creare a GWorld matching the window device, color table, alignment, etc.
-  GetWindowPortBounds(windowRef, &portRect);
-  OSErr error = NewGWorld(&gWorldPtr, 0, &portRect, nil, nil, 0);
-  if (error != noErr) {
-    return Err(error);
-  }
-  if (gWorldPtr == nil) {
-    return Err((OSErr)__LINE__);
-  }
   return Ok(GWorld(gWorldPtr));
 }
 
-Result<Rect, OSErr> Window::PortBounds() {
-  if (windowRef == nil) {
-    return Err((OSErr)__LINE__);
-  }
+Result<Rect> Window::PortBounds() {
+  REQUIRE_NOT_NULL(windowRef);
 
   Rect bounds;
   GetWindowPortBounds(windowRef, &bounds);
+
   return Ok(bounds);
 }
 
 // TODO: what happens if this is a non-color window?
-Result<CGrafPtr, OSErr> Window::Port() {
-  if (windowRef == nil) {
-    return Err((OSErr)__LINE__);
-  }
+Result<CGrafPtr> Window::Port() {
+  REQUIRE_NOT_NULL(windowRef);
 
   return Ok(GetWindowPort(windowRef));
 }

@@ -5,13 +5,12 @@
 
 #include <MacTypes.h>
 
-#include "Result.hpp"
-
 namespace AtelierEsri {
 
 class Error {
 public:
   /// `osErr` may be 0/`noErr` for non-OS errors.
+  /// FUTURE: If we need other error domains, we can make this a variant.
   Error(const char *message, OSErr osErr, const char *file, uint32_t line,
         const char *function);
 
@@ -27,23 +26,16 @@ private:
   uint32_t line;
 };
 
+} // namespace AtelierEsri
+
+#pragma region Constructor macros
+
+/// Construct an error with a message and source location.
 #define ERROR(message)                                                         \
   ::AtelierEsri::Error((message), noErr, __FILE__, __LINE__, __func__)
 
+/// Construct an error with a message, OS error code, and source location.
 #define OS_ERROR(message, osErr)                                               \
-  ::AtelierEsri::Exception((message), (osErr), __FILE__, __LINE__, __func__)
+  ::AtelierEsri::Error((message), (osErr), __FILE__, __LINE__, __func__)
 
-#define BAIL(message) return ::AtelierEsri::Err(ERROR(message))
-
-#define OS_BAIL(message, osErr)                                                \
-  return ::AtelierEsri::Err(OS_ERROR(message, osErr))
-
-#define OS_CHECKED(expr, message)                                              \
-  {                                                                            \
-    OSErr osErr = (expr);                                                      \
-    if (osErr) {                                                               \
-      OS_BAIL(message, osErr);                                                 \
-    }                                                                          \
-  }
-
-} // namespace AtelierEsri
+#pragma endregion

@@ -2,9 +2,9 @@
 
 #include "Quickdraw.h"
 
-#include "Debug.hpp"
-
 namespace AtelierEsri {
+
+GWorld::GWorld(GWorldPtr ptr) noexcept : ptr(ptr) {}
 
 GWorld::GWorld(GWorld &&src) noexcept {
   ptr = src.ptr;
@@ -17,19 +17,21 @@ GWorld &GWorld::operator=(GWorld &&src) noexcept {
   return *this;
 }
 
-GWorld::~GWorld() {
+GWorld::~GWorld() noexcept {
   if (ptr) {
     DisposeGWorld(ptr);
   }
 }
 
-Result<GWorldLockPixelsGuard, OSErr> GWorld::LockPixels() {
+Result<GWorldLockPixelsGuard> GWorld::LockPixels() noexcept {
   return GWorldLockPixelsGuard::Construct(ptr);
 }
 
-GWorldActiveGuard GWorld::MakeActive() { return GWorldActiveGuard(ptr); }
+GWorldActiveGuard GWorld::MakeActive() noexcept {
+  return GWorldActiveGuard(ptr);
+}
 
-Rect GWorld::Bounds() {
+Rect GWorld::Bounds() noexcept {
 #if TARGET_API_MAC_CARBON
   Rect bounds;
   GetPortBounds(ptr, &bounds);
@@ -39,31 +41,26 @@ Rect GWorld::Bounds() {
 #endif
 }
 
-Result<GWorldLockPixelsGuard, OSErr>
-GWorldLockPixelsGuard::Construct(GWorldPtr ptr) {
-  Debug::Printfln("GWorld ptr = %#08x", ptr);
-
+Result<GWorldLockPixelsGuard>
+GWorldLockPixelsGuard::Construct(GWorldPtr ptr) noexcept {
   PixMapHandle hdl = GetGWorldPixMap(ptr);
+  REQUIRE_NOT_NULL(hdl);
 
-  Debug::Printfln("GWorld hdl = %#08x", hdl);
-  if (hdl == nil) {
-    return Err((OSErr)__LINE__);
-  }
   bool locked = LockPixels(hdl);
   if (!locked) {
-    return Err((OSErr)__LINE__);
+    BAIL("Couldn't lock pixels for offscreen GWorld");
   }
+
   return Ok(GWorldLockPixelsGuard(ptr, hdl));
 }
 
-GWorldLockPixelsGuard::GWorldLockPixelsGuard(GWorldPtr ptr, PixMapHandle hdl) {
-  this->ptr = ptr;
-  this->hdl = hdl;
-}
+GWorldLockPixelsGuard::GWorldLockPixelsGuard(GWorldPtr ptr,
+                                             PixMapHandle hdl) noexcept
+    : ptr(ptr), hdl(hdl) {}
 
-GWorldLockPixelsGuard::~GWorldLockPixelsGuard() { UnlockPixels(hdl); }
+GWorldLockPixelsGuard::~GWorldLockPixelsGuard() noexcept { UnlockPixels(hdl); }
 
-const BitMap *GWorldLockPixelsGuard::Bits() {
+const BitMap *GWorldLockPixelsGuard::Bits() noexcept {
 #if TARGET_API_MAC_CARBON
   return GetPortBitMapForCopyBits(ptr);
 #else
@@ -71,12 +68,14 @@ const BitMap *GWorldLockPixelsGuard::Bits() {
 #endif
 }
 
-GWorldActiveGuard::GWorldActiveGuard(GWorldPtr ptr) {
+GWorldActiveGuard::GWorldActiveGuard(GWorldPtr ptr) noexcept {
   GetGWorld(&this->prevPort, &this->prevDevice);
   GDHandle device = GetGWorldDevice(ptr);
   SetGWorld(ptr, device);
 }
 
-GWorldActiveGuard::~GWorldActiveGuard() { SetGWorld(prevPort, prevDevice); }
+GWorldActiveGuard::~GWorldActiveGuard() noexcept {
+  SetGWorld(prevPort, prevDevice);
+}
 
 } // namespace AtelierEsri

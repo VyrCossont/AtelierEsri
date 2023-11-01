@@ -5,6 +5,7 @@
 #include <MacTypes.h>
 #include <OSUtils.h>
 
+#include "Error.hpp"
 #include "Result.hpp"
 
 namespace AtelierEsri {
@@ -12,7 +13,7 @@ namespace AtelierEsri {
 class Env {
 public:
   static uint64_t Microseconds() noexcept;
-  static Result<bool, OSErr> HasColorQuickDraw();
+  static Result<bool> HasColorQuickDraw();
 
 private:
 #if !TARGET_API_MAC_CARBON

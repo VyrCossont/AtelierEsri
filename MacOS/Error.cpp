@@ -17,18 +17,19 @@ std::string Error::Explanation() const {
   }
 }
 
+#ifdef _WIN32
+static const char separator = '\\';
+#else
+static const char separator = '/';
+#endif
+
 std::string Error::Location() const {
   char const *filename = file;
   if (file) {
     char const *c = file;
     while (*c) {
       // Take the last part of the path, assuming host system separators.
-      // TODO: (Vyr) Can we do this at compile time?
-#ifdef _WIN32
-      const char separator = '\\';
-#else
-      const char separator = '/';
-#endif
+      // TODO: (Vyr) Can we extract the filename at compile time?
       if (*c == separator && *(c + 1)) {
         filename = c + 1;
       }

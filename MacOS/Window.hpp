@@ -1,6 +1,7 @@
 #include <MacTypes.h>
 #include <MacWindows.h>
 
+#include "Error.hpp"
 #include "GWorld.hpp"
 #include "Result.hpp"
 
@@ -8,19 +9,20 @@ namespace AtelierEsri {
 
 class Window {
 public:
-  explicit Window(SInt16 resourceID);
+  explicit Window(int16_t resourceID);
   ~Window();
-  static const WindowRef inFrontOfAllOtherWindows;
-  Result<std::monostate, OSErr> Present();
+  /// Valid only for Present(inFrontOf).
+  static const WindowRef allOtherWindows;
+  Result<std::monostate> Present(WindowRef inFrontOf = allOtherWindows);
   void Dismiss();
   /// Get a GWorld optimized for copy to this window.
-  Result<GWorld, OSErr> FastGWorld();
-  Result<Rect, OSErr> PortBounds();
-  Result<CGrafPtr, OSErr> Port();
+  Result<GWorld> FastGWorld();
+  Result<Rect> PortBounds();
+  Result<CGrafPtr> Port();
 
 private:
-  SInt16 resourceID;
-  WindowRef windowRef;
+  int16_t resourceID;
+  WindowRef windowRef = nullptr;
 };
 
 } // namespace AtelierEsri

@@ -10,7 +10,6 @@
 #include "AppResources.h"
 #include "Debug.hpp"
 #include "Env.hpp"
-#include "Error.hpp"
 #include "GWorld.hpp"
 #include "Game.hpp"
 #include "Result.hpp"
@@ -29,20 +28,15 @@ void App::Initialize() {
   InitWindows();
   InitMenus();
   TEInit();
-  InitDialogs(nil);
+  InitDialogs(nullptr);
 #endif
   InitCursor();
   // Flush any low-level events left over from other apps. (PSKM p. 167)
   FlushEvents(everyEvent, 0);
 }
 
-void Draw(GWorld &gWorld) {
-  Result<GWorldLockPixelsGuard, OSErr> lockResult = gWorld.LockPixels();
-  if (lockResult.is_err()) {
-    SysError(lockResult.err_value());
-    ExitToShell();
-  }
-  GWorldLockPixelsGuard lockPixelsGuard = lockResult.ok_value();
+Result<Unit> Draw(GWorld &gWorld) {
+  GUARD_LET_TRY(GWorldLockPixelsGuard, lockPixelsGuard, gWorld.LockPixels());
   GWorldActiveGuard activeGuard = gWorld.MakeActive();
 
   Rect rect = gWorld.Bounds();
@@ -57,32 +51,18 @@ void Draw(GWorld &gWorld) {
 #endif
 
   FillRect(&rect, &pattern);
+
+  return Ok(Unit());
 }
 
-void Copy(GWorld &gWorld, Window &window) {
-  Result<GWorldLockPixelsGuard, OSErr> lockResult = gWorld.LockPixels();
-  if (lockResult.is_err()) {
-    SysError(__LINE__);
-    ExitToShell();
-  }
-  GWorldLockPixelsGuard lockPixelsGuard = lockResult.take_ok_value();
+Result<Unit> Copy(GWorld &gWorld, Window &window) {
+  GUARD_LET_TRY(GWorldLockPixelsGuard, lockPixelsGuard, gWorld.LockPixels());
 
   Rect gWorldRect = gWorld.Bounds();
   const BitMap *gWorldBits = lockPixelsGuard.Bits();
 
-  Result<Rect, OSErr> windowRectResult = window.PortBounds();
-  if (windowRectResult.is_err()) {
-    SysError(__LINE__);
-    ExitToShell();
-  }
-  Rect windowRect = windowRectResult.ok_value();
-
-  Result<CGrafPtr, OSErr> windowPortResult = window.Port();
-  if (windowPortResult.is_err()) {
-    SysError(__LINE__);
-    ExitToShell();
-  }
-  CGrafPtr windowPort = windowPortResult.ok_value();
+  GUARD_LET_TRY(Rect, windowRect, window.PortBounds());
+  GUARD_LET_TRY(CGrafPtr, windowPort, window.Port());
 
 #if TARGET_API_MAC_CARBON
   const BitMap *windowBits = GetPortBitMapForCopyBits(windowPort);
@@ -90,12 +70,11 @@ void Copy(GWorld &gWorld, Window &window) {
   const BitMap *windowBits = &((GrafPtr)windowPort)->portBits;
 #endif
 
-  CopyBits(gWorldBits, windowBits, &gWorldRect, &windowRect, srcCopy, nil);
-  OSErr qdError = QDError();
-  if (qdError != noErr) {
-    SysError(__LINE__);
-    ExitToShell();
-  }
+  QD_CHECKED(CopyBits(gWorldBits, windowBits, &gWorldRect, &windowRect, srcCopy,
+                      nullptr),
+             "Couldn't copy from offscreen GWorld");
+
+  return Ok(Unit());
 }
 
 OSErr App::Run() {
@@ -115,14 +94,14 @@ Result<std::monostate, Error> App::EventLoop() {
   /// Ticks (approx. 1/60th of a second)
   uint32_t sleepTimeTicks = 1;
   uint64_t frameDurationUsec = sleepTimeTicks * 1000 * 1000 / 60;
-  int demoState = 0;
+  uint16_t demoState = 0;
   std::optional<GWorld> offscreenGWorld;
   Game game;
 
   uint64_t lastFrameTimestampUsec = Env::Microseconds();
   while (true) {
     // Don't set a mouse region so we don't get mouse-moved events for now.
-    WaitNextEvent(everyEvent, &event, sleepTimeTicks, nil);
+    WaitNextEvent(everyEvent, &event, sleepTimeTicks, nullptr);
 
     switch (event.what) {
     case keyDown:
@@ -131,23 +110,19 @@ Result<std::monostate, Error> App::EventLoop() {
         gameWindow.Present();
         break;
 
-      case 1:
-        BAIL("Just keeping things spicy");
-
-      case 2: {
-        Result<GWorld, OSErr> gWorldResult = gameWindow.FastGWorld();
+      case 1: {
+        Result<GWorld> gWorldResult = gameWindow.FastGWorld();
         if (gWorldResult.is_err()) {
-          SysError(gWorldResult.take_err_value());
-          ExitToShell();
+          return Err(gWorldResult.take_err_value());
         }
         offscreenGWorld = gWorldResult.take_ok_value();
       } break;
 
-      case 3:
+      case 2:
         Draw(offscreenGWorld.value());
         break;
 
-      case 4:
+      case 3:
         Copy(offscreenGWorld.value(), gameWindow);
         break;
 
