@@ -10,6 +10,9 @@
 
 namespace AtelierEsri {
 
+// We don't use result types in this file because debug logging is best effort
+// and we'll almost always discard the result.
+
 OSErr Debug::Printfln(const char *fmt, ...) {
   /// Original format string with a Mac newline on the end.
   char fmtBuffer[256];
@@ -23,23 +26,23 @@ OSErr Debug::Printfln(const char *fmt, ...) {
 
   size_t num_bytes = strnlen(buffer, sizeof buffer);
 
-  OSErr error;
+  OSErr osErr;
 
-  error = FilePrint(num_bytes, buffer);
-  if (error != noErr) {
-    return error;
+  osErr = FilePrint(num_bytes, buffer);
+  if (osErr) {
+    return osErr;
   }
 
-  error = SerialPrint(num_bytes, buffer);
-  if (error != noErr) {
-    return error;
+  osErr = SerialPrint(num_bytes, buffer);
+  if (osErr) {
+    return osErr;
   }
 
   return noErr;
 }
 
 OSErr Debug::FilePrint(size_t num_bytes, const char *buffer) {
-  OSErr error;
+  OSErr osErr;
   long count;
 
 #pragma clang diagnostic push
@@ -49,47 +52,53 @@ OSErr Debug::FilePrint(size_t num_bytes, const char *buffer) {
 
   // Volume 0 and directory 0 default to the current working directory.
 
-  error = HCreate(0, 0, fileName, 'ttxt', 'TEXT');
-  if (error != noErr && error != dupFNErr) {
-    return error;
+  osErr = HCreate(0, 0, fileName, 'ttxt', 'TEXT');
+  if (osErr && osErr != dupFNErr) {
+    return osErr;
   }
 
   short fileRefNum;
-  error = HOpenDF(0, 0, fileName, fsWrPerm, &fileRefNum);
-  if (error != noErr) {
-    return error;
+  osErr = HOpenDF(0, 0, fileName, fsWrPerm, &fileRefNum);
+  if (osErr) {
+    return osErr;
   }
 
   // Seek to end.
-  error = SetFPos(fileRefNum, fsFromLEOF, 0);
-  if (error != noErr) {
+  osErr = SetFPos(fileRefNum, fsFromLEOF, 0);
+  if (osErr) {
     goto close;
   }
 
   count = (long)num_bytes;
-  error = FSWrite(fileRefNum, &count, buffer);
-  if (error != noErr) {
+  osErr = FSWrite(fileRefNum, &count, buffer);
+  if (osErr) {
     goto close;
   }
 
   FileParam fileParam;
   fileParam.ioFRefNum = fileRefNum;
-  error = PBFlushFile((ParmBlkPtr)&fileParam, false);
-  if (error != noErr) {
+  osErr = PBFlushFileSync((ParmBlkPtr)&fileParam);
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "ConstantConditionsOC"
+  if (osErr) {
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "UnreachableCode"
     goto close;
+#pragma clang diagnostic pop
   }
+#pragma clang diagnostic pop
 
 close:
   OSErr closeError = FSClose(fileRefNum);
-  if (error == noErr && closeError != noErr) {
+  if (osErr == noErr && closeError != noErr) {
     return closeError;
   }
 
-  return error;
+  return osErr;
 }
 
 OSErr Debug::SerialPrint(size_t num_bytes, const char *buffer) {
-  OSErr error;
+  OSErr osErr;
 
   // TODO: (Vyr) use Carbon equivalents of legacy serial API
 #if !TARGET_API_MAC_CARBON
@@ -102,13 +111,13 @@ OSErr Debug::SerialPrint(size_t num_bytes, const char *buffer) {
 #pragma clang diagnostic ignored "-Wunknown-escape-sequence"
   auto driverName = (ConstStr255Param) "\p:.AOut";
 #pragma clang diagnostic pop
-  error = MacOpenDriver(driverName, &serialPortRefNum);
-  if (error != noErr) {
-    return error;
+  osErr = MacOpenDriver(driverName, &serialPortRefNum);
+  if (osErr) {
+    return osErr;
   }
 
-  error = SerReset(serialPortRefNum, serConfig);
-  if (error != noErr) {
+  osErr = SerReset(serialPortRefNum, serConfig);
+  if (osErr) {
     goto close;
   }
 
@@ -119,19 +128,25 @@ OSErr Debug::SerialPrint(size_t num_bytes, const char *buffer) {
   ioParam.ioRefNum = serialPortRefNum;
   ioParam.ioBuffer = ioBuffer;
   ioParam.ioReqCount = (long)std::min(num_bytes, sizeof ioBuffer);
-  error = PBWrite((ParmBlkPtr)&ioParam, false);
-  if (error != noErr) {
+  osErr = PBWriteSync((ParmBlkPtr)&ioParam);
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "ConstantConditionsOC"
+  if (osErr) {
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "UnreachableCode"
     goto close;
+#pragma clang diagnostic pop
   }
+#pragma clang diagnostic pop
 
 close:
   OSErr closeError = MacCloseDriver(serialPortRefNum);
-  if (error == noErr && closeError != noErr) {
+  if (osErr == noErr && closeError != noErr) {
     return closeError;
   }
 #endif
 
-  return error;
+  return osErr;
 }
 
 } // namespace AtelierEsri

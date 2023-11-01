@@ -5,7 +5,7 @@
 
 #include "AppResources.h"
 
-resource 'ALRT' (helloALRTResourceID, purgeable) {
+resource 'ALRT' (errorALRTResourceID, "exception alert", purgeable) {
 	{50, 30, 170, 410},
 	128,
 	{	/* array: 4 elements */
@@ -21,7 +21,7 @@ resource 'ALRT' (helloALRTResourceID, purgeable) {
 	alertPositionMainScreen
 };
 
-resource 'DITL' (helloDITLResourceID, purgeable) {
+resource 'DITL' (errorDITLResourceID, "exception alert", purgeable) {
 	{	/* array DITLarray: 2 elements */
 		/* [1] */
 		{80, 290, 100, 358},
@@ -33,7 +33,7 @@ resource 'DITL' (helloDITLResourceID, purgeable) {
 		{16, 64, 66, 354},
 		StaticText {
 			disabled,
-			"Hello World, this is Retro68!"
+			"Fatal exception: ^0\rLocation: ^1"
 		}
 	}
 };

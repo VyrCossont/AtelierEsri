@@ -4,8 +4,8 @@
 #ifndef ATELIERESRI_APPRESOURCES_H
 #define ATELIERESRI_APPRESOURCES_H
 
-#define helloALRTResourceID 128
-#define helloDITLResourceID helloALRTResourceID
+#define errorALRTResourceID 128
+#define errorDITLResourceID errorALRTResourceID
 
 #define gameWINDResourceID 128
 

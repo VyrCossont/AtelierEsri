@@ -1,4 +1,3 @@
-#include <cstring>
 #include <optional>
 
 #include <Dialogs.h>
@@ -6,43 +5,22 @@
 #include <Fonts.h>
 #include <MacWindows.h>
 #include <Menus.h>
-#include <QuickDraw.h>
 #include <TextEdit.h>
 
 #include "AppResources.h"
 #include "Debug.hpp"
 #include "Env.hpp"
+#include "Error.hpp"
 #include "GWorld.hpp"
+#include "Game.hpp"
 #include "Result.hpp"
+#include "Strings.hpp"
 
 #include "App.hpp"
 
 namespace AtelierEsri {
 
-class Game {
-public:
-  void Update() {
-    Debug::Printfln("game.counter = %u", counter);
-    counter++;
-  }
-
-  void Draw() const {
-    uint16_t seconds = counter / 60;
-    uint16_t ticks = counter % 60;
-    char buffer[256];
-    snprintf(buffer, sizeof buffer, "%u:%02u", seconds, ticks);
-    auto num_bytes = static_cast<int16_t>(strnlen(buffer, sizeof buffer));
-    MoveTo(20, 20);
-    DrawText(buffer, 0, num_bytes);
-  }
-
-private:
-  uint16_t counter = 0;
-};
-
-App::App() : helloAlert(helloALRTResourceID), gameWindow(gameWINDResourceID) {
-  Initialize();
-}
+App::App() : gameWindow(gameWINDResourceID) { Initialize(); }
 
 void App::Initialize() {
 #if !TARGET_API_MAC_CARBON
@@ -120,35 +98,41 @@ void Copy(GWorld &gWorld, Window &window) {
   }
 }
 
-void App::Run() {
+OSErr App::Run() {
+  auto result = EventLoop();
+  if (result.is_ok()) {
+    return noErr;
+  }
+
+  FatalError(result.err_value());
+
+  OSErr osErr = result.err_value().osErr;
+  return osErr ? osErr : appError;
+}
+
+Result<std::monostate, Error> App::EventLoop() {
   EventRecord event;
   /// Ticks (approx. 1/60th of a second)
-  uint32_t sleepTime = 1;
-  uint64_t frameDurationUsec = sleepTime * 1000 * 1000 / 60;
+  uint32_t sleepTimeTicks = 1;
+  uint64_t frameDurationUsec = sleepTimeTicks * 1000 * 1000 / 60;
   int demoState = 0;
   std::optional<GWorld> offscreenGWorld;
   Game game;
 
   uint64_t lastFrameTimestampUsec = Env::Microseconds();
-  Debug::Printfln("Starting event loop.");
   while (true) {
     // Don't set a mouse region so we don't get mouse-moved events for now.
-    WaitNextEvent(everyEvent, &event, sleepTime, nil);
+    WaitNextEvent(everyEvent, &event, sleepTimeTicks, nil);
 
     switch (event.what) {
     case keyDown:
-      Debug::Printfln("demoState = %#08x", demoState);
-
       switch (demoState) {
       case 0:
-        helloAlert.Show();
-        demoState++;
+        gameWindow.Present();
         break;
 
       case 1:
-        gameWindow.Present();
-        demoState++;
-        break;
+        BAIL("Just keeping things spicy");
 
       case 2: {
         Result<GWorld, OSErr> gWorldResult = gameWindow.FastGWorld();
@@ -157,24 +141,20 @@ void App::Run() {
           ExitToShell();
         }
         offscreenGWorld = gWorldResult.take_ok_value();
-      }
-        demoState++;
-        break;
+      } break;
 
       case 3:
         Draw(offscreenGWorld.value());
-        demoState++;
         break;
 
       case 4:
         Copy(offscreenGWorld.value(), gameWindow);
-        demoState++;
         break;
 
       default:
-        Debug::Printfln("Finished.");
-        return;
+        return Ok(std::monostate());
       }
+      demoState++;
       break;
 
     default:
@@ -196,6 +176,20 @@ void App::Run() {
       }
     }
   }
+}
+
+// Not used in `MacErrors.h`.
+OSErr App::appError = 666;
+
+void App::FatalError(const Error &error) {
+  Str255 explanation, location;
+  Strings::ToPascal(error.Explanation(), explanation);
+  Strings::ToPascal(error.Location(), location);
+  ParamText(explanation, location, nullptr, nullptr);
+
+  Alert alert(errorALRTResourceID, AlertType::stop);
+  // Ignore the result.
+  alert.Show();
 }
 
 } // namespace AtelierEsri
