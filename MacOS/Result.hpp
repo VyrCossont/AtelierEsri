@@ -1,4 +1,5 @@
-/// Copied from https://yegor.pomortsev.com/post/result-type/
+/// Result/Ok/Err copied from https://yegor.pomortsev.com/post/result-type/
+/// and licensed under the Apache License, Version 2.0.
 
 #pragma once
 
