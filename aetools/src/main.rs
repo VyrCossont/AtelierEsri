@@ -1,9 +1,12 @@
 mod grey_quantizer;
+mod histogram;
 mod image2bit;
 mod implicit_tree;
 mod items;
 mod lo5;
+mod mac;
 mod mac_assets;
+mod mac_icon;
 mod palettes;
 mod pokepak;
 mod tileshred;
@@ -108,6 +111,11 @@ enum Commands {
         #[clap(value_parser)]
         output: PathBuf,
     },
+    MacIconDemo {
+        /// Output PNG path.
+        #[clap(value_parser)]
+        output: PathBuf,
+    },
 }
 
 fn main() -> anyhow::Result<()> {
@@ -137,6 +145,7 @@ fn main() -> anyhow::Result<()> {
         Commands::MacAssets { input, output } => {
             mac_assets::generate(input.as_path(), output.as_path())?
         }
+        Commands::MacIconDemo { output } => mac_icon::demo(output.as_path())?,
     }
     Ok(())
 }

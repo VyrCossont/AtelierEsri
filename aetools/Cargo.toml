@@ -10,6 +10,7 @@ license = "MIT"
 png = "0.17.6"
 clap = { version = "3.2.19", features = ["derive"] }
 anyhow = "1.0.63"
+binrw = "0.12.0"
 # Must be same version used by Deku.
 bitvec = "0.22.3"
 convert_case = "0.6.0"

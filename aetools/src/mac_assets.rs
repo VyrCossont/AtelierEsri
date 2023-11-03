@@ -217,6 +217,25 @@ struct MaskedPictAsset {
     mask_pict_data_rel: String,
 }
 
+/// A 32×32 B&W icon. Does not support a mask.
+struct ICONAsset {
+    /// File path to bare icon data, relative to build dir
+    data_rel: String,
+    /// Allocate resource ID from range usable by Menu Manager:
+    /// https://preterhuman.net/macstuff/insidemac/Toolbox/Toolbox-101.html#HEADING101-48
+    menu: bool,
+}
+
+/// A 16×16 B&W icon with optional mask.
+/// Technically the mask is the second entry in a list of icons,
+/// but no Toolbox routines seem to use anything past the mask.
+struct SICNAsset {
+    /// File path to bare icon data, relative to build dir
+    data_rel: String,
+    /// Allocate resource ID from range usable by Menu Manager.
+    menu: bool,
+}
+
 /// Write Rez resource file and headers that can be used by Rez and C.
 fn generate_rez_and_header_files(
     build_dir: &Path,
