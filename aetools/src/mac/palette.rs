@@ -1,12 +1,14 @@
 //! Standard Apple palettes.
 //! Mostly useful for reconstructing icons.
 
+/// Safe to truncate to 8 bits per channel.
 #[rustfmt::skip]
 pub const DEFAULT_1_BIT_COLOR_PALETTE: [[u16; 3]; 2] = [
     [0xffff, 0xffff, 0xffff],
     [0x0000, 0x0000, 0x0000]
 ];
 
+/// Safe to truncate to 8 bits per channel.
 pub const DEFAULT_2_BIT_COLOR_PALETTE: [[u16; 3]; 4] = [
     [0xffff, 0xffff, 0xffff],
     [0xacac, 0xacac, 0xacac],
@@ -14,6 +16,8 @@ pub const DEFAULT_2_BIT_COLOR_PALETTE: [[u16; 3]; 4] = [
     [0x0000, 0x0000, 0x0000],
 ];
 
+/// Dates back to System 4.1:
+/// https://en.wikipedia.org/wiki/List_of_software_palettes#Apple_Macintosh_default_16-color_palette
 pub const DEFAULT_4_BIT_COLOR_PALETTE: [[u16; 3]; 16] = [
     [0xffff, 0xffff, 0xffff],
     [0xfc00, 0xf37d, 0x052f],
@@ -33,6 +37,7 @@ pub const DEFAULT_4_BIT_COLOR_PALETTE: [[u16; 3]; 16] = [
     [0x0000, 0x0000, 0x0000],
 ];
 
+/// Safe to truncate to 8 bits per channel.
 pub const DEFAULT_8_BIT_COLOR_PALETTE: [[u16; 3]; 256] = [
     [0xffff, 0xffff, 0xffff],
     [0xffff, 0xffff, 0xcccc],
@@ -292,6 +297,7 @@ pub const DEFAULT_8_BIT_COLOR_PALETTE: [[u16; 3]; 256] = [
     [0x0000, 0x0000, 0x0000],
 ];
 
+/// Usable on machines that don't have Color QuickDraw (those with a 68000 CPU).
 pub const BASIC_QUICKDRAW_PALETTE: [[u16; 3]; 8] = [
     [0x0000, 0x0000, 0x0000],
     [0xfc00, 0xf37d, 0x052f],
