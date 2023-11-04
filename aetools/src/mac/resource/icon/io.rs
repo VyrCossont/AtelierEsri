@@ -1,3 +1,4 @@
+use crate::histogram::DynamicHistogramError;
 use bitvec::prelude::*;
 use image::{DynamicImage, GrayImage, ImageBuffer, Rgb};
 
@@ -8,13 +9,23 @@ pub trait IconIO: Sized {
     fn image(&self) -> Option<DynamicImage>;
     /// Mask converted to alpha as a grayscale image.
     fn mask(&self) -> Option<DynamicImage>;
-
-    fn try_from() -> Result<Self, IconIOError>;
+    /// Try to create an icon from an input image.
+    /// Fails if it's the wrong size, colors, etc.
+    fn try_from(image: DynamicImage) -> Result<Self, IconIOError>;
 }
 
-enum IconIOError {
-    WrongSize,
-    WrongColors,
+#[derive(Debug)]
+pub enum IconIOError {
+    /// Dimensions not appropriate for this type of icon.
+    Size,
+    /// Color depth not appropriate for this type of icon.
+    Depth,
+    /// Color palette not appropriate for this type of icon.
+    Palette,
+    /// Alpha channel not appropriate for mask of this type of icon.
+    Alpha,
+    /// Error calculating histogram of the input image.
+    Histogram(DynamicHistogramError),
 }
 
 /// Icon type with a fixed size.

@@ -3,6 +3,8 @@
 #include <Dialogs.h>
 #include <MacTypes.h>
 
+#include "Resource.hpp"
+
 namespace AtelierEsri {
 
 enum AlertType {
@@ -14,7 +16,7 @@ enum AlertType {
 
 class Alert {
 public:
-  explicit Alert(SInt16 resourceID, AlertType alertType = custom);
+  explicit Alert(ResourceID resourceID, AlertType alertType = custom);
   DialogItemIndex Show();
 
 private:

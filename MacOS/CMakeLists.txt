@@ -14,6 +14,7 @@ add_application(AtelierEsri
         Error.cpp
         Game.cpp
         GWorld.cpp
+        MaskedPict.cpp
         Strings.cpp
         Window.cpp
 )

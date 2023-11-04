@@ -120,19 +120,29 @@ using Unit = std::monostate;
   } while (false)
 
 /// Flow control statement:
-/// Evaluate an expression that can set a Color QuickDraw error code.
-/// These are OS errors but are returned out of band:
-/// https://preterhuman.net/macstuff/insidemac/QuickDraw/QuickDraw-255.html
+/// Evaluate an expression that can set an OS error code returned out of band.
 /// If there is no error, pass the result through.
 /// Otherwise, return an error result with a message, OS error code, and source
 /// location.
-#define QD_CHECKED(expr, message)                                              \
+#define OOB_CHECKED(expr, message, errorExpr)                                  \
   (expr);                                                                      \
   do {                                                                         \
-    OSErr qdError = QDError();                                                 \
-    if (qdError) {                                                             \
-      OS_BAIL((message), qdError);                                             \
+    OSErr osErr = (errorExpr);                                                 \
+    if (osErr) {                                                               \
+      OS_BAIL((message), osErr);                                               \
     }                                                                          \
   } while (false)
+
+// TODO: (Vyr) OOB_CHECKED operations should know the error return value of the
+//  function they're calling: -1, nil, etc., and only call `errorExpr` then.
+
+/// Checked Color QuickDraw operation.
+/// https://preterhuman.net/macstuff/insidemac/QuickDraw/QuickDraw-255.html
+/// Note that Basic QuickDraw machines will never return an error code this way.
+#define QD_CHECKED(expr, message) OOB_CHECKED((expr), (message), QDError())
+
+/// Checked Resource Manager operation.
+/// https://preterhuman.net/macstuff/insidemac/MoreToolbox/MoreToolbox-35.html
+#define RES_CHECKED(expr, message) OOB_CHECKED((expr), (message), ResError())
 
 #pragma endregion

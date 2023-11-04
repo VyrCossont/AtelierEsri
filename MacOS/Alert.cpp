@@ -4,7 +4,7 @@
 
 namespace AtelierEsri {
 
-Alert::Alert(SInt16 resourceID, AlertType alertType)
+Alert::Alert(int16_t resourceID, AlertType alertType)
     : resourceID(resourceID), alertType(alertType) {}
 
 DialogItemIndex Alert::Show() {

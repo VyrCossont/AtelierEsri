@@ -38,6 +38,8 @@ pub enum DynamicHistogram {
 }
 
 impl DynamicHistogram {
+    /// Bit depth required to represent the input image's color info.
+    /// Not necessarily the input image's bit depth.
     pub fn color_bit_depth(&self) -> usize {
         match self {
             DynamicHistogram::HistogramLuma8 { colors } => colors.len().next_power_of_two(),
@@ -51,6 +53,9 @@ impl DynamicHistogram {
         }
     }
 
+    /// Bit depth required to represent the input image's alpha channel.
+    /// Not necessarily the input image's alpha bit depth.
+    /// Returns `0` if the input image has no alpha channel.
     pub fn alpha_bit_depth(&self) -> usize {
         match self {
             DynamicHistogram::HistogramLuma8 { .. } => 0,
