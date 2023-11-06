@@ -184,11 +184,12 @@ fn imagemagick_convert(input: &Path, output: &Path) -> anyhow::Result<()> {
 }
 
 /// Extract an image's alpha channel as a mask image.
+/// Note that masks for QuickDraw `CopyMask` are inverted: black pixels are copied, white pixels are ignored.
 fn imagemagick_mask(input: &Path, output: &Path) -> anyhow::Result<()> {
     let program = "magick";
     let status = Command::new(program)
         .arg(input)
-        .args(["-alpha", "extract", "-monochrome"])
+        .args(["-alpha", "extract", "-monochrome", "-negate"])
         .arg(output)
         .status()?;
     if !status.success() {

@@ -1,11 +1,11 @@
-use crate::mac::resource::icon::io::{expand_grays, IconIO, SizedIcon};
+use crate::mac::resource::icon::io::{expand_grays, IconIO, IconIOError, SizedIcon};
 use crate::mac::resource::TypedResource;
 use crate::mac::OSType;
 use binrw::binrw;
 use image::DynamicImage;
 
 /// 1-bit icon list structure shared by `SICN` and `ICN#`.
-trait Icon1BitList: SizedIcon {
+trait Icon1BitList: SizedIcon + Sized {
     fn icon_list(&self) -> Vec<&[u8]>;
 
     fn image(&self) -> Option<DynamicImage> {
@@ -18,6 +18,10 @@ trait Icon1BitList: SizedIcon {
         self.icon_list()
             .get(1)
             .map(|data| DynamicImage::ImageLuma8(expand_grays::<1>(Self::ICON_SIZE, data, true)))
+    }
+
+    fn try_from(image: DynamicImage) -> Result<Self, IconIOError> {
+        todo!()
     }
 }
 
@@ -55,6 +59,10 @@ impl IconIO for Icon1BitSmallMaskedOldest {
     fn mask(&self) -> Option<DynamicImage> {
         <Self as Icon1BitList>::mask(self)
     }
+
+    fn try_from(image: DynamicImage) -> Result<Self, IconIOError> {
+        <Self as Icon1BitList>::try_from(image)
+    }
 }
 
 /// Normally used as an icon and mask pair, but technically a list.
@@ -90,5 +98,9 @@ impl IconIO for Icon1BitLargeMasked {
 
     fn mask(&self) -> Option<DynamicImage> {
         <Self as Icon1BitList>::mask(self)
+    }
+
+    fn try_from(image: DynamicImage) -> Result<Self, IconIOError> {
+        <Self as Icon1BitList>::try_from(image)
     }
 }

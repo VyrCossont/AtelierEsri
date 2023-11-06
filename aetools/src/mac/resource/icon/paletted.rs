@@ -1,12 +1,12 @@
 use crate::mac::palette::{DEFAULT_4_BIT_COLOR_PALETTE, DEFAULT_8_BIT_COLOR_PALETTE};
-use crate::mac::resource::icon::io::{apply_quickdraw_palette, IconIO, SizedIcon};
+use crate::mac::resource::icon::io::{apply_quickdraw_palette, IconIO, IconIOError, SizedIcon};
 use crate::mac::resource::TypedResource;
 use crate::mac::OSType;
 use binrw::binrw;
 use image::DynamicImage;
 
 /// Indexed color image with fixed palette structure shared by other `ic??` icons.
-trait PalettedIcon<const NUM_COLORS: usize>: SizedIcon {
+trait PalettedIcon<const NUM_COLORS: usize>: SizedIcon + Sized {
     const ICON_PALETTE: &'static [[u16; 3]; NUM_COLORS];
     fn image_data(&self) -> &[u8];
 
@@ -16,6 +16,10 @@ trait PalettedIcon<const NUM_COLORS: usize>: SizedIcon {
             self.image_data(),
             Self::ICON_PALETTE,
         )))
+    }
+
+    fn try_from(image: DynamicImage) -> Result<Self, IconIOError> {
+        todo!()
     }
 }
 
@@ -51,6 +55,10 @@ impl IconIO for Icon4BitLarge {
     fn mask(&self) -> Option<DynamicImage> {
         None
     }
+
+    fn try_from(image: DynamicImage) -> Result<Self, IconIOError> {
+        <Self as PalettedIcon<16>>::try_from(image)
+    }
 }
 
 /// System 7 and up.
@@ -84,6 +92,10 @@ impl IconIO for Icon4BitSmall {
 
     fn mask(&self) -> Option<DynamicImage> {
         None
+    }
+
+    fn try_from(image: DynamicImage) -> Result<Self, IconIOError> {
+        <Self as PalettedIcon<16>>::try_from(image)
     }
 }
 
@@ -120,6 +132,10 @@ impl IconIO for Icon4BitMini {
     fn mask(&self) -> Option<DynamicImage> {
         None
     }
+
+    fn try_from(image: DynamicImage) -> Result<Self, IconIOError> {
+        <Self as PalettedIcon<16>>::try_from(image)
+    }
 }
 
 /// System 7 and up.
@@ -153,6 +169,10 @@ impl IconIO for Icon8BitLarge {
 
     fn mask(&self) -> Option<DynamicImage> {
         None
+    }
+
+    fn try_from(image: DynamicImage) -> Result<Self, IconIOError> {
+        <Self as PalettedIcon<256>>::try_from(image)
     }
 }
 
@@ -188,6 +208,10 @@ impl IconIO for Icon8BitSmall {
     fn mask(&self) -> Option<DynamicImage> {
         None
     }
+
+    fn try_from(image: DynamicImage) -> Result<Self, IconIOError> {
+        <Self as PalettedIcon<256>>::try_from(image)
+    }
 }
 
 /// System 7 and up.
@@ -222,5 +246,9 @@ impl IconIO for Icon8BitMini {
 
     fn mask(&self) -> Option<DynamicImage> {
         None
+    }
+
+    fn try_from(image: DynamicImage) -> Result<Self, IconIOError> {
+        <Self as PalettedIcon<256>>::try_from(image)
     }
 }

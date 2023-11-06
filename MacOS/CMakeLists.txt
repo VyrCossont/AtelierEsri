@@ -7,6 +7,7 @@ add_application(AtelierEsri
         # CONSOLE
         main.cpp
         AppResources.r
+        Assets.rsrc
         App.cpp
         Alert.cpp
         Debug.cpp
@@ -14,7 +15,7 @@ add_application(AtelierEsri
         Error.cpp
         Game.cpp
         GWorld.cpp
-        MaskedPict.cpp
+        MaskedImage.cpp
         Strings.cpp
         Window.cpp
 )

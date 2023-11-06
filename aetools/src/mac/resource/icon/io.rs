@@ -28,7 +28,7 @@ pub enum IconIOError {
     Histogram(DynamicHistogramError),
 }
 
-/// Icon type with a fixed size.
+/// Icon type with fixed dimensions.
 pub trait SizedIcon {
     const ICON_SIZE: (u32, u32);
     const ICON_SIZE_LARGE: (u32, u32) = (32, 32);

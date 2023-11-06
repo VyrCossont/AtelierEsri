@@ -22,7 +22,7 @@ uint64_t Env::Microseconds() noexcept {
 std::optional<SysEnvRec> Env::sysEnvRec = {};
 #endif
 
-Result<bool> Env::HasColorQuickDraw() {
+Result<bool> Env::HasColorQuickDraw() noexcept {
 #if TARGET_API_MAC_CARBON
   return Ok(true);
 #else
@@ -33,6 +33,16 @@ Result<bool> Env::HasColorQuickDraw() {
     sysEnvRec = newSysEnvRec;
   }
   return Ok(sysEnvRec->hasColorQD != 0);
+#endif
+}
+
+Pattern Env::Gray() noexcept {
+#if TARGET_API_MAC_CARBON
+  Pattern pattern;
+  GetQDGlobalsGray(&pattern);
+  return pattern;
+#else
+  return qd.gray;
 #endif
 }
 

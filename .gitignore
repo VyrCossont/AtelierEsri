@@ -3,3 +3,5 @@ target
 /asset_originals/items.schema.json
 /build
 /MacOS/cmake-build-*
+/MacOS/Assets.h
+/MacOS/Assets.rsrc

@@ -65,6 +65,18 @@ using Unit = std::monostate;
 #pragma region Flow control macros
 
 /// Flow control statement:
+/// Evaluate an expression with an ignorable result type (normally `Unit`).
+/// If the result is an error, return an error result of the appropriate type.
+/// Otherwise, ignore the result.
+#define TRY(expr)                                                              \
+  do {                                                                         \
+    auto tryResult = (expr);                                                   \
+    if (tryResult.is_err()) {                                                  \
+      return ::AtelierEsri::Err(tryResult.take_err_value());                   \
+    }                                                                          \
+  } while (false)
+
+/// Flow control statement:
 /// Evaluate an expression with a result type.
 /// If the result is an error, return an error result of the appropriate type.
 /// Otherwise, pass the success value through.

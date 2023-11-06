@@ -1,11 +1,11 @@
-use crate::mac::resource::icon::io::{expand_grays, IconIO, SizedIcon};
+use crate::mac::resource::icon::io::{expand_grays, IconIO, IconIOError, SizedIcon};
 use crate::mac::resource::TypedResource;
 use crate::mac::OSType;
 use binrw::binrw;
 use image::DynamicImage;
 
 /// 1-bit image and mask structure shared by `ics#` and `icm#`.
-trait Icon1BitMasked: SizedIcon {
+trait Icon1BitMasked: SizedIcon + Sized {
     fn image_data(&self) -> &[u8];
     fn mask_data(&self) -> &[u8];
 
@@ -23,6 +23,10 @@ trait Icon1BitMasked: SizedIcon {
             self.mask_data(),
             true,
         )))
+    }
+
+    fn try_from(image: DynamicImage) -> Result<Self, IconIOError> {
+        todo!()
     }
 }
 
@@ -61,6 +65,10 @@ impl IconIO for Icon1BitSmallMasked {
     fn mask(&self) -> Option<DynamicImage> {
         <Self as Icon1BitMasked>::mask(self)
     }
+
+    fn try_from(image: DynamicImage) -> Result<Self, IconIOError> {
+        <Self as Icon1BitMasked>::try_from(image)
+    }
 }
 
 /// System 6 and up.
@@ -98,5 +106,9 @@ impl IconIO for Icon1BitMiniMasked {
 
     fn mask(&self) -> Option<DynamicImage> {
         <Self as Icon1BitMasked>::mask(self)
+    }
+
+    fn try_from(image: DynamicImage) -> Result<Self, IconIOError> {
+        <Self as Icon1BitMasked>::try_from(image)
     }
 }

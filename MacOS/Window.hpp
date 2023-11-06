@@ -1,3 +1,5 @@
+#pragma once
+
 #include <MacTypes.h>
 #include <MacWindows.h>
 
@@ -16,7 +18,8 @@ public:
   Result<std::monostate> Present(WindowRef inFrontOf = allOtherWindows);
   void Dismiss();
   /// Get a GWorld optimized for copy to this window.
-  Result<GWorld> FastGWorld();
+  /// If `w` or `h` are not zero, sets a custom size.
+  Result<GWorld> FastGWorld(int16_t w = 0, int16_t h = 0);
   Result<Rect> PortBounds();
   Result<CGrafPtr> Port();
 

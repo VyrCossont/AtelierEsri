@@ -1,4 +1,5 @@
-use crate::mac::resource::icon::io::{expand_grays, IconIO, SizedIcon};
+use crate::histogram::DynamicHistogram;
+use crate::mac::resource::icon::io::{expand_grays, IconIO, IconIOError, SizedIcon};
 use crate::mac::resource::TypedResource;
 use crate::mac::OSType;
 use binrw::binrw;
@@ -31,5 +32,32 @@ impl IconIO for Icon1BitLargeOldest {
 
     fn mask(&self) -> Option<DynamicImage> {
         None
+    }
+
+    fn try_from(image: DynamicImage) -> Result<Self, IconIOError> {
+        let histogram = DynamicHistogram::try_from(image).map_err(|e| IconIOError::Histogram(e))?;
+
+        if histogram.color_bit_depth() > 1 {
+            return Err(IconIOError::Depth);
+        }
+        if histogram.alpha_bit_depth() > 1 {
+            return Err(IconIOError::Depth);
+        }
+
+        match histogram {
+            DynamicHistogram::HistogramLuma8 { colors } => {}
+            DynamicHistogram::HistogramLumaA8 { colors, alphas } => {}
+            DynamicHistogram::HistogramRgb8 { colors } => {}
+            DynamicHistogram::HistogramRgba8 { colors, alphas } => {}
+            DynamicHistogram::HistogramLuma16 { colors } => {}
+            DynamicHistogram::HistogramLumaA16 { colors, alphas } => {}
+            DynamicHistogram::HistogramRgb16 { colors } => {}
+            DynamicHistogram::HistogramRgba16 { colors, alphas } => {}
+        }
+
+        Ok(Self {
+            // TODO
+            image_data: [0u8; 128],
+        })
     }
 }

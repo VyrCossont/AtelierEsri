@@ -35,26 +35,6 @@ void App::Initialize() {
   FlushEvents(everyEvent, 0);
 }
 
-Result<Unit> Draw(GWorld &gWorld) {
-  GUARD_LET_TRY(GWorldLockPixelsGuard, lockPixelsGuard, gWorld.LockPixels());
-  GWorldActiveGuard activeGuard = gWorld.MakeActive();
-
-  Rect rect = gWorld.Bounds();
-  EraseRect(&rect);
-  InsetRect(&rect, 40, 40);
-
-  Pattern pattern;
-#if TARGET_API_MAC_CARBON
-  GetQDGlobalsBlack(&pattern);
-#else
-  pattern = qd.black;
-#endif
-
-  FillRect(&rect, &pattern);
-
-  return Ok(Unit());
-}
-
 Result<Unit> Copy(GWorld &gWorld, Window &window) {
   GUARD_LET_TRY(GWorldLockPixelsGuard, lockPixelsGuard, gWorld.LockPixels());
 
@@ -96,7 +76,7 @@ Result<std::monostate, Error> App::EventLoop() {
   uint64_t frameDurationUsec = sleepTimeTicks * 1000 * 1000 / 60;
   uint16_t demoState = 0;
   std::optional<GWorld> offscreenGWorld;
-  Game game;
+  std::optional<Game> game;
 
   uint64_t lastFrameTimestampUsec = Env::Microseconds();
   while (true) {
@@ -116,15 +96,17 @@ Result<std::monostate, Error> App::EventLoop() {
           return Err(gWorldResult.take_err_value());
         }
         offscreenGWorld = gWorldResult.take_ok_value();
-      } break;
-
-      case 2:
-        Draw(offscreenGWorld.value());
         break;
+      }
 
-      case 3:
-        Copy(offscreenGWorld.value(), gameWindow);
+      case 2: {
+        Result<Game> gameResult = Game::Setup(gameWindow);
+        if (gameResult.is_err()) {
+          return Err(gameResult.take_err_value());
+        }
+        game = gameResult.take_ok_value();
         break;
+      }
 
       default:
         return Ok(std::monostate());
@@ -142,12 +124,15 @@ Result<std::monostate, Error> App::EventLoop() {
       // TODO: handle multiple elapsed frames
       lastFrameTimestampUsec = currentTimestampUsec;
 
-      game.Update();
+      if (game.has_value()) {
+        game.value().Update();
 
-      if (offscreenGWorld.has_value()) {
-        Copy(offscreenGWorld.value(), gameWindow);
-        SetPort((GrafPtr)gameWindow.Port().ok_value());
-        game.Draw();
+        if (offscreenGWorld.has_value()) {
+          game.value().Draw(offscreenGWorld.value());
+
+          Copy(offscreenGWorld.value(), gameWindow);
+          SetPort((GrafPtr)gameWindow.Port().ok_value());
+        }
       }
     }
   }

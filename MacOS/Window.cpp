@@ -32,14 +32,20 @@ void Window::Dismiss() {
   }
 }
 
-Result<GWorld> Window::FastGWorld() {
+Result<GWorld> Window::FastGWorld(int16_t w, int16_t h) {
   REQUIRE_NOT_NULL(windowRef);
 
-  // Create a GWorld matching the window device, color table, alignment, etc.
-  Rect portRect;
-  GetWindowPortBounds(windowRef, &portRect);
+  Rect rect;
+  GetWindowPortBounds(windowRef, &rect);
+  if (w > 0 && h > 0) {
+    // Change GWorld dimensions to something other than the window's dimensions.
+    rect.right = static_cast<int16_t>(rect.left + w);
+    rect.bottom = static_cast<int16_t>(rect.top + h);
+  }
+
+  // Create a GWorld matching the window device, color table, etc.
   GWorldPtr gWorldPtr;
-  OS_CHECKED(NewGWorld(&gWorldPtr, 0, &portRect, nullptr, nullptr, 0),
+  OS_CHECKED(NewGWorld(&gWorldPtr, 0, &rect, nullptr, nullptr, 0),
              "Couldn't create offscreen GWorld");
   if (!gWorldPtr) {
     BAIL("Couldn't create offscreen GWorld: gWorldPtr is null");
