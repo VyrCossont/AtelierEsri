@@ -8,33 +8,43 @@
 
 namespace AtelierEsri {
 
-Window::Window(int16_t resourceID) : resourceID(resourceID) {}
+Window::Window(WindowRef windowRef) noexcept : windowRef(windowRef) {}
 
-Window::~Window() { Dismiss(); }
+Window::Window(Window &&src) noexcept {
+  windowRef = src.windowRef;
+  src.windowRef = nullptr;
+}
 
-const WindowRef Window::allOtherWindows = (WindowRef)-1;
+Window &Window::operator=(Window &&src) noexcept {
+  windowRef = src.windowRef;
+  src.windowRef = nullptr;
+  return *this;
+}
 
-Result<std::monostate, Error> Window::Present(WindowRef inFrontOf) {
+Window::~Window() noexcept {
+  if (windowRef) {
+    DisposeWindow(windowRef);
+  }
+}
+
+const WindowRef Window::allOtherWindows = reinterpret_cast<WindowRef>(-1);
+
+Result<Window> Window::Present(ResourceID resourceID,
+                               WindowRef inFrontOf) noexcept {
   GUARD_LET_TRY(bool, hasColorQuickDraw, Env::HasColorQuickDraw());
 
+  WindowRef windowRef;
   if (hasColorQuickDraw) {
     windowRef = GetNewCWindow(resourceID, nullptr, inFrontOf);
   } else {
     windowRef = GetNewWindow(resourceID, nullptr, inFrontOf);
   }
-
-  return Ok(std::monostate());
-}
-
-void Window::Dismiss() {
-  if (!windowRef) {
-    DisposeWindow(windowRef);
-  }
-}
-
-Result<GWorld> Window::FastGWorld(int16_t w, int16_t h) {
   REQUIRE_NOT_NULL(windowRef);
 
+  return Ok(Window(windowRef));
+}
+
+Result<GWorld> Window::FastGWorld(int16_t w, int16_t h) noexcept {
   Rect rect;
   GetWindowPortBounds(windowRef, &rect);
   if (w > 0 && h > 0) {
@@ -47,27 +57,22 @@ Result<GWorld> Window::FastGWorld(int16_t w, int16_t h) {
   GWorldPtr gWorldPtr;
   OS_CHECKED(NewGWorld(&gWorldPtr, 0, &rect, nullptr, nullptr, 0),
              "Couldn't create offscreen GWorld");
-  if (!gWorldPtr) {
-    BAIL("Couldn't create offscreen GWorld: gWorldPtr is null");
-  }
+  REQUIRE_NOT_NULL(gWorldPtr);
 
   return Ok(GWorld(gWorldPtr));
 }
 
-Result<Rect> Window::PortBounds() {
-  REQUIRE_NOT_NULL(windowRef);
-
+Rect Window::PortBounds() noexcept {
   Rect bounds;
   GetWindowPortBounds(windowRef, &bounds);
-
-  return Ok(bounds);
+  return bounds;
 }
 
 // TODO: what happens if this is a non-color window?
-Result<CGrafPtr> Window::Port() {
-  REQUIRE_NOT_NULL(windowRef);
-
-  return Ok(GetWindowPort(windowRef));
+Result<CGrafPtr> Window::Port() noexcept {
+  CGrafPtr port = GetWindowPort(windowRef);
+  REQUIRE_NOT_NULL(port);
+  return Ok(port);
 }
 
 } // namespace AtelierEsri

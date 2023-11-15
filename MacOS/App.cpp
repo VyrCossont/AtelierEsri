@@ -1,11 +1,9 @@
-#include <optional>
+#include "App.hpp"
 
-#include <Dialogs.h>
+#include <Devices.h>
 #include <Events.h>
-#include <Fonts.h>
-#include <MacWindows.h>
 #include <Menus.h>
-#include <TextEdit.h>
+#include <ToolUtils.h>
 
 #include "AppResources.h"
 #include "Debug.hpp"
@@ -13,27 +11,44 @@
 #include "GWorld.hpp"
 #include "Game.hpp"
 #include "Result.hpp"
-#include "Strings.hpp"
-
-#include "App.hpp"
 
 namespace AtelierEsri {
 
-App::App() : gameWindow(gameWINDResourceID) { Initialize(); }
-
-void App::Initialize() {
-#if !TARGET_API_MAC_CARBON
-  InitGraf(&qd.thePort);
-  InitFonts();
-  InitWindows();
-  InitMenus();
-  TEInit();
-  InitDialogs(nullptr);
-#endif
-  InitCursor();
-  // Flush any low-level events left over from other apps. (PSKM p. 167)
-  FlushEvents(everyEvent, 0);
+Result<App> App::New() noexcept {
+  TRY(SetupMenuBar());
+  GUARD_LET_TRY(Window, gameWindow, Window::Present(gameWINDResourceID));
+  GUARD_LET_TRY(GWorld, offscreenGWorld, gameWindow.FastGWorld());
+  GUARD_LET_TRY(Game, game, Game::Setup(gameWindow));
+  return Ok(
+      App(std::move(gameWindow), std::move(offscreenGWorld), std::move(game)));
 }
+
+Result<Unit> App::SetupMenuBar() noexcept {
+  MenuBarHandle menuBar = GetNewMBar(menuBarMBARResourceID);
+  REQUIRE_NOT_NULL(menuBar);
+  SetMenuBar(menuBar);
+
+  // Attach system-managed Apple menu items.
+  MenuHandle appleMenu = GetMenuHandle(appleMenuMENUResourceID);
+  if (!appleMenu) {
+    // TODO: if we do this a lot, add a managed handle type
+    DisposeHandle(menuBar);
+  }
+  REQUIRE_NOT_NULL(appleMenu);
+  AppendResMenu(appleMenu, 'DRVR');
+
+  DrawMenuBar();
+
+  // Menu bar not retained after this because it doesn't have to be:
+  // https://preterhuman.net/macstuff/insidemac/Toolbox/Toolbox-98.html#MARKER-9-260
+  DisposeHandle(menuBar);
+
+  return Ok(Unit());
+}
+
+App::App(Window gameWindow, GWorld offscreenGWorld, Game game) noexcept
+    : gameWindow(std::move(gameWindow)),
+      offscreenGWorld(std::move(offscreenGWorld)), game(std::move(game)) {}
 
 Result<Unit> Copy(GWorld &gWorld, Window &window) {
   GUARD_LET_TRY(GWorldLockPixelsGuard, lockPixelsGuard, gWorld.LockPixels());
@@ -41,7 +56,7 @@ Result<Unit> Copy(GWorld &gWorld, Window &window) {
   Rect gWorldRect = gWorld.Bounds();
   const BitMap *gWorldBits = lockPixelsGuard.Bits();
 
-  GUARD_LET_TRY(Rect, windowRect, window.PortBounds());
+  Rect windowRect = window.PortBounds();
   GUARD_LET_TRY(CGrafPtr, windowPort, window.Port());
 
 #if TARGET_API_MAC_CARBON
@@ -57,26 +72,11 @@ Result<Unit> Copy(GWorld &gWorld, Window &window) {
   return Ok(Unit());
 }
 
-OSErr App::Run() {
-  auto result = EventLoop();
-  if (result.is_ok()) {
-    return noErr;
-  }
-
-  FatalError(result.err_value());
-
-  OSErr osErr = result.err_value().osErr;
-  return osErr ? osErr : appError;
-}
-
-Result<std::monostate, Error> App::EventLoop() {
+Result<Unit> App::EventLoop() noexcept {
   EventRecord event;
   /// Ticks (approx. 1/60th of a second)
   uint32_t sleepTimeTicks = 1;
   uint64_t frameDurationUsec = sleepTimeTicks * 1000 * 1000 / 60;
-  uint16_t demoState = 0;
-  std::optional<GWorld> offscreenGWorld;
-  std::optional<Game> game;
 
   uint64_t lastFrameTimestampUsec = Env::Microseconds();
   while (true) {
@@ -85,34 +85,40 @@ Result<std::monostate, Error> App::EventLoop() {
 
     switch (event.what) {
     case keyDown:
-      switch (demoState) {
-      case 0:
-        gameWindow.Present();
-        break;
-
-      case 1: {
-        Result<GWorld> gWorldResult = gameWindow.FastGWorld();
-        if (gWorldResult.is_err()) {
-          return Err(gWorldResult.take_err_value());
+      if (event.modifiers & cmdKey) {
+        // MenuKey() is an A-line trap and the declaration confuses CLion.
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "UnusedLocalVariable"
+        auto key = static_cast<int16_t>(event.message & charCodeMask);
+#pragma clang diagnostic pop
+        bool quit = HandleMenuSelection(MenuKey(key));
+        if (quit) {
+          return Ok(Unit());
         }
-        offscreenGWorld = gWorldResult.take_ok_value();
-        break;
       }
+      break;
 
-      case 2: {
-        Result<Game> gameResult = Game::Setup(gameWindow);
-        if (gameResult.is_err()) {
-          return Err(gameResult.take_err_value());
+    case mouseDown: {
+      WindowPtr windowPtr;
+      switch (FindWindow(event.where, &windowPtr)) {
+      case inMenuBar: {
+        bool quit = HandleMenuSelection(MenuSelect(event.where));
+        if (quit) {
+          return Ok(Unit());
         }
-        game = gameResult.take_ok_value();
+      } break;
+
+      case inSysWindow:
+#if !TARGET_API_MAC_CARBON
+        // Handle desk accessory interactions.
+        SystemClick(&event, windowPtr);
+#endif
         break;
-      }
 
       default:
-        return Ok(std::monostate());
+        break;
       }
-      demoState++;
-      break;
+    } break;
 
     default:
       // Ignore most kinds of event, including disk formatting events.
@@ -124,32 +130,84 @@ Result<std::monostate, Error> App::EventLoop() {
       // TODO: handle multiple elapsed frames
       lastFrameTimestampUsec = currentTimestampUsec;
 
-      if (game.has_value()) {
-        game.value().Update();
+      game.Update();
 
-        if (offscreenGWorld.has_value()) {
-          game.value().Draw(offscreenGWorld.value());
+      game.Draw(offscreenGWorld);
 
-          Copy(offscreenGWorld.value(), gameWindow);
-          SetPort((GrafPtr)gameWindow.Port().ok_value());
-        }
-      }
+      Copy(offscreenGWorld, gameWindow);
+      SetPort((GrafPtr)gameWindow.Port().ok_value());
     }
   }
 }
 
-// Not used in `MacErrors.h`.
-OSErr App::appError = 666;
+enum AppleMenuItems {
+  about = 1,
+};
 
-void App::FatalError(const Error &error) {
-  Str255 explanation, location;
-  Strings::ToPascal(error.Explanation(), explanation);
-  Strings::ToPascal(error.Location(), location);
-  ParamText(explanation, location, nullptr, nullptr);
+enum FileMenuItems {
+  open = 1,
+  save = 2,
+  // separator
+  quit = 4,
+};
 
-  Alert alert(errorALRTResourceID, AlertType::stop);
-  // Ignore the result.
-  alert.Show();
+bool App::HandleMenuSelection(int32_t menuSelection) noexcept {
+  int16_t menuID = HiWord(menuSelection);
+  int16_t menuItem = LoWord(menuSelection);
+  Debug::Printfln("Menu selection: menuID = %d, menuItem = %d", menuID,
+                  menuItem);
+  switch (menuID) {
+  case appleMenuMENUResourceID:
+    switch (menuItem) {
+    case AppleMenuItems::about:
+      AboutBox();
+      break;
+
+    default: {
+#if !TARGET_API_MAC_CARBON
+      // https://preterhuman.net/macstuff/insidemac/Toolbox/Toolbox-104.html#HEADING104-8
+      Str255 itemName;
+      MenuHandle appleMenu = GetMenuHandle(appleMenuMENUResourceID);
+      GetMenuItemText(appleMenu, menuItem, itemName);
+      OpenDeskAcc(itemName);
+      // TODO: implement suspend/resume events
+      //  As is, this will open the Apple menu item only after the app quits.
+      //  https://preterhuman.net/macstuff/insidemac/Toolbox/Toolbox-41.html#HEADING41-14
+#endif
+    } break;
+    }
+
+    break;
+
+  case fileMenuMENUResourceID:
+    switch (menuItem) {
+    case FileMenuItems::open:
+      // TODO
+      break;
+
+    case FileMenuItems::save:
+      // TODO
+      break;
+
+    case FileMenuItems::quit:
+      HiliteMenu(0);
+      return true;
+
+    default:
+      break;
+    }
+    break;
+
+  default:
+    break;
+  }
+
+  HiliteMenu(0);
+  return false;
+}
+
+void App::AboutBox() noexcept {
+  // TODO
 }
 
 } // namespace AtelierEsri

@@ -9,8 +9,6 @@
 
 namespace AtelierEsri {
 
-using PICTResource = Resource<'PICT', PicPtr, PicHandle, GetPicture>;
-
 /// `PICT` resource.
 class Picture {
 public:

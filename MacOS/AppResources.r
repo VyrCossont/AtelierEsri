@@ -1,7 +1,9 @@
 /** Manually managed resources (as opposed to game assets). */
+/* coding: macintosh */
 
 #include "Dialogs.r"
 #include "MacWindows.r"
+#include "Menus.r"
 
 #include "AppResources.h"
 
@@ -33,7 +35,7 @@ resource 'DITL' (errorDITLResourceID, "exception alert", purgeable) {
 		{16, 64, 66, 354},
 		StaticText {
 			disabled,
-			"Fatal exception: ^0\rLocation: ^1"
+			"Fatal error: ^0\rLocation: ^1"
 		}
 	}
 };
@@ -46,4 +48,48 @@ resource 'WIND' (gameWINDResourceID, "game window", purgeable) {
     0x0, /* refCon */
     "Atelier Esri",
     noAutoCenter
+};
+
+/*
+ * Menus are called out as specifically not purgeable here:
+ * https://preterhuman.net/macstuff/insidemac/MoreToolbox/MoreToolbox-13.html#HEADING13-0
+ */
+
+resource 'MBAR' (menuBarMBARResourceID, "menu bar", preload) {
+	{	/* array MenuArray: 2 elements */
+		/* [1] */
+		appleMenuMENUResourceID,
+		/* [2] */
+		fileMenuMENUResourceID
+	}
+};
+
+resource 'MENU' (appleMenuMENUResourceID, "Apple menu", preload) {
+	appleMenuMENUResourceID,
+	textMenuProc,
+	allEnabled,
+	enabled,
+	apple,
+	{	/* array: 1 elements */
+		/* [1] */
+		"About Atelier Esri…", noIcon, noKey, noMark, plain
+	}
+};
+
+resource 'MENU' (fileMenuMENUResourceID, "file menu", preload) {
+	fileMenuMENUResourceID,
+	textMenuProc,
+	0x7FFFFFFB,
+	enabled,
+	"File",
+	{	/* array: 4 elements */
+		/* [1] */
+		"Open…", noIcon, "O", noMark, plain,
+		/* [2] */
+		"Save", noIcon, "S", noMark, plain,
+		/* [3] */
+		"-", noIcon, noKey, noMark, plain,
+		/* [4] */
+		"Quit", noIcon, "Q", noMark, plain
+	}
 };

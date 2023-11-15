@@ -9,4 +9,9 @@
 
 #define gameWINDResourceID 128
 
+#define menuBarMBARResourceID 128
+
+#define appleMenuMENUResourceID 128
+#define fileMenuMENUResourceID 129
+
 #endif /* ATELIERESRI_APPRESOURCES_H */
