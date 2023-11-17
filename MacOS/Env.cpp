@@ -38,32 +38,4 @@ uint64_t Env::Microseconds() noexcept {
   return u64.as_int;
 }
 
-#if !TARGET_API_MAC_CARBON
-std::optional<SysEnvRec> Env::sysEnvRec = {};
-#endif
-
-Result<bool> Env::HasColorQuickDraw() noexcept {
-#if TARGET_API_MAC_CARBON
-  return Ok(true);
-#else
-  if (!sysEnvRec.has_value()) {
-    SysEnvRec newSysEnvRec;
-    OS_CHECKED(SysEnvirons(1, &newSysEnvRec),
-               "Couldn't check QuickDraw capabilities");
-    sysEnvRec = newSysEnvRec;
-  }
-  return Ok(sysEnvRec->hasColorQD != 0);
-#endif
-}
-
-Pattern Env::Gray() noexcept {
-#if TARGET_API_MAC_CARBON
-  Pattern pattern;
-  GetQDGlobalsGray(&pattern);
-  return pattern;
-#else
-  return qd.gray;
-#endif
-}
-
 } // namespace AtelierEsri

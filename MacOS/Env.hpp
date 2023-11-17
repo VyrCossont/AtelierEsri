@@ -1,13 +1,6 @@
 #pragma once
 
-#include <optional>
-
-#include <MacTypes.h>
-#include <OSUtils.h>
-#include <Quickdraw.h>
-
-#include "Error.hpp"
-#include "Result.hpp"
+#include <cstdint>
 
 namespace AtelierEsri {
 
@@ -16,13 +9,6 @@ public:
   /// Set up Toolbox stuff.
   static void Initialize() noexcept;
   static uint64_t Microseconds() noexcept;
-  static Result<bool> HasColorQuickDraw() noexcept;
-  static Pattern Gray() noexcept;
-
-private:
-#if !TARGET_API_MAC_CARBON
-  static std::optional<SysEnvRec> sysEnvRec;
-#endif
 };
 
 } // namespace AtelierEsri

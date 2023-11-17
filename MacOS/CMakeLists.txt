@@ -11,6 +11,7 @@ add_application(AtelierEsri
         App.cpp
         Alert.cpp
         Debug.cpp
+        Drawing.cpp
         Env.cpp
         Error.cpp
         Game.cpp

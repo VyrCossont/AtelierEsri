@@ -1,7 +1,9 @@
 #include "Game.hpp"
 
+#include <ctgmath>
+
 #include "Assets.h"
-#include "Env.hpp"
+#include "Drawing.hpp"
 
 namespace AtelierEsri {
 
@@ -15,13 +17,20 @@ Result<Game> Game::Setup(Window &window) noexcept {
 void Game::Update() {}
 
 Result<Unit> Game::Draw(GWorld &gWorld) noexcept {
+  QD::Reset();
+
   GWorldActiveGuard activeGuard = gWorld.MakeActive();
 
   Rect rect = gWorld.Bounds();
-  Pattern background = Env::Gray();
+  Pattern background = QD::Gray();
   FillRect(&rect, &background);
 
   TRY(avatar.Draw(gWorld, avatar.Bounds()));
+
+  ManagedPolygon hex = Ngon(120, 120, 32, 6, M_PI_2);
+  QD_CHECKED(ErasePoly(hex.get()), "Couldn't clear hexagon");
+  PenSize(3, 3);
+  QD_CHECKED(FramePoly(hex.get()), "Couldn't draw hexagon");
 
   return Ok(Unit());
 }

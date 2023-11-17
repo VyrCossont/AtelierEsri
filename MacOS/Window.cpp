@@ -1,7 +1,7 @@
 #include <MacTypes.h>
 #include <MacWindows.h>
 
-#include "Env.hpp"
+#include "Drawing.hpp"
 #include "GWorld.hpp"
 #include "Result.hpp"
 #include "Window.hpp"
@@ -31,7 +31,7 @@ const WindowRef Window::allOtherWindows = reinterpret_cast<WindowRef>(-1);
 
 Result<Window> Window::Present(ResourceID resourceID,
                                WindowRef inFrontOf) noexcept {
-  GUARD_LET_TRY(bool, hasColorQuickDraw, Env::HasColorQuickDraw());
+  GUARD_LET_TRY(bool, hasColorQuickDraw, QD::HasColor());
 
   WindowRef windowRef;
   if (hasColorQuickDraw) {
