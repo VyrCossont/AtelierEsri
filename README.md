@@ -26,9 +26,9 @@ For more info about setting up WASM-4, see the [quickstart guide](https://wasm4.
 
 ## Folders
 
-`asset_originals` is not directly consumed by the build script, and contains project files in formats like [Pixaki](https://pixaki.com/)/[Aseprite](https://www.aseprite.org/) documents (graphics), [PICO-8](https://www.lexaloffle.com/pico-8.php) cartridges (music, sound effects), and [Tiled](https://www.mapeditor.org/) (tilesets, maps).
+`asset_originals` contains project files in formats like [Pixaki](https://pixaki.com/)/[Procreate](https://procreate.com/)/[Aseprite](https://www.aseprite.org/) documents (graphics), [PICO-8](https://www.lexaloffle.com/pico-8.php) cartridges (music, sound effects), and [Tiled](https://www.mapeditor.org/) (tilesets, maps).
 
-[`assets`](assets) is intended for consumption by the [build script](build.rs).
+[`assets`](assets) is intended for consumption by the [obsolete WASM-4 edition build script](build.rs).
 
 ## Licensing
 
