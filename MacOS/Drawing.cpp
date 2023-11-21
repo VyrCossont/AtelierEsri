@@ -77,21 +77,27 @@ Pattern QD::White() noexcept {
 #endif
 }
 
-ManagedPolygon Ngon(int16_t x, int16_t y, int16_t r, uint8_t n,
-                    float theta) noexcept {
+Ngon::Ngon(V2I center, int16_t r, uint8_t n, float theta) noexcept
+    : center(center), r(r), n(n), theta(theta) {}
+
+V2I Ngon::operator[](uint8_t i) const noexcept {
+  float thetaI = theta + (static_cast<float>(M_TWOPI) * static_cast<float>(i)) /
+                             static_cast<float>(n);
+  return {
+      static_cast<int16_t>(
+          center.x + static_cast<int16_t>(static_cast<float>(r) * cos(thetaI))),
+      static_cast<int16_t>(
+          center.y +
+          static_cast<int16_t>(static_cast<float>(r) * sin(thetaI)))};
+}
+
+ManagedPolygon Ngon::Polygon() const noexcept {
   PolyHandle polygon = OpenPoly();
-  MoveTo(static_cast<int16_t>(
-             x + static_cast<int16_t>(static_cast<float>(r) * cos(theta))),
-         static_cast<int16_t>(
-             y + static_cast<int16_t>(static_cast<float>(r) * sin(theta))));
+  V2I point = operator[](0);
+  MoveTo(point.x, point.y);
   for (uint8_t i = 1; i <= n; i++) {
-    float thetaI =
-        theta + (static_cast<float>(M_TWOPI) * static_cast<float>(i)) /
-                    static_cast<float>(n);
-    LineTo(static_cast<int16_t>(
-               x + static_cast<int16_t>(static_cast<float>(r) * cos(thetaI))),
-           static_cast<int16_t>(
-               y + static_cast<int16_t>(static_cast<float>(r) * sin(thetaI))));
+    point = operator[](i);
+    LineTo(point.x, point.y);
   }
   ClosePoly();
   return ManagedPolygon(polygon);

@@ -45,7 +45,24 @@ using ManagedRegion =
     std::unique_ptr<RgnPtr, ResourceReleaser<RgnHandle, DisposeRgn>>;
 #endif
 
-ManagedPolygon Ngon(int16_t x, int16_t y, int16_t r, uint8_t n,
-                    float theta) noexcept;
+struct V2I {
+  int16_t x;
+  int16_t y;
+};
+
+class Ngon {
+public:
+  Ngon(V2I center, int16_t r, uint8_t n, float theta) noexcept;
+
+  V2I operator[](uint8_t i) const noexcept;
+
+  ManagedPolygon Polygon() const noexcept;
+
+private:
+  V2I center;
+  int16_t r;
+  uint8_t n;
+  float theta;
+};
 
 } // namespace AtelierEsri
