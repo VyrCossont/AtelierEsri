@@ -10,7 +10,7 @@ type 'TMPL' {
 
 /* Template for region lists. */
 resource 'TMPL' (128, "RGN#") {
-	{	/* array fields: 5 elements */
+	{	/* array fields: 6 elements */
 		/* [1] */
 		"NumRegions",
 		"OCNT",
@@ -21,9 +21,12 @@ resource 'TMPL' (128, "RGN#") {
 		"Name",
 		"PSTR",
 		/* [4] */
+		"*****",
+		"AWRD",
+		/* [5] */
 		"Frame",
 		"RECT",
-		/* [5] */
+		/* [6] */
 		"*****",
 		"LSTE"
 	}
@@ -34,6 +37,7 @@ type 'RGN#' {
     unsigned integer = $$CountOf(regions);
     array regions {
         pstring;    /* name */
+        align word;
         rect;       /* frame */
     };
 };
