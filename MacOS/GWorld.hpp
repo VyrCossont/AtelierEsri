@@ -4,7 +4,7 @@
 
 #include <QDOffscreen.h>
 
-#include "Result.hpp"
+#include "Exception.hpp"
 
 namespace AtelierEsri {
 
@@ -14,15 +14,15 @@ class GWorldActiveGuard;
 /// An offscreen GWorld.
 class GWorld {
 public:
-  explicit GWorld(GWorldPtr ptr) noexcept;
+  explicit GWorld(GWorldPtr ptr);
   GWorld(GWorld &&src) noexcept;
   GWorld &operator=(GWorld &&src) noexcept;
   GWorld(const GWorld &src) = delete;
   GWorld &operator=(const GWorld &src) = delete;
-  ~GWorld() noexcept;
-  Result<GWorldLockPixelsGuard> LockPixels() noexcept;
-  GWorldActiveGuard MakeActive() noexcept;
-  Rect Bounds() noexcept;
+  ~GWorld();
+  GWorldLockPixelsGuard LockPixels();
+  GWorldActiveGuard MakeActive();
+  Rect Bounds();
 
 private:
   GWorldPtr ptr;
@@ -31,13 +31,13 @@ private:
 /// Guard object that locks the GWorld's pixels into memory.
 class GWorldLockPixelsGuard {
 public:
-  static Result<GWorldLockPixelsGuard> Construct(GWorldPtr ptr) noexcept;
-  ~GWorldLockPixelsGuard() noexcept;
+  static GWorldLockPixelsGuard Construct(GWorldPtr ptr);
+  ~GWorldLockPixelsGuard();
   /// Get the GWorld's bits. Should be used *only* with `CopyBits`, etc.
-  const BitMap *Bits() noexcept;
+  const BitMap *Bits();
 
 private:
-  GWorldLockPixelsGuard(GWorldPtr ptr, PixMapHandle hdl) noexcept;
+  GWorldLockPixelsGuard(GWorldPtr ptr, PixMapHandle hdl);
   GWorldPtr ptr;
   PixMapHandle hdl;
 };
@@ -45,8 +45,8 @@ private:
 /// Guard object that makes the GWorld active for drawing operations.
 class GWorldActiveGuard {
 public:
-  explicit GWorldActiveGuard(GWorldPtr ptr) noexcept;
-  ~GWorldActiveGuard() noexcept;
+  explicit GWorldActiveGuard(GWorldPtr ptr);
+  ~GWorldActiveGuard();
 
 private:
   CGrafPtr prevPort = nil;

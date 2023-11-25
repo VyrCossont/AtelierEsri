@@ -6,9 +6,9 @@ namespace AtelierEsri {
 std::optional<SysEnvRec> QD::sysEnvRec = {};
 #endif
 
-Result<bool> QD::HasColor() noexcept {
+bool QD::HasColor() {
 #if TARGET_API_MAC_CARBON
-  return Ok(true);
+  return true;
 #else
   if (!sysEnvRec.has_value()) {
     SysEnvRec newSysEnvRec;
@@ -16,18 +16,18 @@ Result<bool> QD::HasColor() noexcept {
                "Couldn't check QuickDraw capabilities");
     sysEnvRec = newSysEnvRec;
   }
-  return Ok(sysEnvRec->hasColorQD != 0);
+  return sysEnvRec->hasColorQD != 0;
 #endif
 }
 
-void QD::Reset() noexcept {
+void QD::Reset() {
   PenNormal();
 
   Pattern defaultBackground = QD::White();
   BackPat(&defaultBackground);
 }
 
-Pattern QD::Black() noexcept {
+Pattern QD::Black() {
 #if TARGET_API_MAC_CARBON
   Pattern pattern;
   GetQDGlobalsBlack(&pattern);
@@ -37,7 +37,7 @@ Pattern QD::Black() noexcept {
 #endif
 }
 
-Pattern QD::DarkGray() noexcept {
+Pattern QD::DarkGray() {
 #if TARGET_API_MAC_CARBON
   Pattern pattern;
   GetQDGlobalsDarkGray(&pattern);
@@ -47,7 +47,7 @@ Pattern QD::DarkGray() noexcept {
 #endif
 }
 
-Pattern QD::Gray() noexcept {
+Pattern QD::Gray() {
 #if TARGET_API_MAC_CARBON
   Pattern pattern;
   GetQDGlobalsGray(&pattern);
@@ -57,7 +57,7 @@ Pattern QD::Gray() noexcept {
 #endif
 }
 
-Pattern QD::LightGray() noexcept {
+Pattern QD::LightGray() {
 #if TARGET_API_MAC_CARBON
   Pattern pattern;
   GetQDGlobalsLightGray(&pattern);
@@ -67,7 +67,7 @@ Pattern QD::LightGray() noexcept {
 #endif
 }
 
-Pattern QD::White() noexcept {
+Pattern QD::White() {
 #if TARGET_API_MAC_CARBON
   Pattern pattern;
   GetQDGlobalsWhite(&pattern);
@@ -77,27 +77,27 @@ Pattern QD::White() noexcept {
 #endif
 }
 
-Ngon::Ngon(V2I center, int16_t r, uint8_t n, float theta) noexcept
+Ngon::Ngon(Point center, int16_t r, uint8_t n, float theta)
     : center(center), r(r), n(n), theta(theta) {}
 
-V2I Ngon::operator[](uint8_t i) const noexcept {
+Point Ngon::operator[](uint8_t i) const {
   float thetaI = theta + (static_cast<float>(M_TWOPI) * static_cast<float>(i)) /
                              static_cast<float>(n);
   return {
       static_cast<int16_t>(
-          center.x + static_cast<int16_t>(static_cast<float>(r) * cos(thetaI))),
+          center.h + static_cast<int16_t>(static_cast<float>(r) * cos(thetaI))),
       static_cast<int16_t>(
-          center.y +
+          center.v +
           static_cast<int16_t>(static_cast<float>(r) * sin(thetaI)))};
 }
 
-ManagedPolygon Ngon::Polygon() const noexcept {
+ManagedPolygon Ngon::Polygon() const {
   PolyHandle polygon = OpenPoly();
-  V2I point = operator[](0);
-  MoveTo(point.x, point.y);
+  Point point = operator[](0);
+  MoveTo(point.h, point.v);
   for (uint8_t i = 1; i <= n; i++) {
     point = operator[](i);
-    LineTo(point.x, point.y);
+    LineTo(point.h, point.v);
   }
   ClosePoly();
   return ManagedPolygon(polygon);

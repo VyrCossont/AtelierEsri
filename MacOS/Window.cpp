@@ -2,26 +2,26 @@
 #include <MacWindows.h>
 
 #include "Drawing.hpp"
+#include "Exception.hpp"
 #include "GWorld.hpp"
-#include "Result.hpp"
 #include "Window.hpp"
 
 namespace AtelierEsri {
 
-Window::Window(WindowRef windowRef) noexcept : windowRef(windowRef) {}
+Window::Window(WindowRef windowRef) : windowRef(windowRef) {}
 
-Window::Window(Window &&src) noexcept {
+Window::Window(Window &&src) {
   windowRef = src.windowRef;
   src.windowRef = nullptr;
 }
 
-Window &Window::operator=(Window &&src) noexcept {
+Window &Window::operator=(Window &&src) {
   windowRef = src.windowRef;
   src.windowRef = nullptr;
   return *this;
 }
 
-Window::~Window() noexcept {
+Window::~Window() {
   if (windowRef) {
     DisposeWindow(windowRef);
   }
@@ -29,9 +29,8 @@ Window::~Window() noexcept {
 
 const WindowRef Window::allOtherWindows = reinterpret_cast<WindowRef>(-1);
 
-Result<Window> Window::Present(ResourceID resourceID,
-                               WindowRef inFrontOf) noexcept {
-  GUARD_LET_TRY(bool, hasColorQuickDraw, QD::HasColor());
+Window Window::Present(ResourceID resourceID, WindowRef inFrontOf) {
+  bool hasColorQuickDraw = QD::HasColor();
 
   WindowRef windowRef;
   if (hasColorQuickDraw) {
@@ -41,10 +40,10 @@ Result<Window> Window::Present(ResourceID resourceID,
   }
   REQUIRE_NOT_NULL(windowRef);
 
-  return Ok(Window(windowRef));
+  return Window(windowRef);
 }
 
-Result<GWorld> Window::FastGWorld(int16_t w, int16_t h) noexcept {
+GWorld Window::FastGWorld(int16_t w, int16_t h) {
   Rect rect;
   GetWindowPortBounds(windowRef, &rect);
   if (w > 0 && h > 0) {
@@ -59,20 +58,20 @@ Result<GWorld> Window::FastGWorld(int16_t w, int16_t h) noexcept {
              "Couldn't create offscreen GWorld");
   REQUIRE_NOT_NULL(gWorldPtr);
 
-  return Ok(GWorld(gWorldPtr));
+  return GWorld(gWorldPtr);
 }
 
-Rect Window::PortBounds() noexcept {
+Rect Window::PortBounds() {
   Rect bounds;
   GetWindowPortBounds(windowRef, &bounds);
   return bounds;
 }
 
 // TODO: what happens if this is a non-color window?
-Result<CGrafPtr> Window::Port() noexcept {
+CGrafPtr Window::Port() {
   CGrafPtr port = GetWindowPort(windowRef);
   REQUIRE_NOT_NULL(port);
-  return Ok(port);
+  return port;
 }
 
 } // namespace AtelierEsri

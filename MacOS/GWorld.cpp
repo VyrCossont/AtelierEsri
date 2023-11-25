@@ -4,7 +4,7 @@
 
 namespace AtelierEsri {
 
-GWorld::GWorld(GWorldPtr ptr) noexcept : ptr(ptr) {}
+GWorld::GWorld(GWorldPtr ptr) : ptr(ptr) {}
 
 GWorld::GWorld(GWorld &&src) noexcept {
   ptr = src.ptr;
@@ -17,21 +17,19 @@ GWorld &GWorld::operator=(GWorld &&src) noexcept {
   return *this;
 }
 
-GWorld::~GWorld() noexcept {
+GWorld::~GWorld() {
   if (ptr) {
     DisposeGWorld(ptr);
   }
 }
 
-Result<GWorldLockPixelsGuard> GWorld::LockPixels() noexcept {
+GWorldLockPixelsGuard GWorld::LockPixels() {
   return GWorldLockPixelsGuard::Construct(ptr);
 }
 
-GWorldActiveGuard GWorld::MakeActive() noexcept {
-  return GWorldActiveGuard(ptr);
-}
+GWorldActiveGuard GWorld::MakeActive() { return GWorldActiveGuard(ptr); }
 
-Rect GWorld::Bounds() noexcept {
+Rect GWorld::Bounds() {
 #if TARGET_API_MAC_CARBON
   Rect bounds;
   GetPortBounds(ptr, &bounds);
@@ -41,8 +39,7 @@ Rect GWorld::Bounds() noexcept {
 #endif
 }
 
-Result<GWorldLockPixelsGuard>
-GWorldLockPixelsGuard::Construct(GWorldPtr ptr) noexcept {
+GWorldLockPixelsGuard GWorldLockPixelsGuard::Construct(GWorldPtr ptr) {
   PixMapHandle hdl = GetGWorldPixMap(ptr);
   REQUIRE_NOT_NULL(hdl);
 
@@ -51,16 +48,15 @@ GWorldLockPixelsGuard::Construct(GWorldPtr ptr) noexcept {
     BAIL("Couldn't lock pixels for offscreen GWorld");
   }
 
-  return Ok(GWorldLockPixelsGuard(ptr, hdl));
+  return {ptr, hdl};
 }
 
-GWorldLockPixelsGuard::GWorldLockPixelsGuard(GWorldPtr ptr,
-                                             PixMapHandle hdl) noexcept
+GWorldLockPixelsGuard::GWorldLockPixelsGuard(GWorldPtr ptr, PixMapHandle hdl)
     : ptr(ptr), hdl(hdl) {}
 
-GWorldLockPixelsGuard::~GWorldLockPixelsGuard() noexcept { UnlockPixels(hdl); }
+GWorldLockPixelsGuard::~GWorldLockPixelsGuard() { UnlockPixels(hdl); }
 
-const BitMap *GWorldLockPixelsGuard::Bits() noexcept {
+const BitMap *GWorldLockPixelsGuard::Bits() {
 #if TARGET_API_MAC_CARBON
   return GetPortBitMapForCopyBits(ptr);
 #else
@@ -68,14 +64,12 @@ const BitMap *GWorldLockPixelsGuard::Bits() noexcept {
 #endif
 }
 
-GWorldActiveGuard::GWorldActiveGuard(GWorldPtr ptr) noexcept {
+GWorldActiveGuard::GWorldActiveGuard(GWorldPtr ptr) {
   GetGWorld(&this->prevPort, &this->prevDevice);
   GDHandle device = GetGWorldDevice(ptr);
   SetGWorld(ptr, device);
 }
 
-GWorldActiveGuard::~GWorldActiveGuard() noexcept {
-  SetGWorld(prevPort, prevDevice);
-}
+GWorldActiveGuard::~GWorldActiveGuard() { SetGWorld(prevPort, prevDevice); }
 
 } // namespace AtelierEsri

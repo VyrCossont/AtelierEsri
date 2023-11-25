@@ -1,15 +1,15 @@
-#include "Error.hpp"
+#include "Exception.hpp"
 
 #include "Strings.hpp"
 
 namespace AtelierEsri {
 
-Error::Error(const char *message, OSErr osErr, const char *file, uint32_t line,
-             const char *function)
+Exception::Exception(const char *message, OSErr osErr, const char *file,
+                     uint32_t line, const char *function)
     : message(message), osErr(osErr), file(file), line(line),
       function(function) {}
 
-std::string Error::Explanation() const {
+std::string Exception::Explanation() const {
   if (osErr) {
     return Strings::FormatShort("%s (OSErr %d)", message, osErr);
   } else {
@@ -23,7 +23,7 @@ static const char separator = '\\';
 static const char separator = '/';
 #endif
 
-std::string Error::Location() const {
+std::string Exception::Location() const {
   char const *filename = file;
   if (file) {
     char const *c = file;

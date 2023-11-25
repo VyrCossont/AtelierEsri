@@ -4,7 +4,7 @@
 
 #include <Resources.h>
 
-#include "Result.hpp"
+#include "Exception.hpp"
 
 namespace AtelierEsri {
 
@@ -12,7 +12,7 @@ using ResourceID = int16_t;
 
 /// Release the resource without doing anything else.
 template <typename ResourceHandleType = Handle>
-void ResourceReleaseFn(ResourceHandleType handle) noexcept {
+void ResourceReleaseFn(ResourceHandleType handle) {
   // TODO: (Vyr) log or panic if this call fails. It can set `ResError()`.
   ReleaseResource(reinterpret_cast<Handle>(handle));
 }
@@ -22,7 +22,7 @@ template <typename ResourceHandleType = Handle,
           auto releaseFn = ResourceReleaseFn<ResourceHandleType>>
 class ResourceReleaser {
 public:
-  void operator()(ResourceHandleType resourceHandle) noexcept {
+  void operator()(ResourceHandleType resourceHandle) {
     releaseFn(resourceHandle);
   };
 };
@@ -30,7 +30,7 @@ public:
 /// Get a resource of a given type without doing anything else.
 /// May set `ResError()`.
 template <ResType resourceType, typename ResourceHandleType = Handle>
-ResourceHandleType ResourceGetFn(ResourceID resourceID) noexcept {
+ResourceHandleType ResourceGetFn(ResourceID resourceID) {
   return static_cast<ResourceHandleType>(GetResource(resourceType, resourceID));
 }
 
@@ -45,11 +45,11 @@ template <ResType resourceType, typename ResourcePointerType = Ptr,
           auto releaseFn = ResourceReleaseFn<ResourceHandleType>>
 class Resource {
 public:
-  static Result<Resource> Get(ResourceID resourceID) noexcept {
+  static Resource Get(ResourceID resourceID) {
     ResourceHandleType handle =
         RES_CHECKED(getFn(resourceID), "Couldn't load resource");
     REQUIRE_NOT_NULL(handle);
-    return Ok(Resource(handle));
+    return Resource(handle);
   }
 
   Resource(Resource &&src) noexcept { this->handle = std::move(src.handle); };
@@ -65,10 +65,10 @@ public:
 
   /// Get an unmanaged handle to the resource.
   /// TODO: (Vyr) support purgeable resources by making this a guard object.
-  ResourceHandleType Unmanaged() noexcept { return handle.get(); }
+  ResourceHandleType Unmanaged() { return handle.get(); }
 
 private:
-  explicit Resource(ResourceHandleType handle) noexcept : handle(handle) {}
+  explicit Resource(ResourceHandleType handle) : handle(handle) {}
 
   std::unique_ptr<ResourcePointerType,
                   ResourceReleaser<ResourceHandleType, releaseFn>>

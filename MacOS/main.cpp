@@ -6,7 +6,7 @@
 #include "AppResources.h"
 #include "Debug.hpp"
 #include "Env.hpp"
-#include "Result.hpp"
+#include "Exception.hpp"
 #include "Strings.hpp"
 
 namespace AtelierEsri {
@@ -16,25 +16,23 @@ namespace AtelierEsri {
 static OSErr appError = static_cast<OSErr>(666);
 
 /// Display a fatal error.
-void FatalError(const Error &error) noexcept {
-  Debug::Printfln("Fatal error: %s\n%s", error.Explanation().c_str(),
-                  error.Location().c_str());
+void FatalError(const std::string &explanation, const std::string &location) {
+  Debug::Printfln("Fatal error: %s\n%s", explanation.c_str(), location.c_str());
 
-  Str255 explanation, location;
-  Strings::ToPascal(error.Explanation(), explanation);
-  Strings::ToPascal(error.Location(), location);
-  ParamText(explanation, location, nullptr, nullptr);
+  Str255 pascalExplanation, pascalLocation;
+  Strings::ToPascal(explanation, pascalExplanation);
+  Strings::ToPascal(location, pascalLocation);
+  ParamText(pascalExplanation, pascalLocation, nullptr, nullptr);
 
   AtelierEsri::Alert alert(errorALRTResourceID, AtelierEsri::AlertType::stop);
-  // Ignore the result.
   alert.Show();
 }
 
 /// Create and run the app.
-Result<Unit> Run() {
+void Run() {
   Env::Initialize();
 
-  GUARD_LET_TRY(App, app, App::New());
+  App app = App::New();
   return app.EventLoop();
 }
 
@@ -44,11 +42,20 @@ int main() {
   using namespace AtelierEsri;
 
   OSErr osErr = noErr;
-  Result<Unit> result = Run();
-  if (result.is_err()) {
-    FatalError(result.err_value());
-    osErr = result.err_value().osErr;
+  try {
+    Run();
+  } catch (const Exception &e) {
+    FatalError(e.Explanation(), e.Location());
+    osErr = e.osErr;
     osErr = osErr ? osErr : appError;
+  } catch (const std::exception &e) {
+    std::string explanation(e.what());
+    std::string location("<unknown location>");
+    osErr = appError;
+  } catch (...) {
+    std::string explanation("<unknown exception>");
+    std::string location("<unknown location>");
+    osErr = appError;
   }
 
 #if !TARGET_API_MAC_CARBON

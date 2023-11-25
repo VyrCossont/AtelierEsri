@@ -7,13 +7,13 @@ namespace AtelierEsri {
 
 class Game {
 public:
-  static Result<Game> Setup(Window &window) noexcept;
+  static Game Setup(Window &window);
   /// Called at approximately 60 Hz.
   void Update();
-  Result<Unit> Draw(GWorld &gWorld) noexcept;
+  void Draw(GWorld &gWorld);
 
 private:
-  explicit Game(SpriteSheet &&spriteSheet) noexcept;
+  explicit Game(SpriteSheet &&spriteSheet);
   SpriteSheet spriteSheet;
 };
 

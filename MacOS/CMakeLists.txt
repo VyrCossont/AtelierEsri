@@ -13,7 +13,7 @@ add_application(AtelierEsri
         Debug.cpp
         Drawing.cpp
         Env.cpp
-        Error.cpp
+        Exception.cpp
         Game.cpp
         GWorld.cpp
         MaskedImage.cpp

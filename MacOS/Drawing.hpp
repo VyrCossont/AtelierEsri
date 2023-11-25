@@ -8,8 +8,8 @@
 #include <OSUtils.h>
 #include <Quickdraw.h>
 
+#include "Exception.hpp"
 #include "Resource.hpp"
-#include "Result.hpp"
 
 namespace AtelierEsri {
 
@@ -17,16 +17,16 @@ namespace AtelierEsri {
 class QD {
 public:
   /// Return whether Color QuickDraw is available.
-  static Result<bool> HasColor() noexcept;
+  static bool HasColor();
 
   /// Reset graphics port to defaults.
-  static void Reset() noexcept;
+  static void Reset();
 
-  static Pattern Black() noexcept;
-  static Pattern DarkGray() noexcept;
-  static Pattern Gray() noexcept;
-  static Pattern LightGray() noexcept;
-  static Pattern White() noexcept;
+  static Pattern Black();
+  static Pattern DarkGray();
+  static Pattern Gray();
+  static Pattern LightGray();
+  static Pattern White();
 
 private:
 #if !TARGET_API_MAC_CARBON
@@ -45,21 +45,16 @@ using ManagedRegion =
     std::unique_ptr<RgnPtr, ResourceReleaser<RgnHandle, DisposeRgn>>;
 #endif
 
-struct V2I {
-  int16_t x;
-  int16_t y;
-};
-
 class Ngon {
 public:
-  Ngon(V2I center, int16_t r, uint8_t n, float theta) noexcept;
+  Ngon(Point center, int16_t r, uint8_t n, float theta);
 
-  V2I operator[](uint8_t i) const noexcept;
+  Point operator[](uint8_t i) const;
 
-  ManagedPolygon Polygon() const noexcept;
+  ManagedPolygon Polygon() const;
 
 private:
-  V2I center;
+  Point center;
   int16_t r;
   uint8_t n;
   float theta;

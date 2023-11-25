@@ -7,13 +7,12 @@
 
 namespace AtelierEsri {
 
-Result<Picture> Picture::Get(ResourceID resourceID) noexcept {
-  GUARD_LET_TRY(PICTResource, resource, PICTResource::Get(resourceID));
-  return Ok(Picture(std::move(resource)));
+Picture Picture::Get(ResourceID resourceID) {
+  PICTResource resource = PICTResource::Get(resourceID);
+  return Picture(std::move(resource));
 }
 
-Picture::Picture(PICTResource &&resource) noexcept
-    : resource(std::move(resource)) {}
+Picture::Picture(PICTResource &&resource) : resource(std::move(resource)) {}
 
 Picture::Picture(Picture &&src) noexcept : resource(std::move(src.resource)) {}
 
@@ -22,29 +21,27 @@ Picture &Picture::operator=(Picture &&src) noexcept {
   return *this;
 }
 
-Result<Rect> Picture::Bounds() noexcept {
+Rect Picture::Bounds() {
   PictInfo pictInfo;
   OS_CHECKED(GetPictInfo(resource.Unmanaged(), &pictInfo, 0, 0, 0, 0),
              "Couldn't get picture info");
-  return Ok(pictInfo.sourceRect);
+  return pictInfo.sourceRect;
 }
 
-Result<Unit> Picture::Draw(const Rect &rect) noexcept {
+void Picture::Draw(const Rect &rect) {
   QD_CHECKED(DrawPicture(resource.Unmanaged(), &rect), "Couldn't draw picture");
-  return Ok(Unit());
 }
 
-Result<MaskedImage> MaskedImage::Get(int16_t imageResourceID,
-                                     int16_t maskResourceID,
-                                     Window &window) noexcept {
-  GUARD_LET_TRY(Picture, imagePicture, Picture::Get(imageResourceID));
-  GUARD_LET_TRY(Rect, imageRect, imagePicture.Bounds());
+MaskedImage MaskedImage::Get(int16_t imageResourceID, int16_t maskResourceID,
+                             Window &window) {
+  Picture imagePicture = Picture::Get(imageResourceID);
+  Rect imageRect = imagePicture.Bounds();
   if (imageRect.left != 0 || imageRect.top != 0) {
     BAIL("Image rect doesn't start at origin");
   }
 
-  GUARD_LET_TRY(Picture, maskPicture, Picture::Get(maskResourceID));
-  GUARD_LET_TRY(Rect, maskRect, imagePicture.Bounds());
+  Picture maskPicture = Picture::Get(maskResourceID);
+  Rect maskRect = imagePicture.Bounds();
   if (maskRect.left != 0 || maskRect.top != 0) {
     BAIL("Mask rect doesn't start at origin");
   }
@@ -54,15 +51,13 @@ Result<MaskedImage> MaskedImage::Get(int16_t imageResourceID,
     BAIL("Image dimensions don't match mask dimensions");
   }
 
-  GUARD_LET_TRY(GWorld, image,
-                window.FastGWorld(imageRect.right, imageRect.bottom));
-  TRY(DrawInto(imagePicture, imageRect, image));
+  GWorld image = window.FastGWorld(imageRect.right, imageRect.bottom);
+  DrawInto(imagePicture, imageRect, image);
 
-  GUARD_LET_TRY(GWorld, mask,
-                window.FastGWorld(imageRect.right, imageRect.bottom));
-  TRY(DrawInto(maskPicture, maskRect, mask));
+  GWorld mask = window.FastGWorld(imageRect.right, imageRect.bottom);
+  DrawInto(maskPicture, maskRect, mask);
 
-  return Ok(MaskedImage(std::move(image), std::move(mask), imageRect));
+  return MaskedImage(std::move(image), std::move(mask), imageRect);
 }
 
 MaskedImage::MaskedImage(MaskedImage &&src) noexcept
@@ -75,36 +70,28 @@ MaskedImage &MaskedImage::operator=(MaskedImage &&src) noexcept {
   return *this;
 }
 
-Rect MaskedImage::Bounds() noexcept { return rect; }
+Rect MaskedImage::Bounds() { return rect; }
 
-Result<Unit> MaskedImage::Draw(AtelierEsri::GWorld &destination,
-                               const Rect &srcRect,
-                               const Rect &dstRec) noexcept {
-  GUARD_LET_TRY(GWorldLockPixelsGuard, destinationLockPixelsGuard,
-                destination.LockPixels());
-  GUARD_LET_TRY(GWorldLockPixelsGuard, imageLockPixelsGuard,
-                image.LockPixels());
-  GUARD_LET_TRY(GWorldLockPixelsGuard, maskLockPixelsGuard, mask.LockPixels());
+void MaskedImage::Draw(AtelierEsri::GWorld &destination, const Rect &srcRect,
+                       const Rect &dstRec) {
+  GWorldLockPixelsGuard destinationLockPixelsGuard = destination.LockPixels();
+  GWorldLockPixelsGuard imageLockPixelsGuard = image.LockPixels();
+  GWorldLockPixelsGuard maskLockPixelsGuard = mask.LockPixels();
 
   QD_CHECKED(CopyMask(imageLockPixelsGuard.Bits(), maskLockPixelsGuard.Bits(),
                       destinationLockPixelsGuard.Bits(), &srcRect, &srcRect,
                       &dstRec),
              "CopyMask failed");
-
-  return Ok(Unit());
 }
 
-MaskedImage::MaskedImage(GWorld &&image, GWorld &&mask, Rect rect) noexcept
+MaskedImage::MaskedImage(GWorld &&image, GWorld &&mask, Rect rect)
     : image(std::move(image)), mask(std::move(mask)), rect(rect) {}
 
-Result<Unit> MaskedImage::DrawInto(Picture &picture, const Rect &rect,
-                                   GWorld &gWorld) noexcept {
-  GUARD_LET_TRY(GWorldLockPixelsGuard, lockPixelsGuard, gWorld.LockPixels());
+void MaskedImage::DrawInto(Picture &picture, const Rect &rect, GWorld &gWorld) {
+  GWorldLockPixelsGuard lockPixelsGuard = gWorld.LockPixels();
   GWorldActiveGuard activeGuard = gWorld.MakeActive();
 
   picture.Draw(rect);
-
-  return Ok(Unit());
 }
 
 } // namespace AtelierEsri

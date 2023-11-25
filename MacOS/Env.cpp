@@ -11,7 +11,7 @@
 
 namespace AtelierEsri {
 
-void Env::Initialize() noexcept {
+void Env::Initialize() {
 #if !TARGET_API_MAC_CARBON
   InitGraf(&qd.thePort);
   InitFonts();
@@ -32,7 +32,7 @@ union U64 {
   uint64_t as_int;
 };
 
-uint64_t Env::Microseconds() noexcept {
+uint64_t Env::Microseconds() {
   U64 u64 = {0};
   ::Microseconds(&u64.as_struct);
   return u64.as_int;

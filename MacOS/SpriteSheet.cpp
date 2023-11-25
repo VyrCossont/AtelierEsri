@@ -2,14 +2,13 @@
 
 namespace AtelierEsri {
 
-Result<SpriteSheet> SpriteSheet::Get(MaskedImage &&maskedImage,
-                                     ResourceID rgnResourceID) noexcept {
-  GUARD_LET_TRY(std::vector<Rect>, regions, ReadRGN(rgnResourceID));
-  return Ok(SpriteSheet(std::move(maskedImage), std::move(regions)));
+SpriteSheet SpriteSheet::New(MaskedImage &&maskedImage,
+                             ResourceID rgnResourceID) {
+  std::vector<Rect> regions = ReadRGN(rgnResourceID);
+  return SpriteSheet(std::move(maskedImage), std::move(regions));
 }
 
-SpriteSheet::SpriteSheet(MaskedImage &&maskedImage,
-                         std::vector<Rect> &&regions) noexcept
+SpriteSheet::SpriteSheet(MaskedImage &&maskedImage, std::vector<Rect> &&regions)
     : maskedImage(std::move(maskedImage)), regions(std::move(regions)) {}
 
 SpriteSheet::SpriteSheet(SpriteSheet &&src) noexcept
@@ -22,16 +21,14 @@ SpriteSheet &SpriteSheet::operator=(SpriteSheet &&src) noexcept {
   return *this;
 }
 
-Result<std::vector<Rect>>
-SpriteSheet::ReadRGN(ResourceID rgnResourceID) noexcept {
-  GUARD_LET_TRY(RGNResource, rgnResource, RGNResource::Get(rgnResourceID));
+std::vector<Rect> SpriteSheet::ReadRGN(ResourceID rgnResourceID) {
+  RGNResource rgnResource = RGNResource::Get(rgnResourceID);
   size_t rgnLen = RES_CHECKED(GetMaxResourceSize(rgnResource.Unmanaged()),
                               "Couldn't get RGN# resource size");
   return ReadRGN(rgnLen, reinterpret_cast<uint8_t *>(*rgnResource.Unmanaged()));
 }
 
-Result<std::vector<Rect>> SpriteSheet::ReadRGN(size_t rgnLen,
-                                               uint8_t *rgnPtr) noexcept {
+std::vector<Rect> SpriteSheet::ReadRGN(size_t rgnLen, uint8_t *rgnPtr) {
   if (rgnLen < sizeof(uint16_t)) {
     BAIL("RGN# resource too small");
   }
@@ -66,11 +63,11 @@ Result<std::vector<Rect>> SpriteSheet::ReadRGN(size_t rgnLen,
     count--;
   }
 
-  return Ok(regions);
+  return regions;
 }
 
-Result<Unit> SpriteSheet::Draw(GWorld &gWorld, size_t spriteIndex,
-                               const Rect &dstRect) noexcept {
+void SpriteSheet::Draw(GWorld &gWorld, size_t spriteIndex,
+                       const Rect &dstRect) {
   if (spriteIndex >= regions.size()) {
     BAIL("Invalid sprite index");
   }

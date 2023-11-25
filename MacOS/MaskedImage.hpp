@@ -2,9 +2,9 @@
 
 #include <Quickdraw.h>
 
+#include "Exception.hpp"
 #include "GWorld.hpp"
 #include "Resource.hpp"
-#include "Result.hpp"
 #include "Window.hpp"
 
 namespace AtelierEsri {
@@ -12,9 +12,9 @@ namespace AtelierEsri {
 /// `PICT` resource with typed operations.
 class Picture {
 public:
-  static Result<Picture> Get(ResourceID resourceID) noexcept;
-  Result<Rect> Bounds() noexcept;
-  Result<Unit> Draw(const Rect &rect) noexcept;
+  static Picture Get(ResourceID resourceID);
+  Rect Bounds();
+  void Draw(const Rect &rect);
 
   Picture(Picture &&src) noexcept;
   Picture &operator=(Picture &&src) noexcept;
@@ -22,18 +22,17 @@ public:
   Picture &operator=(const Picture &src) = delete;
 
 private:
-  explicit Picture(PICTResource &&resource) noexcept;
+  explicit Picture(PICTResource &&resource);
   PICTResource resource;
 };
 
 class MaskedImage {
 public:
-  static Result<MaskedImage>
-  Get(int16_t imageResourceID, int16_t maskResourceID, Window &window) noexcept;
-  Rect Bounds() noexcept;
+  static MaskedImage Get(int16_t imageResourceID, int16_t maskResourceID,
+                         Window &window);
+  Rect Bounds();
   /// Copy the masked image into a `GWorld`.
-  Result<Unit> Draw(GWorld &gWorld, const Rect &srcRect,
-                    const Rect &dstRect) noexcept;
+  void Draw(GWorld &gWorld, const Rect &srcRect, const Rect &dstRect);
 
   MaskedImage(MaskedImage &&src) noexcept;
   MaskedImage &operator=(MaskedImage &&src) noexcept;
@@ -41,10 +40,9 @@ public:
   MaskedImage &operator=(const MaskedImage &src) = delete;
 
 private:
-  explicit MaskedImage(GWorld &&image, GWorld &&mask, Rect rect) noexcept;
+  explicit MaskedImage(GWorld &&image, GWorld &&mask, Rect rect);
   /// Used to copy an image or mask picture into a `GWorld` during setup.
-  static Result<Unit> DrawInto(Picture &picture, const Rect &rect,
-                               GWorld &gWorld) noexcept;
+  static void DrawInto(Picture &picture, const Rect &rect, GWorld &gWorld);
 
   GWorld image;
   GWorld mask;

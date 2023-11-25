@@ -1,11 +1,10 @@
 #pragma once
 
 #include "Alert.hpp"
-#include "Error.hpp"
+#include "Exception.hpp"
 #include "GWorld.hpp"
 #include "Game.hpp"
 #include "Resource.hpp"
-#include "Result.hpp"
 #include "Window.hpp"
 
 namespace AtelierEsri {
@@ -13,20 +12,20 @@ namespace AtelierEsri {
 /// Responsible for initing the Toolbox and running the event loop.
 class App {
 public:
-  static Result<App> New() noexcept;
+  static App New();
 
   /// Run the event loop.
-  Result<Unit> EventLoop() noexcept;
+  void EventLoop();
 
 private:
-  App(Window gameWindow, GWorld offscreenGWorld, Game game) noexcept;
+  App(Window gameWindow, GWorld offscreenGWorld, Game game);
 
-  static Result<Unit> SetupMenuBar() noexcept;
+  static void SetupMenuBar();
 
   /// Returns true if we should quit.
-  bool HandleMenuSelection(int32_t menuSelection) noexcept;
+  bool HandleMenuSelection(int32_t menuSelection);
 
-  void AboutBox() noexcept;
+  void AboutBox();
 
   /// Window in which the game world gets drawn.
   /// Auxiliary windows or dialogs may be used, but we'll always need this

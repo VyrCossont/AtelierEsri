@@ -8,22 +8,21 @@
 #include "AppResources.h"
 #include "Debug.hpp"
 #include "Env.hpp"
+#include "Exception.hpp"
 #include "GWorld.hpp"
 #include "Game.hpp"
-#include "Result.hpp"
 
 namespace AtelierEsri {
 
-Result<App> App::New() noexcept {
-  TRY(SetupMenuBar());
-  GUARD_LET_TRY(Window, gameWindow, Window::Present(gameWINDResourceID));
-  GUARD_LET_TRY(GWorld, offscreenGWorld, gameWindow.FastGWorld());
-  GUARD_LET_TRY(Game, game, Game::Setup(gameWindow));
-  return Ok(
-      App(std::move(gameWindow), std::move(offscreenGWorld), std::move(game)));
+App App::New() {
+  SetupMenuBar();
+  Window gameWindow = Window::Present(gameWINDResourceID);
+  GWorld offscreenGWorld = gameWindow.FastGWorld();
+  Game game = Game::Setup(gameWindow);
+  return {std::move(gameWindow), std::move(offscreenGWorld), std::move(game)};
 }
 
-Result<Unit> App::SetupMenuBar() noexcept {
+void App::SetupMenuBar() {
   MenuBarHandle menuBar = GetNewMBar(menuBarMBARResourceID);
   REQUIRE_NOT_NULL(menuBar);
   SetMenuBar(menuBar);
@@ -42,22 +41,20 @@ Result<Unit> App::SetupMenuBar() noexcept {
   // Menu bar not retained after this because it doesn't have to be:
   // https://preterhuman.net/macstuff/insidemac/Toolbox/Toolbox-98.html#MARKER-9-260
   DisposeHandle(menuBar);
-
-  return Ok(Unit());
 }
 
-App::App(Window gameWindow, GWorld offscreenGWorld, Game game) noexcept
+App::App(Window gameWindow, GWorld offscreenGWorld, Game game)
     : gameWindow(std::move(gameWindow)),
       offscreenGWorld(std::move(offscreenGWorld)), game(std::move(game)) {}
 
-Result<Unit> Copy(GWorld &gWorld, Window &window) {
-  GUARD_LET_TRY(GWorldLockPixelsGuard, lockPixelsGuard, gWorld.LockPixels());
+void Copy(GWorld &gWorld, Window &window) {
+  GWorldLockPixelsGuard lockPixelsGuard = gWorld.LockPixels();
 
   Rect gWorldRect = gWorld.Bounds();
   const BitMap *gWorldBits = lockPixelsGuard.Bits();
 
   Rect windowRect = window.PortBounds();
-  GUARD_LET_TRY(CGrafPtr, windowPort, window.Port());
+  CGrafPtr windowPort = window.Port();
 
 #if TARGET_API_MAC_CARBON
   const BitMap *windowBits = GetPortBitMapForCopyBits(windowPort);
@@ -68,11 +65,9 @@ Result<Unit> Copy(GWorld &gWorld, Window &window) {
   QD_CHECKED(CopyBits(gWorldBits, windowBits, &gWorldRect, &windowRect, srcCopy,
                       nullptr),
              "Couldn't copy from offscreen GWorld");
-
-  return Ok(Unit());
 }
 
-Result<Unit> App::EventLoop() noexcept {
+void App::EventLoop() {
   EventRecord event;
   /// Ticks (approx. 1/60th of a second)
   uint32_t sleepTimeTicks = 1;
@@ -93,7 +88,7 @@ Result<Unit> App::EventLoop() noexcept {
 #pragma clang diagnostic pop
         bool quit = HandleMenuSelection(MenuKey(key));
         if (quit) {
-          return Ok(Unit());
+          return;
         }
       }
       break;
@@ -104,7 +99,7 @@ Result<Unit> App::EventLoop() noexcept {
       case inMenuBar: {
         bool quit = HandleMenuSelection(MenuSelect(event.where));
         if (quit) {
-          return Ok(Unit());
+          return;
         }
       } break;
 
@@ -135,7 +130,7 @@ Result<Unit> App::EventLoop() noexcept {
       game.Draw(offscreenGWorld);
 
       Copy(offscreenGWorld, gameWindow);
-      SetPort((GrafPtr)gameWindow.Port().ok_value());
+      SetPort((GrafPtr)gameWindow.Port());
     }
   }
 }
@@ -151,7 +146,7 @@ enum FileMenuItems {
   quit = 4,
 };
 
-bool App::HandleMenuSelection(int32_t menuSelection) noexcept {
+bool App::HandleMenuSelection(int32_t menuSelection) {
   int16_t menuID = HiWord(menuSelection);
   int16_t menuItem = LoWord(menuSelection);
   Debug::Printfln("Menu selection: menuID = %d, menuItem = %d", menuID,
@@ -206,7 +201,7 @@ bool App::HandleMenuSelection(int32_t menuSelection) noexcept {
   return false;
 }
 
-void App::AboutBox() noexcept {
+void App::AboutBox() {
   // TODO
 }
 
