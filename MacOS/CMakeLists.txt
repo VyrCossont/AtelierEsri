@@ -3,24 +3,63 @@ project(AtelierEsri)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_application(AtelierEsri
-        # CONSOLE
-        main.cpp
-        AppResources.r
-        Assets.rsrc
-        App.cpp
-        Alert.cpp
-        Debug.cpp
-        Drawing.cpp
-        Env.cpp
-        Exception.cpp
-        Game.cpp
-        GWorld.cpp
-        MaskedImage.cpp
-        SpriteSheet.cpp
-        Strings.cpp
-        Window.cpp
+if ((CMAKE_SYSTEM_NAME MATCHES Retro68)
+        OR (CMAKE_SYSTEM_NAME MATCHES RetroPPC)
+        OR (CMAKE_SYSTEM_NAME MATCHES RetroCarbon))
+    set(RETRO68 TRUE CACHE BOOL "Is this target Retro68?")
+else ()
+    set(RETRO68 FALSE CACHE BOOL "Is this target Retro68?")
+endif ()
+
+# Portable library containing platform-independent code.
+# In particular, should not depend on Apple universal headers.
+add_library(Breeze STATIC
+        Breeze/Alchemy.cpp
 )
+
+# Target for running Breeze tests on the host platform.
+if (NOT RETRO68)
+    add_executable(BreezeTests
+            Breeze
+            Breeze/AlchemyTest.cpp
+    )
+    target_link_libraries(BreezeTests PUBLIC Breeze)
+    target_include_directories(BreezeTests PUBLIC
+            "${PROJECT_BINARY_DIR}"
+            "${PROJECT_SOURCE_DIR}/Breeze")
+    find_package(Catch2 3 REQUIRED)
+    target_link_libraries(BreezeTests PRIVATE Catch2::Catch2WithMain)
+
+    include(CTest)
+    include(Catch)
+    catch_discover_tests(BreezeTests)
+endif ()
+
+# The actual game, for the target platforms.
+if (RETRO68)
+    add_application(AtelierEsri
+            # CONSOLE
+            main.cpp
+            AppResources.r
+            Assets.rsrc
+            App.cpp
+            Alert.cpp
+            Debug.cpp
+            Drawing.cpp
+            Env.cpp
+            Exception.cpp
+            Game.cpp
+            GWorld.cpp
+            MaskedImage.cpp
+            SpriteSheet.cpp
+            Strings.cpp
+            Window.cpp
+    )
+    target_link_libraries(AtelierEsri PUBLIC Breeze)
+    target_include_directories(AtelierEsri PUBLIC
+            "${PROJECT_BINARY_DIR}"
+            "${PROJECT_SOURCE_DIR}/Breeze")
+endif ()
 
 # Size reduction disabled because it breaks exceptions on 68k:
 # https://github.com/autc04/Retro68/issues/217
