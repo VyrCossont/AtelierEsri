@@ -15,6 +15,13 @@ Result<Picture> Picture::Get(ResourceID resourceID) noexcept {
 Picture::Picture(PICTResource &&resource) noexcept
     : resource(std::move(resource)) {}
 
+Picture::Picture(Picture &&src) noexcept : resource(std::move(src.resource)) {}
+
+Picture &Picture::operator=(Picture &&src) noexcept {
+  this->resource = std::move(src.resource);
+  return *this;
+}
+
 Result<Rect> Picture::Bounds() noexcept {
   PictInfo pictInfo;
   OS_CHECKED(GetPictInfo(resource.Unmanaged(), &pictInfo, 0, 0, 0, 0),
@@ -58,10 +65,21 @@ Result<MaskedImage> MaskedImage::Get(int16_t imageResourceID,
   return Ok(MaskedImage(std::move(image), std::move(mask), imageRect));
 }
 
+MaskedImage::MaskedImage(MaskedImage &&src) noexcept
+    : image(std::move(src.image)), mask(std::move(src.mask)), rect(src.rect) {}
+
+MaskedImage &MaskedImage::operator=(MaskedImage &&src) noexcept {
+  this->image = std::move(src.image);
+  this->mask = std::move(src.mask);
+  this->rect = src.rect;
+  return *this;
+}
+
 Rect MaskedImage::Bounds() noexcept { return rect; }
 
 Result<Unit> MaskedImage::Draw(AtelierEsri::GWorld &destination,
-                               const Rect &destinationRect) noexcept {
+                               const Rect &srcRect,
+                               const Rect &dstRec) noexcept {
   GUARD_LET_TRY(GWorldLockPixelsGuard, destinationLockPixelsGuard,
                 destination.LockPixels());
   GUARD_LET_TRY(GWorldLockPixelsGuard, imageLockPixelsGuard,
@@ -69,8 +87,8 @@ Result<Unit> MaskedImage::Draw(AtelierEsri::GWorld &destination,
   GUARD_LET_TRY(GWorldLockPixelsGuard, maskLockPixelsGuard, mask.LockPixels());
 
   QD_CHECKED(CopyMask(imageLockPixelsGuard.Bits(), maskLockPixelsGuard.Bits(),
-                      destinationLockPixelsGuard.Bits(), &rect, &rect,
-                      &destinationRect),
+                      destinationLockPixelsGuard.Bits(), &srcRect, &srcRect,
+                      &dstRec),
              "CopyMask failed");
 
   return Ok(Unit());

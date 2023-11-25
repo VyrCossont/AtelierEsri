@@ -78,5 +78,6 @@ private:
 
 // These `using` declarations confuse CLion but compile and work fine:
 using PICTResource = Resource<'PICT', PicPtr, PicHandle, GetPicture>;
+using RGNResource = Resource<'RGN#'>;
 
 } // namespace AtelierEsri

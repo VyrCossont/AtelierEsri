@@ -1,7 +1,7 @@
 #pragma once
 
 #include "GWorld.hpp"
-#include "MaskedImage.hpp"
+#include "SpriteSheet.hpp"
 
 namespace AtelierEsri {
 
@@ -13,8 +13,8 @@ public:
   Result<Unit> Draw(GWorld &gWorld) noexcept;
 
 private:
-  explicit Game(MaskedImage &&avatar) noexcept;
-  MaskedImage avatar;
+  explicit Game(SpriteSheet &&spriteSheet) noexcept;
+  SpriteSheet spriteSheet;
 };
 
 } // namespace AtelierEsri

@@ -9,12 +9,17 @@
 
 namespace AtelierEsri {
 
-/// `PICT` resource.
+/// `PICT` resource with typed operations.
 class Picture {
 public:
   static Result<Picture> Get(ResourceID resourceID) noexcept;
   Result<Rect> Bounds() noexcept;
   Result<Unit> Draw(const Rect &rect) noexcept;
+
+  Picture(Picture &&src) noexcept;
+  Picture &operator=(Picture &&src) noexcept;
+  Picture(const Picture &src) = delete;
+  Picture &operator=(const Picture &src) = delete;
 
 private:
   explicit Picture(PICTResource &&resource) noexcept;
@@ -27,7 +32,13 @@ public:
   Get(int16_t imageResourceID, int16_t maskResourceID, Window &window) noexcept;
   Rect Bounds() noexcept;
   /// Copy the masked image into a `GWorld`.
-  Result<Unit> Draw(GWorld &gWorld, const Rect &rect) noexcept;
+  Result<Unit> Draw(GWorld &gWorld, const Rect &srcRect,
+                    const Rect &dstRect) noexcept;
+
+  MaskedImage(MaskedImage &&src) noexcept;
+  MaskedImage &operator=(MaskedImage &&src) noexcept;
+  MaskedImage(const MaskedImage &src) = delete;
+  MaskedImage &operator=(const MaskedImage &src) = delete;
 
 private:
   explicit MaskedImage(GWorld &&image, GWorld &&mask, Rect rect) noexcept;

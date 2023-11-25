@@ -4,6 +4,7 @@
 #include "Dialogs.r"
 #include "MacWindows.r"
 #include "Menus.r"
+#include "Processes.r"
 
 #include "AppResources.h"
 
@@ -92,4 +93,26 @@ resource 'MENU' (fileMenuMENUResourceID, "file menu", preload) {
 		/* [4] */
 		"Quit", noIcon, "Q", noMark, plain
 	}
+};
+
+/* Require 10 MB of heap for now. Main sprite sheet currently uses a silly amount of memory. */
+resource 'SIZE' (-1) {
+	reserved,
+	ignoreSuspendResumeEvents,
+	reserved,
+	cannotBackground,
+	notMultiFinderAware,
+	backgroundAndForeground,
+	dontGetFrontClicks,
+	ignoreChildDiedEvents,
+	is32BitCompatible,
+	notHighLevelEventAware,
+	onlyLocalHLEvents,
+	notStationeryAware,
+	dontUseTextEditServices,
+	notDisplayManagerAware,
+	reserved,
+	reserved,
+	10485760, /* 10 MB */
+	10485760  /* 10 MB */
 };

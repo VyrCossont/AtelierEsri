@@ -4,14 +4,18 @@
 
 #include "Assets.h"
 #include "Drawing.hpp"
+#include "MaskedImage.hpp"
 
 namespace AtelierEsri {
 
 Result<Game> Game::Setup(Window &window) noexcept {
-  GUARD_LET_TRY(MaskedImage, avatar,
-                MaskedImage::Get(assetAvatarEsriImagePictResourceId,
-                                 assetAvatarEsriMaskPictResourceId, window));
-  return Ok(Game(std::move(avatar)));
+  GUARD_LET_TRY(MaskedImage, spriteSheetImage,
+                MaskedImage::Get(assetSpriteSheet00ImagePictResourceId,
+                                 assetSpriteSheet00MaskPictResourceId, window));
+  GUARD_LET_TRY(SpriteSheet, spriteSheet,
+                SpriteSheet::Get(std::move(spriteSheetImage),
+                                 assetSpriteSheet00RgnResourceId));
+  return Ok(Game(std::move(spriteSheet)));
 }
 
 void Game::Update() {}
@@ -25,9 +29,11 @@ Result<Unit> Game::Draw(GWorld &gWorld) noexcept {
   Pattern background = QD::Gray();
   FillRect(&rect, &background);
 
-  TRY(avatar.Draw(gWorld, avatar.Bounds()));
+  Rect dstRect = {0, 0, 64, 64};
+  TRY(spriteSheet.Draw(gWorld, assetSpriteSheet00AvatarEsriSpriteIndex,
+                       dstRect));
 
-  Ngon hex = Ngon({120, 120}, 32, 6, M_PI_2);
+  Ngon hex = Ngon({120, 120}, 32, 6, M_PI + M_PI_2);
   {
     ManagedPolygon polygon = hex.Polygon();
     OffsetPoly(polygon.get(), -2, -2);
@@ -48,12 +54,23 @@ Result<Unit> Game::Draw(GWorld &gWorld) noexcept {
       nodeRect.bottom = static_cast<int16_t>(center.y + nodeR);
       FillOval(&nodeRect, &pattern);
       FrameOval(&nodeRect);
+
+      if (i < 3) {
+        Rect pipRect;
+        pipRect.left = static_cast<int16_t>(center.x - 4);
+        pipRect.right = static_cast<int16_t>(center.x + 4);
+        pipRect.top = static_cast<int16_t>(center.y - 4);
+        pipRect.bottom = static_cast<int16_t>(center.y + 4);
+        TRY(spriteSheet.Draw(gWorld, assetSpriteSheet00ElementFireSpriteIndex,
+                             pipRect));
+      }
     }
   }
 
   return Ok(Unit());
 }
 
-Game::Game(MaskedImage &&avatar) noexcept : avatar(std::move(avatar)) {}
+Game::Game(SpriteSheet &&spriteSheet) noexcept
+    : spriteSheet(std::move(spriteSheet)) {}
 
 } // namespace AtelierEsri
