@@ -1,11 +1,14 @@
-cmake_minimum_required(VERSION 3.26)
+cmake_minimum_required(VERSION 3.27)
 project(AtelierEsri)
 
 set(CMAKE_CXX_STANDARD 17)
 
-if ((CMAKE_SYSTEM_NAME MATCHES Retro68)
-        OR (CMAKE_SYSTEM_NAME MATCHES RetroPPC)
-        OR (CMAKE_SYSTEM_NAME MATCHES RetroCarbon))
+# Suppress warning about CMAKE_TOOLCHAIN_FILE: https://stackoverflow.com/a/17085081
+MESSAGE(STATUS "Using toolchain file: ${CMAKE_TOOLCHAIN_FILE}")
+
+if ((VCPKG_TARGET_TRIPLET STREQUAL m68k-apple-macos)
+        OR (VCPKG_TARGET_TRIPLET STREQUAL powerpc-apple-macos)
+        OR (VCPKG_TARGET_TRIPLET STREQUAL powerpc-apple-macos-carbon))
     set(RETRO68 TRUE CACHE BOOL "Is this target Retro68?")
 else ()
     set(RETRO68 FALSE CACHE BOOL "Is this target Retro68?")
@@ -16,6 +19,9 @@ endif ()
 add_library(Breeze STATIC
         Breeze/Alchemy.cpp
 )
+
+find_path(BETTER_ENUMS_INCLUDE_DIR NAMES better-enums/enum.h)
+target_include_directories(Breeze PUBLIC ${BETTER_ENUMS_INCLUDE_DIR})
 
 # Target for running Breeze tests on the host platform.
 if (NOT RETRO68)
