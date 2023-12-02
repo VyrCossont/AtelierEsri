@@ -3,6 +3,7 @@
 #include "Alchemy.hpp"
 
 using namespace Breeze;
+
 TEST_CASE("alchemy category properties") {
   constexpr Category bomb = Category::Bombs;
   REQUIRE(bomb._to_string() == std::string("Bombs"));
