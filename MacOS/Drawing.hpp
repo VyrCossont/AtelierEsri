@@ -8,7 +8,6 @@
 #include <OSUtils.h>
 #include <Quickdraw.h>
 
-#include "Exception.hpp"
 #include "Resource.hpp"
 
 namespace AtelierEsri {
@@ -51,7 +50,7 @@ public:
 
   Point operator[](uint8_t i) const;
 
-  ManagedPolygon Polygon() const;
+  [[nodiscard]] ManagedPolygon Polygon() const;
 
 private:
   Point center;

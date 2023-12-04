@@ -17,7 +17,7 @@ enum AlertType {
 class Alert {
 public:
   explicit Alert(ResourceID resourceID, AlertType alertType = custom);
-  DialogItemIndex Show();
+  DialogItemIndex Show() const;
 
 private:
   SInt16 resourceID;

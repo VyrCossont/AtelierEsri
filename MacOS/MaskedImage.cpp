@@ -1,13 +1,10 @@
 #include "MaskedImage.hpp"
 
-#include <limits>
-
 #include <PictUtils.h>
-#include <Resources.h>
 
 namespace AtelierEsri {
 
-Picture Picture::Get(ResourceID resourceID) {
+Picture Picture::Get(const ResourceID resourceID) {
   PICTResource resource = PICTResource::Get(resourceID);
   return Picture(std::move(resource));
 }
@@ -32,16 +29,16 @@ void Picture::Draw(const Rect &rect) {
   QD_CHECKED(DrawPicture(resource.Unmanaged(), &rect), "Couldn't draw picture");
 }
 
-MaskedImage MaskedImage::Get(int16_t imageResourceID, int16_t maskResourceID,
-                             Window &window) {
+MaskedImage MaskedImage::Get(const int16_t imageResourceID,
+                             const int16_t maskResourceID, Window &window) {
   Picture imagePicture = Picture::Get(imageResourceID);
-  Rect imageRect = imagePicture.Bounds();
+  const Rect imageRect = imagePicture.Bounds();
   if (imageRect.left != 0 || imageRect.top != 0) {
     BAIL("Image rect doesn't start at origin");
   }
 
   Picture maskPicture = Picture::Get(maskResourceID);
-  Rect maskRect = imagePicture.Bounds();
+  const Rect maskRect = imagePicture.Bounds();
   if (maskRect.left != 0 || maskRect.top != 0) {
     BAIL("Mask rect doesn't start at origin");
   }
@@ -72,19 +69,20 @@ MaskedImage &MaskedImage::operator=(MaskedImage &&src) noexcept {
 
 Rect MaskedImage::Bounds() { return rect; }
 
-void MaskedImage::Draw(AtelierEsri::GWorld &destination, const Rect &srcRect,
-                       const Rect &dstRec) {
-  GWorldLockPixelsGuard destinationLockPixelsGuard = destination.LockPixels();
-  GWorldLockPixelsGuard imageLockPixelsGuard = image.LockPixels();
-  GWorldLockPixelsGuard maskLockPixelsGuard = mask.LockPixels();
+void MaskedImage::Draw(GWorld &destination, const Rect &srcRect,
+                       const Rect &dstRect) {
+  const GWorldLockPixelsGuard destinationLockPixelsGuard =
+      destination.LockPixels();
+  const GWorldLockPixelsGuard imageLockPixelsGuard = image.LockPixels();
+  const GWorldLockPixelsGuard maskLockPixelsGuard = mask.LockPixels();
 
   QD_CHECKED(CopyMask(imageLockPixelsGuard.Bits(), maskLockPixelsGuard.Bits(),
                       destinationLockPixelsGuard.Bits(), &srcRect, &srcRect,
-                      &dstRec),
+                      &dstRect),
              "CopyMask failed");
 }
 
-MaskedImage::MaskedImage(GWorld &&image, GWorld &&mask, Rect rect)
+MaskedImage::MaskedImage(GWorld &&image, GWorld &&mask, const Rect rect)
     : image(std::move(image)), mask(std::move(mask)), rect(rect) {}
 
 void MaskedImage::DrawInto(Picture &picture, const Rect &rect, GWorld &gWorld) {

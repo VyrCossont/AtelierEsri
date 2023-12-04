@@ -3,7 +3,7 @@
 namespace AtelierEsri {
 
 SpriteSheet SpriteSheet::New(MaskedImage &&maskedImage,
-                             ResourceID rgnResourceID) {
+                             const ResourceID rgnResourceID) {
   std::vector<Rect> regions = ReadRGN(rgnResourceID);
   return SpriteSheet(std::move(maskedImage), std::move(regions));
 }
@@ -23,8 +23,8 @@ SpriteSheet &SpriteSheet::operator=(SpriteSheet &&src) noexcept {
 
 std::vector<Rect> SpriteSheet::ReadRGN(ResourceID rgnResourceID) {
   RGNResource rgnResource = RGNResource::Get(rgnResourceID);
-  size_t rgnLen = RES_CHECKED(GetMaxResourceSize(rgnResource.Unmanaged()),
-                              "Couldn't get RGN# resource size");
+  const size_t rgnLen = RES_CHECKED(GetMaxResourceSize(rgnResource.Unmanaged()),
+                                    "Couldn't get RGN# resource size");
   return ReadRGN(rgnLen, reinterpret_cast<uint8_t *>(*rgnResource.Unmanaged()));
 }
 
@@ -37,7 +37,7 @@ std::vector<Rect> SpriteSheet::ReadRGN(size_t rgnLen, uint8_t *rgnPtr) {
   uint16_t count = *reinterpret_cast<uint16_t *>(rgnPtr);
   regions.reserve(count);
 
-  uint8_t *rgnBytesEnd = rgnPtr + rgnLen;
+  const uint8_t *rgnBytesEnd = rgnPtr + rgnLen;
   rgnPtr += sizeof(uint16_t);
   while (count > 0) {
     if (rgnPtr >= rgnBytesEnd) {
@@ -45,7 +45,7 @@ std::vector<Rect> SpriteSheet::ReadRGN(size_t rgnLen, uint8_t *rgnPtr) {
     }
 
     // Skip region name.
-    uint8_t pstrLen = *rgnPtr;
+    const uint8_t pstrLen = *rgnPtr;
     rgnPtr += 1 + pstrLen;
 
     // Align to word boundary.
@@ -71,7 +71,7 @@ void SpriteSheet::Draw(GWorld &gWorld, size_t spriteIndex,
   if (spriteIndex >= regions.size()) {
     BAIL("Invalid sprite index");
   }
-  Rect srcRect = regions[spriteIndex];
+  const Rect srcRect = regions[spriteIndex];
   return maskedImage.Draw(gWorld, srcRect, dstRect);
 }
 

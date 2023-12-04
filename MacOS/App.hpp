@@ -1,10 +1,7 @@
 #pragma once
 
-#include "Alert.hpp"
-#include "Exception.hpp"
 #include "GWorld.hpp"
 #include "Game.hpp"
-#include "Resource.hpp"
 #include "Window.hpp"
 
 namespace AtelierEsri {

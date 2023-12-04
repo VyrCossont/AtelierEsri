@@ -23,17 +23,19 @@ App App::New() {
 }
 
 void App::SetupMenuBar() {
-  MenuBarHandle menuBar = GetNewMBar(menuBarMBARResourceID);
+  const MenuBarHandle menuBar = GetNewMBar(menuBarMBARResourceID);
   REQUIRE_NOT_NULL(menuBar);
   SetMenuBar(menuBar);
 
   // Attach system-managed Apple menu items.
+  // ReSharper disable once CppLocalVariableMayBeConst
   MenuHandle appleMenu = GetMenuHandle(appleMenuMENUResourceID);
   if (!appleMenu) {
     // TODO: if we do this a lot, add a managed handle type
     DisposeHandle(menuBar);
   }
   REQUIRE_NOT_NULL(appleMenu);
+  // ReSharper disable once CppMultiCharacterLiteral
   AppendResMenu(appleMenu, 'DRVR');
 
   DrawMenuBar();
@@ -48,18 +50,18 @@ App::App(Window gameWindow, GWorld offscreenGWorld, Game game)
       offscreenGWorld(std::move(offscreenGWorld)), game(std::move(game)) {}
 
 void Copy(GWorld &gWorld, Window &window) {
-  GWorldLockPixelsGuard lockPixelsGuard = gWorld.LockPixels();
+  const GWorldLockPixelsGuard lockPixelsGuard = gWorld.LockPixels();
 
-  Rect gWorldRect = gWorld.Bounds();
+  const Rect gWorldRect = gWorld.Bounds();
   const BitMap *gWorldBits = lockPixelsGuard.Bits();
 
-  Rect windowRect = window.PortBounds();
+  const Rect windowRect = window.PortBounds();
   CGrafPtr windowPort = window.Port();
 
 #if TARGET_API_MAC_CARBON
   const BitMap *windowBits = GetPortBitMapForCopyBits(windowPort);
 #else
-  const BitMap *windowBits = &((GrafPtr)windowPort)->portBits;
+  const BitMap *windowBits = &reinterpret_cast<GrafPtr>(windowPort)->portBits;
 #endif
 
   QD_CHECKED(CopyBits(gWorldBits, windowBits, &gWorldRect, &windowRect, srcCopy,
@@ -70,8 +72,8 @@ void Copy(GWorld &gWorld, Window &window) {
 void App::EventLoop() {
   EventRecord event;
   /// Ticks (approx. 1/60th of a second)
-  uint32_t sleepTimeTicks = 1;
-  uint64_t frameDurationUsec = sleepTimeTicks * 1000 * 1000 / 60;
+  constexpr uint32_t sleepTimeTicks = 1;
+  constexpr uint64_t frameDurationUsec = sleepTimeTicks * 1000 * 1000 / 60;
 
   uint64_t lastFrameTimestampUsec = Env::Microseconds();
   while (true) {
@@ -82,11 +84,11 @@ void App::EventLoop() {
     case keyDown:
       if (event.modifiers & cmdKey) {
         // MenuKey() is an A-line trap and the declaration confuses CLion.
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "UnusedLocalVariable"
-        auto key = static_cast<int16_t>(event.message & charCodeMask);
-#pragma clang diagnostic pop
-        bool quit = HandleMenuSelection(MenuKey(key));
+        // ReSharper disable once CppDFAUnreadVariable
+        // ReSharper disable once CppDFAUnusedValue
+        const auto key = static_cast<int16_t>(event.message & charCodeMask);
+        // ReSharper disable once CppTooWideScope
+        const bool quit = HandleMenuSelection(MenuKey(key));
         if (quit) {
           return;
         }
@@ -97,7 +99,8 @@ void App::EventLoop() {
       WindowPtr windowPtr;
       switch (FindWindow(event.where, &windowPtr)) {
       case inMenuBar: {
-        bool quit = HandleMenuSelection(MenuSelect(event.where));
+        // ReSharper disable once CppTooWideScope
+        const bool quit = HandleMenuSelection(MenuSelect(event.where));
         if (quit) {
           return;
         }
@@ -120,8 +123,8 @@ void App::EventLoop() {
       break;
     }
 
-    uint64_t currentTimestampUsec = Env::Microseconds();
-    if ((currentTimestampUsec - lastFrameTimestampUsec) >= frameDurationUsec) {
+    if (const uint64_t currentTimestampUsec = Env::Microseconds();
+        (currentTimestampUsec - lastFrameTimestampUsec) >= frameDurationUsec) {
       // TODO: handle multiple elapsed frames
       lastFrameTimestampUsec = currentTimestampUsec;
 
@@ -130,7 +133,7 @@ void App::EventLoop() {
       game.Draw(offscreenGWorld);
 
       Copy(offscreenGWorld, gameWindow);
-      SetPort((GrafPtr)gameWindow.Port());
+      SetPort(reinterpret_cast<GrafPtr>(gameWindow.Port()));
     }
   }
 }
@@ -146,9 +149,9 @@ enum FileMenuItems {
   quit = 4,
 };
 
-bool App::HandleMenuSelection(int32_t menuSelection) {
-  int16_t menuID = HiWord(menuSelection);
-  int16_t menuItem = LoWord(menuSelection);
+bool App::HandleMenuSelection(const int32_t menuSelection) {
+  const int16_t menuID = HiWord(menuSelection);
+  const int16_t menuItem = LoWord(menuSelection);
   Debug::Printfln("Menu selection: menuID = %d, menuItem = %d", menuID,
                   menuItem);
   switch (menuID) {
@@ -162,6 +165,7 @@ bool App::HandleMenuSelection(int32_t menuSelection) {
 #if !TARGET_API_MAC_CARBON
       // https://preterhuman.net/macstuff/insidemac/Toolbox/Toolbox-104.html#HEADING104-8
       Str255 itemName;
+      // ReSharper disable once CppLocalVariableMayBeConst
       MenuHandle appleMenu = GetMenuHandle(appleMenuMENUResourceID);
       GetMenuItemText(appleMenu, menuItem, itemName);
       OpenDeskAcc(itemName);

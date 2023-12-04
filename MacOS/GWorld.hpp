@@ -34,7 +34,7 @@ public:
   static GWorldLockPixelsGuard Construct(GWorldPtr ptr);
   ~GWorldLockPixelsGuard();
   /// Get the GWorld's bits. Should be used *only* with `CopyBits`, etc.
-  const BitMap *Bits();
+  [[nodiscard]] const BitMap *Bits() const;
 
 private:
   GWorldLockPixelsGuard(GWorldPtr ptr, PixMapHandle hdl);
@@ -49,8 +49,8 @@ public:
   ~GWorldActiveGuard();
 
 private:
-  CGrafPtr prevPort = nil;
-  GDHandle prevDevice = nil;
+  CGrafPtr prevPort = nullptr;
+  GDHandle prevDevice = nullptr;
 };
 
 } // namespace AtelierEsri

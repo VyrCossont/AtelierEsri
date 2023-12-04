@@ -23,7 +23,7 @@ bool QD::HasColor() {
 void QD::Reset() {
   PenNormal();
 
-  Pattern defaultBackground = QD::White();
+  const Pattern defaultBackground = White();
   BackPat(&defaultBackground);
 }
 
@@ -77,12 +77,14 @@ Pattern QD::White() {
 #endif
 }
 
-Ngon::Ngon(Point center, int16_t r, uint8_t n, float theta)
+Ngon::Ngon(const Point center, const int16_t r, const uint8_t n,
+           const float theta)
     : center(center), r(r), n(n), theta(theta) {}
 
-Point Ngon::operator[](uint8_t i) const {
-  float thetaI = theta + (static_cast<float>(M_TWOPI) * static_cast<float>(i)) /
-                             static_cast<float>(n);
+Point Ngon::operator[](const uint8_t i) const {
+  const float thetaI =
+      theta + (static_cast<float>(M_TWOPI) * static_cast<float>(i)) /
+                  static_cast<float>(n);
   return {
       static_cast<int16_t>(
           center.h + static_cast<int16_t>(static_cast<float>(r) * cos(thetaI))),
@@ -92,6 +94,7 @@ Point Ngon::operator[](uint8_t i) const {
 }
 
 ManagedPolygon Ngon::Polygon() const {
+  // ReSharper disable once CppLocalVariableMayBeConst
   PolyHandle polygon = OpenPoly();
   Point point = operator[](0);
   MoveTo(point.h, point.v);

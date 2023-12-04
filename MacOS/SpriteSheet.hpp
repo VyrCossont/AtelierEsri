@@ -4,7 +4,6 @@
 
 #include <MacTypes.h>
 
-#include "Exception.hpp"
 #include "MaskedImage.hpp"
 #include "Resource.hpp"
 

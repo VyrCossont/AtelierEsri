@@ -1,8 +1,5 @@
 #pragma once
 
-#include <Quickdraw.h>
-
-#include "Exception.hpp"
 #include "GWorld.hpp"
 #include "Resource.hpp"
 #include "Window.hpp"

@@ -77,7 +77,9 @@ private:
 #pragma clang diagnostic pop
 
 // These `using` declarations confuse CLion but compile and work fine:
+// ReSharper disable CppMultiCharacterLiteral
 using PICTResource = Resource<'PICT', PicPtr, PicHandle, GetPicture>;
 using RGNResource = Resource<'RGN#'>;
+// ReSharper restore CppMultiCharacterLiteral
 
 } // namespace AtelierEsri

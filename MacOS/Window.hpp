@@ -15,8 +15,8 @@ class Window {
 public:
   static Window Present(ResourceID resourceID,
                         WindowRef inFrontOf = allOtherWindows);
-  Window(Window &&src);
-  Window &operator=(Window &&src);
+  Window(Window &&src) noexcept;
+  Window &operator=(Window &&src) noexcept;
   Window(const Window &src) = delete;
   Window &operator=(const Window &src) = delete;
   ~Window();

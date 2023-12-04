@@ -4,8 +4,8 @@
 
 namespace AtelierEsri {
 
-Exception::Exception(const char *message, OSErr osErr, const char *file,
-                     uint32_t line, const char *function)
+Exception::Exception(const char *message, const OSErr osErr, const char *file,
+                     const uint32_t line, const char *function)
     : message(message), osErr(osErr), file(file), line(line),
       function(function) {}
 

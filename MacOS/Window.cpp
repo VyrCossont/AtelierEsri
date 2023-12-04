@@ -10,12 +10,12 @@ namespace AtelierEsri {
 
 Window::Window(WindowRef windowRef) : windowRef(windowRef) {}
 
-Window::Window(Window &&src) {
+Window::Window(Window &&src) noexcept {
   windowRef = src.windowRef;
   src.windowRef = nullptr;
 }
 
-Window &Window::operator=(Window &&src) {
+Window &Window::operator=(Window &&src) noexcept {
   windowRef = src.windowRef;
   src.windowRef = nullptr;
   return *this;

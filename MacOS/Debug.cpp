@@ -24,8 +24,9 @@ OSErr Debug::Printfln(const char *fmt, ...) {
   vsnprintf(buffer, sizeof buffer, fmtBuffer, args);
   va_end(args);
 
-  size_t num_bytes = strnlen(buffer, sizeof buffer);
+  const size_t num_bytes = strnlen(buffer, sizeof buffer);
 
+  // ReSharper disable once CppJoinDeclarationAndAssignment
   OSErr osErr;
 
   osErr = FilePrint(num_bytes, buffer);
@@ -42,17 +43,21 @@ OSErr Debug::Printfln(const char *fmt, ...) {
 }
 
 OSErr Debug::FilePrint(size_t num_bytes, const char *buffer) {
+  // ReSharper disable once CppJoinDeclarationAndAssignment
   OSErr osErr;
   long count;
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunknown-escape-sequence"
-  auto fileName = (ConstStr255Param) "\p:AtelierEsriLog.txt";
+  const auto fileName =
+      reinterpret_cast<ConstStr255Param>("\p:AtelierEsriLog.txt");
 #pragma clang diagnostic pop
 
   // Volume 0 and directory 0 default to the current working directory.
 
+  // ReSharper disable CppMultiCharacterLiteral
   osErr = HCreate(0, 0, fileName, 'ttxt', 'TEXT');
+  // ReSharper restore CppMultiCharacterLiteral
   if (osErr && osErr != dupFNErr) {
     return osErr;
   }
@@ -69,7 +74,7 @@ OSErr Debug::FilePrint(size_t num_bytes, const char *buffer) {
     goto close;
   }
 
-  count = (long)num_bytes;
+  count = static_cast<long>(num_bytes);
   osErr = FSWrite(fileRefNum, &count, buffer);
   if (osErr) {
     goto close;
@@ -77,19 +82,15 @@ OSErr Debug::FilePrint(size_t num_bytes, const char *buffer) {
 
   FileParam fileParam;
   fileParam.ioFRefNum = fileRefNum;
-  osErr = PBFlushFileSync((ParmBlkPtr)&fileParam);
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "ConstantConditionsOC"
+  osErr = PBFlushFileSync(reinterpret_cast<ParmBlkPtr>(&fileParam));
+  // ReSharper disable once CppDFAConstantConditions
   if (osErr) {
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "UnreachableCode"
+    // ReSharper disable once CppDFAUnreachableCode
     goto close;
-#pragma clang diagnostic pop
   }
-#pragma clang diagnostic pop
 
 close:
-  OSErr closeError = FSClose(fileRefNum);
+  const OSErr closeError = FSClose(fileRefNum);
   if (osErr == noErr && closeError != noErr) {
     return closeError;
   }
@@ -97,19 +98,20 @@ close:
   return osErr;
 }
 
-OSErr Debug::SerialPrint(size_t num_bytes, const char *buffer) {
+OSErr Debug::SerialPrint(const size_t num_bytes, const char *buffer) {
   OSErr osErr;
 
   // TODO: (Vyr) use Carbon equivalents of legacy serial API
 #if !TARGET_API_MAC_CARBON
   short serialPortRefNum;
-  short serConfig =
-      (short)stop10 | (short)noParity | (short)data8 | (short)baud9600;
+  constexpr short serConfig =
+      static_cast<short>(stop10) | static_cast<short>(noParity) |
+      static_cast<short>(data8) | static_cast<short>(baud9600);
 
   /// .AOut is the modem port's output side.
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunknown-escape-sequence"
-  auto driverName = (ConstStr255Param) "\p:.AOut";
+  const auto driverName = reinterpret_cast<ConstStr255Param>("\p:.AOut");
 #pragma clang diagnostic pop
   osErr = MacOpenDriver(driverName, &serialPortRefNum);
   if (osErr) {
@@ -127,20 +129,16 @@ OSErr Debug::SerialPrint(size_t num_bytes, const char *buffer) {
   IOParam ioParam;
   ioParam.ioRefNum = serialPortRefNum;
   ioParam.ioBuffer = ioBuffer;
-  ioParam.ioReqCount = (long)std::min(num_bytes, sizeof ioBuffer);
-  osErr = PBWriteSync((ParmBlkPtr)&ioParam);
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "ConstantConditionsOC"
+  ioParam.ioReqCount = static_cast<long>(std::min(num_bytes, sizeof ioBuffer));
+  osErr = PBWriteSync(reinterpret_cast<ParmBlkPtr>(&ioParam));
+  // ReSharper disable once CppDFAConstantConditions
   if (osErr) {
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "UnreachableCode"
+    // ReSharper disable once CppDFAUnreachableCode
     goto close;
-#pragma clang diagnostic pop
   }
-#pragma clang diagnostic pop
 
 close:
-  OSErr closeError = MacCloseDriver(serialPortRefNum);
+  const OSErr closeError = MacCloseDriver(serialPortRefNum);
   if (osErr == noErr && closeError != noErr) {
     return closeError;
   }

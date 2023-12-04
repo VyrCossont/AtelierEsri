@@ -4,7 +4,7 @@
 
 namespace AtelierEsri {
 
-GWorld::GWorld(GWorldPtr ptr) : ptr(ptr) {}
+GWorld::GWorld(const GWorldPtr ptr) : ptr(ptr) {}
 
 GWorld::GWorld(GWorld &&src) noexcept {
   ptr = src.ptr;
@@ -43,29 +43,30 @@ GWorldLockPixelsGuard GWorldLockPixelsGuard::Construct(GWorldPtr ptr) {
   PixMapHandle hdl = GetGWorldPixMap(ptr);
   REQUIRE_NOT_NULL(hdl);
 
-  bool locked = LockPixels(hdl);
-  if (!locked) {
+  if (!LockPixels(hdl)) {
     BAIL("Couldn't lock pixels for offscreen GWorld");
   }
 
   return {ptr, hdl};
 }
 
-GWorldLockPixelsGuard::GWorldLockPixelsGuard(GWorldPtr ptr, PixMapHandle hdl)
+GWorldLockPixelsGuard::GWorldLockPixelsGuard(const GWorldPtr ptr,
+                                             const PixMapHandle hdl)
     : ptr(ptr), hdl(hdl) {}
 
 GWorldLockPixelsGuard::~GWorldLockPixelsGuard() { UnlockPixels(hdl); }
 
-const BitMap *GWorldLockPixelsGuard::Bits() {
+const BitMap *GWorldLockPixelsGuard::Bits() const {
 #if TARGET_API_MAC_CARBON
   return GetPortBitMapForCopyBits(ptr);
 #else
-  return &((GrafPtr)ptr)->portBits;
+  return &reinterpret_cast<GrafPtr>(ptr)->portBits;
 #endif
 }
 
 GWorldActiveGuard::GWorldActiveGuard(GWorldPtr ptr) {
   GetGWorld(&this->prevPort, &this->prevDevice);
+  // ReSharper disable once CppLocalVariableMayBeConst
   GDHandle device = GetGWorldDevice(ptr);
   SetGWorld(ptr, device);
 }
