@@ -17,3 +17,7 @@ TEST_CASE("alchemy bitset properties") {
   REQUIRE(beeBomb.test(Category::Beehives));
   REQUIRE(!beeBomb.test(Category::Uni));
 }
+
+TEST_CASE("alchemy materials catalog") {
+  REQUIRE(!Material::Catalog().empty());
+}

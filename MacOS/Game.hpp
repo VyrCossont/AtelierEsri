@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Alchemy.hpp>
+
 #include "GWorld.hpp"
 #include "SpriteSheet.hpp"
 
@@ -15,6 +17,16 @@ public:
 private:
   explicit Game(SpriteSheet &&spriteSheet);
   SpriteSheet spriteSheet;
+  Breeze::PlayerInventory inventory;
+};
+
+/// Adds name and icon to a Breeze material.
+struct Material {
+  Breeze::Material data;
+  std::string name;
+  size_t spriteIndex;
+
+  static std::vector<Material> Catalog();
 };
 
 } // namespace AtelierEsri

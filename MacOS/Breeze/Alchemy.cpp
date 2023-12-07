@@ -57,4 +57,15 @@ SynthesisResult SynthesisState::Result() const {
   return result;
 }
 
+std::vector<Material> Material::Catalog() {
+  return {// Copper ore
+          {.elements = 1 << Element::Fire,
+           .elementValue = 1,
+           .categories = 1 << Category::Ore},
+          // Copper ingot
+          {.elements = 1 << Element::Fire,
+           .elementValue = 1,
+           .categories = 1 << Category::Ingots}};
+}
+
 } // namespace Breeze

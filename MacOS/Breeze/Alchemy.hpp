@@ -65,12 +65,15 @@ struct Material {
   ElementCount elementValue;
   EnumSet<Category> categories;
   std::vector<Effect> traits;
+
+  /// Materials catalog for demos,
+  static std::vector<Material> Catalog();
 };
 
 /// An actual instance of a material, such as quality 200 red neutralizer with
 /// the Inferno trait.
 struct Item {
-  Material &material;
+  const Material &material;
   /// Should be a superset of `material.elements`.
   EnumSet<Element> elements;
   /// Should be ≥ `material.elementValue`.
