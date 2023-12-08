@@ -8,6 +8,7 @@
 #define errorDITLResourceID errorALRTResourceID
 
 #define gameWINDResourceID 128
+#define gameVScrollBarCNTLResourceID 128
 
 #define menuBarMBARResourceID 128
 

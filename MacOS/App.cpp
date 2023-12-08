@@ -17,9 +17,12 @@ namespace AtelierEsri {
 App App::New() {
   SetupMenuBar();
   Window gameWindow = Window::Present(gameWINDResourceID);
+  ControlHandle gameVScrollBar =
+      gameWindow.AddControl(gameVScrollBarCNTLResourceID);
   GWorld offscreenGWorld = gameWindow.FastGWorld();
   Game game = Game::Setup(gameWindow);
-  return {std::move(gameWindow), std::move(offscreenGWorld), std::move(game)};
+  return {std::move(gameWindow), gameVScrollBar, std::move(offscreenGWorld),
+          std::move(game)};
 }
 
 void App::SetupMenuBar() {
@@ -45,17 +48,21 @@ void App::SetupMenuBar() {
   DisposeHandle(menuBar);
 }
 
-App::App(Window gameWindow, GWorld offscreenGWorld, Game game)
-    : gameWindow(std::move(gameWindow)),
+App::App(Window gameWindow, const ControlHandle gameVScrollBar,
+         GWorld offscreenGWorld, Game game)
+    : gameWindow(std::move(gameWindow)), gameVScrollBar(gameVScrollBar),
       offscreenGWorld(std::move(offscreenGWorld)), game(std::move(game)) {}
 
-void Copy(GWorld &gWorld, Window &window) {
+void Copy(GWorld &gWorld, const Window &window) {
   const GWorldLockPixelsGuard lockPixelsGuard = gWorld.LockPixels();
 
-  const Rect gWorldRect = gWorld.Bounds();
+  Rect gWorldRect = gWorld.Bounds();
+  // Don't draw on top of the vertical scroll bar.
+  gWorldRect.right -= 15;
   const BitMap *gWorldBits = lockPixelsGuard.Bits();
 
-  const Rect windowRect = window.PortBounds();
+  Rect windowRect = window.PortBounds();
+  windowRect.right -= 15;
   CGrafPtr windowPort = window.Port();
 
 #if TARGET_API_MAC_CARBON
@@ -138,11 +145,11 @@ void App::EventLoop() {
   }
 }
 
-enum AppleMenuItems {
+enum class AppleMenuItems : int16_t {
   about = 1,
 };
 
-enum FileMenuItems {
+enum class FileMenuItems : int16_t {
   open = 1,
   save = 2,
   // separator
@@ -156,7 +163,7 @@ bool App::HandleMenuSelection(const int32_t menuSelection) {
                   menuItem);
   switch (menuID) {
   case appleMenuMENUResourceID:
-    switch (menuItem) {
+    switch (static_cast<AppleMenuItems>(menuItem)) {
     case AppleMenuItems::about:
       AboutBox();
       break;
@@ -179,7 +186,7 @@ bool App::HandleMenuSelection(const int32_t menuSelection) {
     break;
 
   case fileMenuMENUResourceID:
-    switch (menuItem) {
+    switch (static_cast<FileMenuItems>(menuItem)) {
     case FileMenuItems::open:
       // TODO
       break;

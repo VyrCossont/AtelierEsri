@@ -1,6 +1,7 @@
 /** Manually managed resources (as opposed to game assets). */
 /* coding: macintosh */
 
+#include "Controls.r"
 #include "Dialogs.r"
 #include "MacWindows.r"
 #include "Menus.r"
@@ -41,7 +42,7 @@ resource 'DITL' (errorDITLResourceID, "exception alert", purgeable) {
 	}
 };
 
-resource 'WIND' (gameWINDResourceID, "game window", purgeable) {
+resource 'WIND' (gameWINDResourceID, "game window", preload, purgeable) {
     {43, 6, 203, 166},
     noGrowDocProc,
     visible,
@@ -49,6 +50,17 @@ resource 'WIND' (gameWINDResourceID, "game window", purgeable) {
     0x0, /* refCon */
     "Atelier Esri",
     noAutoCenter
+};
+
+resource 'CNTL' (gameVScrollBarCNTLResourceID, "game window vertical scroll bar", preload, purgeable) {
+    {-1, 145, 144, 161},
+    0, /* initial setting */
+    visible,
+    0, /* max setting */
+    0, /* min setting */
+    scrollBarProc,
+    0x0, /* refCon */
+    "" /* title */
 };
 
 /*

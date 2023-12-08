@@ -8,7 +8,7 @@
 
 namespace AtelierEsri {
 
-Window::Window(WindowRef windowRef) : windowRef(windowRef) {}
+Window::Window(const WindowRef windowRef) : windowRef(windowRef) {}
 
 Window::Window(Window &&src) noexcept {
   windowRef = src.windowRef;
@@ -29,11 +29,12 @@ Window::~Window() {
 
 const WindowRef Window::allOtherWindows = reinterpret_cast<WindowRef>(-1);
 
-Window Window::Present(ResourceID resourceID, WindowRef inFrontOf) {
-  bool hasColorQuickDraw = QD::HasColor();
+Window Window::Present(const ResourceID resourceID, const WindowRef inFrontOf) {
+  const bool hasColorQuickDraw = QD::HasColor();
 
   WindowRef windowRef;
-  if (hasColorQuickDraw) {
+  // Not actually identical: these are A-line traps and Clang can't parse them.
+  if (hasColorQuickDraw) { // NOLINT(*-branch-clone)
     windowRef = GetNewCWindow(resourceID, nullptr, inFrontOf);
   } else {
     windowRef = GetNewWindow(resourceID, nullptr, inFrontOf);
@@ -43,7 +44,7 @@ Window Window::Present(ResourceID resourceID, WindowRef inFrontOf) {
   return Window(windowRef);
 }
 
-GWorld Window::FastGWorld(int16_t w, int16_t h) {
+GWorld Window::FastGWorld(const int16_t w, const int16_t h) const {
   Rect rect;
   GetWindowPortBounds(windowRef, &rect);
   if (w > 0 && h > 0) {
@@ -61,17 +62,26 @@ GWorld Window::FastGWorld(int16_t w, int16_t h) {
   return GWorld(gWorldPtr);
 }
 
-Rect Window::PortBounds() {
+Rect Window::PortBounds() const {
   Rect bounds;
   GetWindowPortBounds(windowRef, &bounds);
   return bounds;
 }
 
 // TODO: what happens if this is a non-color window?
-CGrafPtr Window::Port() {
+CGrafPtr Window::Port() const {
+  // ReSharper disable once CppLocalVariableMayBeConst
   CGrafPtr port = GetWindowPort(windowRef);
   REQUIRE_NOT_NULL(port);
   return port;
+}
+
+// Another A-line trap goof.
+// NOLINTNEXTLINE(*-convert-member-functions-to-static)
+ControlHandle Window::AddControl(const ResourceID resourceID) const {
+  const ControlHandle control = GetNewControl(resourceID, windowRef);
+  REQUIRE_NOT_NULL(control);
+  return control;
 }
 
 } // namespace AtelierEsri

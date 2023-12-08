@@ -15,7 +15,8 @@ public:
   void EventLoop();
 
 private:
-  App(Window gameWindow, GWorld offscreenGWorld, Game game);
+  App(Window gameWindow, ControlHandle gameVScrollBar, GWorld offscreenGWorld,
+      Game game);
 
   static void SetupMenuBar();
 
@@ -28,6 +29,7 @@ private:
   /// Auxiliary windows or dialogs may be used, but we'll always need this
   /// one.
   Window gameWindow;
+  ControlHandle gameVScrollBar;
 
   GWorld offscreenGWorld;
   Game game;
