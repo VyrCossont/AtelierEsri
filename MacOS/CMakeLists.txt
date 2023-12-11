@@ -50,6 +50,7 @@ if (RETRO68)
             Assets.rsrc
             App.cpp
             Alert.cpp
+            Control.cpp
             Debug.cpp
             Drawing.cpp
             Env.cpp

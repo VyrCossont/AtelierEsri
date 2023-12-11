@@ -1,8 +1,6 @@
 #pragma once
 
-#include <Controls.h>
 #include <MacTypes.h>
-#include <MacWindows.h>
 
 #include "GWorld.hpp"
 #include "Resource.hpp"
@@ -28,16 +26,22 @@ public:
   /// If `w` or `h` are not zero, sets a custom size.
   [[nodiscard]] GWorld FastGWorld(int16_t w = 0, int16_t h = 0) const;
 
+  [[nodiscard]] WindowRef Unmanaged() const;
   [[nodiscard]] Rect PortBounds() const;
   [[nodiscard]] CGrafPtr Port() const;
 
-  /// Load a control resource and attach it to this window.
-  /// Controls are disposed when their window is disposed,
-  /// so we don't need a managed handle type for them.
-  [[nodiscard]] ControlHandle AddControl(ResourceID resourceID) const;
+  /// Handle a mouse down event on this window.
+  /// Assumes that the event is actually in this window
+  /// and that the point is in the global coordinate system.
+  void HandleMouseDown(Point point);
+
+  /// Make this window the current QuickDraw graphics port.
+  [[nodiscard]] GWorldActiveGuard MakeActive() const;
 
 private:
   explicit Window(WindowRef windowRef);
+  void SetRefConToThis();
+
   WindowRef windowRef;
 };
 

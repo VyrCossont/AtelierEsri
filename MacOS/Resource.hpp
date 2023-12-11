@@ -24,13 +24,13 @@ class ResourceReleaser {
 public:
   void operator()(ResourceHandleType resourceHandle) {
     releaseFn(resourceHandle);
-  };
+  }
 };
 
 /// Get a resource of a given type without doing anything else.
 /// May set `ResError()`.
 template <ResType resourceType, typename ResourceHandleType = Handle>
-ResourceHandleType ResourceGetFn(ResourceID resourceID) {
+ResourceHandleType ResourceGetFn(const ResourceID resourceID) {
   return static_cast<ResourceHandleType>(GetResource(resourceType, resourceID));
 }
 
@@ -52,12 +52,12 @@ public:
     return Resource(handle);
   }
 
-  Resource(Resource &&src) noexcept { this->handle = std::move(src.handle); };
+  Resource(Resource &&src) noexcept { this->handle = std::move(src.handle); }
 
   Resource &operator=(Resource &&src) noexcept {
     this->handle = std::move(src.handle);
     return *this;
-  };
+  }
 
   Resource(const Resource &src) = delete;
 

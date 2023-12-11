@@ -50,9 +50,11 @@ GWorldLockPixelsGuard GWorldLockPixelsGuard::Construct(GWorldPtr ptr) {
   return {ptr, hdl};
 }
 
+// ReSharper disable CppParameterMayBeConst
 GWorldLockPixelsGuard::GWorldLockPixelsGuard(const GWorldPtr ptr,
-                                             const PixMapHandle hdl)
+                                             PixMapHandle hdl)
     : ptr(ptr), hdl(hdl) {}
+// ReSharper restore CppParameterMayBeConst
 
 GWorldLockPixelsGuard::~GWorldLockPixelsGuard() { UnlockPixels(hdl); }
 
@@ -64,7 +66,7 @@ const BitMap *GWorldLockPixelsGuard::Bits() const {
 #endif
 }
 
-GWorldActiveGuard::GWorldActiveGuard(GWorldPtr ptr) {
+GWorldActiveGuard::GWorldActiveGuard(const GWorldPtr ptr) {
   GetGWorld(&this->prevPort, &this->prevDevice);
   // ReSharper disable once CppLocalVariableMayBeConst
   GDHandle device = GetGWorldDevice(ptr);

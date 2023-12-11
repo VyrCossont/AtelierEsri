@@ -2,6 +2,7 @@
 
 #include <Devices.h>
 #include <Events.h>
+#include <MacWindows.h>
 #include <Menus.h>
 #include <ToolUtils.h>
 
@@ -17,12 +18,11 @@ namespace AtelierEsri {
 App App::New() {
   SetupMenuBar();
   Window gameWindow = Window::Present(gameWINDResourceID);
-  ControlHandle gameVScrollBar =
-      gameWindow.AddControl(gameVScrollBarCNTLResourceID);
+  ScrollBar gameVScrollBar(gameVScrollBarCNTLResourceID, gameWindow);
   GWorld offscreenGWorld = gameWindow.FastGWorld();
   Game game = Game::Setup(gameWindow);
-  return {std::move(gameWindow), gameVScrollBar, std::move(offscreenGWorld),
-          std::move(game)};
+  return {std::move(gameWindow), std::move(gameVScrollBar),
+          std::move(offscreenGWorld), std::move(game)};
 }
 
 void App::SetupMenuBar() {
@@ -48,9 +48,10 @@ void App::SetupMenuBar() {
   DisposeHandle(menuBar);
 }
 
-App::App(Window gameWindow, const ControlHandle gameVScrollBar,
-         GWorld offscreenGWorld, Game game)
-    : gameWindow(std::move(gameWindow)), gameVScrollBar(gameVScrollBar),
+App::App(Window gameWindow, ScrollBar gameVScrollBar, GWorld offscreenGWorld,
+         Game game)
+    : gameWindow(std::move(gameWindow)),
+      gameVScrollBar(std::move(gameVScrollBar)),
       offscreenGWorld(std::move(offscreenGWorld)), game(std::move(game)) {}
 
 void Copy(GWorld &gWorld, const Window &window) {
@@ -82,6 +83,26 @@ void App::EventLoop() {
   constexpr uint32_t sleepTimeTicks = 1;
   constexpr uint64_t frameDurationUsec = sleepTimeTicks * 1000 * 1000 / 60;
 
+  gameVScrollBar.SetMin(0);
+  gameVScrollBar.SetMax(100);
+  gameVScrollBar.SetValue(50);
+  gameVScrollBar.onScrollLineUp = [&](const ScrollBar &scrollBar) {
+    Debug::Printfln("Scrolled line up");
+  };
+  gameVScrollBar.onScrollLineDown = [&](const ScrollBar &scrollBar) {
+    Debug::Printfln("Scrolled line down");
+  };
+  gameVScrollBar.onScrollPageUp = [&](const ScrollBar &scrollBar) {
+    Debug::Printfln("Scrolled page up");
+  };
+  gameVScrollBar.onScrollPageDown = [&](const ScrollBar &scrollBar) {
+    Debug::Printfln("Scrolled page down");
+  };
+  gameVScrollBar.onScrollBoxDragged = [&](const ScrollBar &scrollBar,
+                                          const int16_t previousValue) {
+    Debug::Printfln("Scrolled from %d to %d", previousValue, scrollBar.Value());
+  };
+
   uint64_t lastFrameTimestampUsec = Env::Microseconds();
   while (true) {
     // Don't set a mouse region so we don't get mouse-moved events for now.
@@ -103,8 +124,8 @@ void App::EventLoop() {
       break;
 
     case mouseDown: {
-      WindowPtr windowPtr;
-      switch (FindWindow(event.where, &windowPtr)) {
+      WindowRef eventWindowRef;
+      switch (FindWindow(event.where, &eventWindowRef)) {
       case inMenuBar: {
         // ReSharper disable once CppTooWideScope
         const bool quit = HandleMenuSelection(MenuSelect(event.where));
@@ -116,11 +137,21 @@ void App::EventLoop() {
       case inSysWindow:
 #if !TARGET_API_MAC_CARBON
         // Handle desk accessory interactions.
-        SystemClick(&event, windowPtr);
+        SystemClick(&event, eventWindowRef);
 #endif
         break;
 
+      case inDesk:
+        // Don't need to do anything.
+        break;
+
       default:
+        if (eventWindowRef) {
+          if (const auto window =
+                  reinterpret_cast<Window *>(GetWRefCon(eventWindowRef))) {
+            window->HandleMouseDown(event.where);
+          }
+        }
         break;
       }
     } break;

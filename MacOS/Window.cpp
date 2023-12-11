@@ -1,6 +1,8 @@
+#include <ControlDefinitions.h>
 #include <MacTypes.h>
 #include <MacWindows.h>
 
+#include "Control.hpp"
 #include "Drawing.hpp"
 #include "Exception.hpp"
 #include "GWorld.hpp"
@@ -8,16 +10,20 @@
 
 namespace AtelierEsri {
 
-Window::Window(const WindowRef windowRef) : windowRef(windowRef) {}
+Window::Window(const WindowRef windowRef) : windowRef(windowRef) {
+  SetRefConToThis();
+}
 
 Window::Window(Window &&src) noexcept {
   windowRef = src.windowRef;
   src.windowRef = nullptr;
+  SetRefConToThis();
 }
 
 Window &Window::operator=(Window &&src) noexcept {
   windowRef = src.windowRef;
   src.windowRef = nullptr;
+  SetRefConToThis();
   return *this;
 }
 
@@ -25,6 +31,10 @@ Window::~Window() {
   if (windowRef) {
     DisposeWindow(windowRef);
   }
+}
+
+void Window::SetRefConToThis() {
+  SetWRefCon(windowRef, reinterpret_cast<long>(this));
 }
 
 const WindowRef Window::allOtherWindows = reinterpret_cast<WindowRef>(-1);
@@ -62,6 +72,8 @@ GWorld Window::FastGWorld(const int16_t w, const int16_t h) const {
   return GWorld(gWorldPtr);
 }
 
+WindowRef Window::Unmanaged() const { return windowRef; }
+
 Rect Window::PortBounds() const {
   Rect bounds;
   GetWindowPortBounds(windowRef, &bounds);
@@ -76,12 +88,24 @@ CGrafPtr Window::Port() const {
   return port;
 }
 
-// Another A-line trap goof.
-// NOLINTNEXTLINE(*-convert-member-functions-to-static)
-ControlHandle Window::AddControl(const ResourceID resourceID) const {
-  const ControlHandle control = GetNewControl(resourceID, windowRef);
-  REQUIRE_NOT_NULL(control);
-  return control;
+void Window::HandleMouseDown(Point point) {
+  // Make this window the active port so we can convert coordinates.
+  GWorldActiveGuard activeGuard = MakeActive();
+  GlobalToLocal(&point);
+  ControlRef eventControlRef;
+  if (const ControlPartCode part =
+          FindControl(point, windowRef, &eventControlRef)) {
+    if (eventControlRef) {
+      if (const auto control = reinterpret_cast<Control *>(
+              GetControlReference(eventControlRef))) {
+        control->HandleMouseDown(point, part);
+      }
+    }
+  }
+}
+
+GWorldActiveGuard Window::MakeActive() const {
+  return GWorldActiveGuard(Port());
 }
 
 } // namespace AtelierEsri
