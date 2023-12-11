@@ -1,0 +1,4 @@
+BasedOnStyle: Google
+AlignAfterOpenBracket: BlockIndent
+BinPackArguments: false
+BinPackParameters: false

@@ -25,6 +25,7 @@ private:
 struct Material {
   Breeze::Material data;
   std::string name;
+  std::string description;
   size_t spriteIndex;
 
   static std::vector<Material> Catalog();

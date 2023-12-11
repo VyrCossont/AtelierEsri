@@ -14,7 +14,8 @@ SynthesisResult SynthesisState::Result() const {
               .categories = recipe.material.categories,
               .traits = recipe.material.traits,
           },
-      .quantity = 1};
+      .quantity = 1
+  };
 
   // Start quality at the average of the ingredient qualities.
   for (const auto [node, placementItem] : placements) {
@@ -58,14 +59,29 @@ SynthesisResult SynthesisState::Result() const {
 }
 
 std::vector<Material> Material::Catalog() {
-  return {// Copper ore
-          {.elements = 1 << Element::Fire,
-           .elementValue = 1,
-           .categories = 1 << Category::Ore},
-          // Copper ingot
-          {.elements = 1 << Element::Fire,
-           .elementValue = 1,
-           .categories = 1 << Category::Ingots}};
+  std::vector<Material> catalog{};
+
+  // Duplicate copper ore a bunch of times.
+  for (size_t id = 0; id < 42; ++id) {
+    Material material{
+        .id = id,
+        .elements = 1 << Element::Fire,
+        .elementValue = 1,
+        .categories = 1 << Category::Ore
+    };
+    catalog.push_back(material);
+  }
+
+  // Copper ingot.
+  const Material material{
+      .id = 42,
+      .elements = 1 << Element::Fire,
+      .elementValue = 1,
+      .categories = 1 << Category::Ore
+  };
+  catalog.push_back(material);
+
+  return catalog;
 }
 
-} // namespace Breeze
+}  // namespace Breeze

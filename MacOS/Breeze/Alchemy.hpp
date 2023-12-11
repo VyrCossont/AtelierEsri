@@ -1,13 +1,13 @@
 #pragma once
 
+#include <better-enums/enum.h>
+
 #include <cstdint>
 #include <functional>
 #include <optional>
 #include <string>
 #include <variant>
 #include <vector>
-
-#include <better-enums/enum.h>
 
 #include "EnumSet.hpp"
 
@@ -26,11 +26,42 @@ struct RecipeGridPoint {
 BETTER_ENUM(Element, uint8_t, Fire, Ice, Lightning, Wind)
 
 // TODO: (Vyr) we'll probably need more categories
-BETTER_ENUM(Category, uint32_t, Water, Plants, Uni, Flowers, Medicinal, Poisons,
-            Elixirs, Sand, Stone, Ore, Gemstones, Gunpowder, Fuel, Edibles,
-            Fruit, Beehives, Mushrooms, Neutralizers, GeneralGoods, Metal,
-            Jewels, Spices, Seeds, Food, Medicine, Bombs, MagicTools, Ingots,
-            Cloth, Weapons, Armor, Accessories)
+BETTER_ENUM(
+    Category,
+    uint32_t,
+    Water,
+    Plants,
+    Uni,
+    Flowers,
+    Medicinal,
+    Poisons,
+    Elixirs,
+    Sand,
+    Stone,
+    Ore,
+    Gemstones,
+    Gunpowder,
+    Fuel,
+    Edibles,
+    Fruit,
+    Beehives,
+    Mushrooms,
+    Neutralizers,
+    GeneralGoods,
+    Metal,
+    Jewels,
+    Spices,
+    Seeds,
+    Food,
+    Medicine,
+    Bombs,
+    MagicTools,
+    Ingots,
+    Cloth,
+    Weapons,
+    Armor,
+    Accessories
+)
 
 // NOLINTEND(*-explicit-constructor, *-no-recursion)
 
@@ -55,18 +86,23 @@ struct EffectElementalDamage {
   int amount;
 };
 
-using Effect =
-    std::variant<EffectQuality, EffectSynthQuantity, EffectAddElement,
-                 EffectAddCategory, EffectElementalDamage>;
+using Effect = std::variant<
+    EffectQuality,
+    EffectSynthQuantity,
+    EffectAddElement,
+    EffectAddCategory,
+    EffectElementalDamage>;
 
 /// An abstract material, such as red neutralizer.
 struct Material {
+  /// Material catalog ID, used to look up display info, etc.
+  size_t id;
   EnumSet<Element> elements;
   ElementCount elementValue;
   EnumSet<Category> categories;
   std::vector<Effect> traits;
 
-  /// Materials catalog for demos,
+  /// Materials catalog for demos.
   static std::vector<Material> Catalog();
 };
 
@@ -150,4 +186,4 @@ struct SynthesisState {
 
 using PlayerInventory = std::vector<Item>;
 
-} // namespace Breeze
+}  // namespace Breeze
