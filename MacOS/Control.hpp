@@ -17,6 +17,7 @@ public:
   Control &operator=(Control &&src) noexcept;
   Control(const Control &src) = delete;
   Control &operator=(const Control &src) = delete;
+  virtual ~Control() = default;
 
   void Draw() const;
 
@@ -36,10 +37,9 @@ public:
   void SetTitle(const std::string &title) const;
 
   /// Handle a mouse down on a given part.
-  virtual void HandleMouseDown(Point point, ControlPartCode part) = 0;
+  virtual void HandleMouseDown(Point point, ControlPartCode part) const = 0;
 
 protected:
-  ~Control() = default;
   void SetRefConToThis();
 
   ControlRef ref;
@@ -49,9 +49,41 @@ class Button final : Control {
 public:
   Button(ResourceID resourceID, const Window &owner);
 
-  void HandleMouseDown(Point point, ControlPartCode part) override;
+  void HandleMouseDown(Point point, ControlPartCode part) const override;
 
   std::function<void(const Button &)> onClick;
+};
+
+/// Common ancestor of checkboxes and radio buttons.
+class Toggle : Control {
+public:
+  Toggle(ResourceID resourceID, const Window &owner);
+
+  void HandleMouseDown(Point point, ControlPartCode part) const override;
+
+  [[nodiscard]] bool Checked() const;
+  void SetChecked(bool checked) const;
+
+protected:
+  virtual void HandleClick() const = 0;
+};
+
+class Checkbox final : Toggle {
+  Checkbox(ResourceID resourceID, const Window &owner);
+
+  std::function<void(const Checkbox &)> onClick;
+
+protected:
+  void HandleClick() const override;
+};
+
+class RadioButton final : Toggle {
+  RadioButton(ResourceID resourceID, const Window &owner);
+
+  std::function<void(const RadioButton &)> onClick;
+
+protected:
+  void HandleClick() const override;
 };
 
 class ScrollBar final : Control {
@@ -68,7 +100,7 @@ public:
   /// Scroll by some amount, within the bounds of the scroll bar.
   void ScrollBy(int16_t amount) const;
 
-  void HandleMouseDown(Point point, ControlPartCode part) override;
+  void HandleMouseDown(Point point, ControlPartCode part) const override;
 
   std::function<void(const ScrollBar &)> onScrollLineUp;
   std::function<void(const ScrollBar &)> onScrollLineDown;

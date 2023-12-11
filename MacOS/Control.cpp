@@ -63,7 +63,8 @@ void Control::SetRefConToThis() {
 Button::Button(const ResourceID resourceID, const Window &owner)
     : Control(resourceID, owner) {}
 
-void Button::HandleMouseDown(const Point point, const ControlPartCode part) {
+void Button::HandleMouseDown(const Point point,
+                             const ControlPartCode part) const {
   if (part == kControlButtonPart) {
     if (const ControlPartCode mouseUpPart = TrackControl(ref, point, nullptr)) {
       if (mouseUpPart == kControlButtonPart) {
@@ -72,6 +73,44 @@ void Button::HandleMouseDown(const Point point, const ControlPartCode part) {
         }
       }
     }
+  }
+}
+
+Toggle::Toggle(const ResourceID resourceID, const Window &owner)
+    : Control(resourceID, owner) {}
+
+void Toggle::HandleMouseDown(const Point point,
+                             const ControlPartCode part) const {
+  if (part == kControlCheckBoxPart) {
+    if (const ControlPartCode mouseUpPart = TrackControl(ref, point, nullptr)) {
+      if (mouseUpPart == kControlCheckBoxPart) {
+        HandleClick();
+      }
+    }
+  }
+}
+
+bool Toggle::Checked() const { return GetControlValue(ref) != 0; }
+
+void Toggle::SetChecked(const bool checked) const {
+  SetControlValue(ref, checked ? 1 : 0);
+}
+
+Checkbox::Checkbox(const ResourceID resourceID, const Window &owner)
+    : Toggle(resourceID, owner) {}
+
+void Checkbox::HandleClick() const {
+  if (onClick) {
+    onClick(*this);
+  }
+}
+
+RadioButton::RadioButton(const ResourceID resourceID, const Window &owner)
+    : Toggle(resourceID, owner) {}
+
+void RadioButton::HandleClick() const {
+  if (onClick) {
+    onClick(*this);
   }
 }
 
@@ -144,7 +183,8 @@ void ScrollBar::ActionProc(ControlRef ref, const ControlPartCode part) {
 
 ControlActionUPP ScrollBar::ActionProcUPP = NewControlActionUPP(ActionProc);
 
-void ScrollBar::HandleMouseDown(const Point point, const ControlPartCode part) {
+void ScrollBar::HandleMouseDown(const Point point,
+                                const ControlPartCode part) const {
   // https://preterhuman.net/macstuff/insidemac/Toolbox/Toolbox-312.html#MARKER-9-271
   switch (part) {
   case kControlIndicatorPart: {
