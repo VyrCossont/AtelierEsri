@@ -35,7 +35,9 @@ Game Game::Setup(Window &window) {
   return game;
 }
 
-void Game::Update() {}
+void Game::Update(const int16_t scrollBarPosition) {
+  yOffset = static_cast<int16_t>(scrollBarPosition - 50);
+}
 
 void Game::Draw(GWorld &gWorld) {
   QD::Reset();
@@ -46,10 +48,11 @@ void Game::Draw(GWorld &gWorld) {
   const Pattern background = QD::Gray();
   FillRect(&rect, &background);
 
-  constexpr Rect dstRect = {0, 0, 64, 64};
+  const Rect dstRect = {yOffset, 0, static_cast<int16_t>(64 + yOffset), 64};
   spriteSheet.Draw(gWorld, assetSpriteSheet00AvatarEsriSpriteIndex, dstRect);
 
-  const auto hex = Ngon({120, 120}, 32, 6, M_PI + M_PI_2);
+  const auto hex =
+      Ngon({120, static_cast<int16_t>(120 + yOffset)}, 32, 6, M_PI + M_PI_2);
   {
     const ManagedPolygon polygon = hex.Polygon();
     OffsetPoly(polygon.get(), -2, -2);

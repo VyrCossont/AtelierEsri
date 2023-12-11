@@ -11,13 +11,14 @@ class Game {
 public:
   static Game Setup(Window &window);
   /// Called at approximately 60 Hz.
-  void Update();
+  void Update(int16_t scrollBarPosition);
   void Draw(GWorld &gWorld);
 
 private:
   explicit Game(SpriteSheet &&spriteSheet);
   SpriteSheet spriteSheet;
   Breeze::PlayerInventory inventory;
+  int16_t yOffset = 0;
 };
 
 /// Adds name and icon to a Breeze material.

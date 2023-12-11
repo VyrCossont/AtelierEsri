@@ -18,6 +18,23 @@ public:
   Control(const Control &src) = delete;
   Control &operator=(const Control &src) = delete;
 
+  void Draw() const;
+
+  void Show() const;
+  void Hide() const;
+
+  /// Move control's origin point to this point.
+  void Move(Point point) const;
+  /// Change control's size to this size (stored as a point).
+  void Size(Point size) const;
+
+  void Hilite(ControlPartCode part) const;
+  static constexpr ControlPartCode HiliteNone = 0;
+  static constexpr ControlPartCode HiliteDisable = 255;
+
+  [[nodiscard]] std::string Title() const;
+  void SetTitle(const std::string &title) const;
+
   /// Handle a mouse down on a given part.
   virtual void HandleMouseDown(Point point, ControlPartCode part) = 0;
 
@@ -47,6 +64,9 @@ public:
   void SetMin(int16_t min) const;
   [[nodiscard]] int16_t Max() const;
   void SetMax(int16_t max) const;
+
+  /// Scroll by some amount, within the bounds of the scroll bar.
+  void ScrollBy(int16_t amount) const;
 
   void HandleMouseDown(Point point, ControlPartCode part) override;
 

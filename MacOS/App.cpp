@@ -87,21 +87,18 @@ void App::EventLoop() {
   gameVScrollBar.SetMax(100);
   gameVScrollBar.SetValue(50);
   gameVScrollBar.onScrollLineUp = [&](const ScrollBar &scrollBar) {
-    Debug::Printfln("Scrolled line up");
+    scrollBar.ScrollBy(-1);
   };
   gameVScrollBar.onScrollLineDown = [&](const ScrollBar &scrollBar) {
-    Debug::Printfln("Scrolled line down");
+    scrollBar.ScrollBy(1);
   };
   gameVScrollBar.onScrollPageUp = [&](const ScrollBar &scrollBar) {
-    Debug::Printfln("Scrolled page up");
+    scrollBar.ScrollBy(-10);
   };
   gameVScrollBar.onScrollPageDown = [&](const ScrollBar &scrollBar) {
-    Debug::Printfln("Scrolled page down");
+    scrollBar.ScrollBy(10);
   };
-  gameVScrollBar.onScrollBoxDragged = [&](const ScrollBar &scrollBar,
-                                          const int16_t previousValue) {
-    Debug::Printfln("Scrolled from %d to %d", previousValue, scrollBar.Value());
-  };
+  // Don't need to do anything to handle drags.
 
   uint64_t lastFrameTimestampUsec = Env::Microseconds();
   while (true) {
@@ -166,7 +163,7 @@ void App::EventLoop() {
       // TODO: handle multiple elapsed frames
       lastFrameTimestampUsec = currentTimestampUsec;
 
-      game.Update();
+      game.Update(gameVScrollBar.Value());
 
       game.Draw(offscreenGWorld);
 

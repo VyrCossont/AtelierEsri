@@ -14,7 +14,10 @@ public:
 
   /// Convert the string to a Pascal string.
   /// If it's too long, it gets truncated.
-  static void ToPascal(const std::string &str, Str255 &pstr);
+  static void ToPascal(const std::string &str, Str255 &pStr);
+
+  /// Create a C++ string from a Pascal string.
+  static std::string FromPascal(const Str255 &pStr);
 
   /// Read a Pascal string from bytes.
   /// Returns number of bytes read.

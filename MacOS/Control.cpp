@@ -1,6 +1,10 @@
 #include "Control.hpp"
 
+#include <algorithm>
+
 #include <ControlDefinitions.h>
+
+#include "Strings.hpp"
 
 namespace AtelierEsri {
 
@@ -22,6 +26,34 @@ Control &Control::operator=(Control &&src) noexcept {
   src.ref = nullptr;
   SetRefConToThis();
   return *this;
+}
+
+void Control::Draw() const { Draw1Control(ref); }
+
+void Control::Show() const { ShowControl(ref); }
+
+void Control::Hide() const { HideControl(ref); }
+
+void Control::Move(const Point point) const {
+  MoveControl(ref, point.h, point.v);
+}
+
+void Control::Size(const Point size) const { SizeControl(ref, size.h, size.v); }
+
+void Control::Hilite(const ControlPartCode part) const {
+  HiliteControl(ref, part);
+}
+
+std::string Control::Title() const {
+  Str255 pStr;
+  GetControlTitle(ref, pStr);
+  return Strings::FromPascal(pStr);
+}
+
+void Control::SetTitle(const std::string &title) const {
+  Str255 pStr;
+  Strings::ToPascal(title, pStr);
+  SetControlTitle(ref, pStr);
 }
 
 void Control::SetRefConToThis() {
@@ -59,6 +91,14 @@ void ScrollBar::SetMin(const int16_t min) const { SetControlMinimum(ref, min); }
 int16_t ScrollBar::Max() const { return GetControlMaximum(ref); }
 
 void ScrollBar::SetMax(const int16_t max) const { SetControlMaximum(ref, max); }
+
+void ScrollBar::ScrollBy(const int16_t amount) const {
+  int32_t value = Value();
+  value += amount;
+  value = std::max(static_cast<int32_t>(Min()), value);
+  value = std::min(value, static_cast<int32_t>(Max()));
+  SetValue(static_cast<int16_t>(value));
+}
 
 // ReSharper disable once CppParameterMayBeConst
 void ScrollBar::ActionProc(ControlRef ref, const ControlPartCode part) {
