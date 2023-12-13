@@ -20,8 +20,10 @@ Picture &Picture::operator=(Picture &&src) noexcept {
 
 Rect Picture::Bounds() {
   PictInfo pictInfo;
-  OS_CHECKED(GetPictInfo(resource.Unmanaged(), &pictInfo, 0, 0, 0, 0),
-             "Couldn't get picture info");
+  OS_CHECKED(
+      GetPictInfo(resource.Unmanaged(), &pictInfo, 0, 0, 0, 0),
+      "Couldn't get picture info"
+  );
   return pictInfo.sourceRect;
 }
 
@@ -29,8 +31,9 @@ void Picture::Draw(const Rect &rect) {
   QD_CHECKED(DrawPicture(resource.Unmanaged(), &rect), "Couldn't draw picture");
 }
 
-MaskedImage MaskedImage::Get(const int16_t imageResourceID,
-                             const int16_t maskResourceID, Window &window) {
+MaskedImage MaskedImage::Get(
+    const int16_t imageResourceID, const int16_t maskResourceID, Window &window
+) {
   Picture imagePicture = Picture::Get(imageResourceID);
   const Rect imageRect = imagePicture.Bounds();
   if (imageRect.left != 0 || imageRect.top != 0) {
@@ -67,19 +70,27 @@ MaskedImage &MaskedImage::operator=(MaskedImage &&src) noexcept {
   return *this;
 }
 
-Rect MaskedImage::Bounds() { return rect; }
+Rect MaskedImage::Bounds() const { return rect; }
 
-void MaskedImage::Draw(GWorld &destination, const Rect &srcRect,
-                       const Rect &dstRect) {
+void MaskedImage::Draw(
+    const GWorld &destination, const Rect &srcRect, const Rect &dstRect
+) const {
   const GWorldLockPixelsGuard destinationLockPixelsGuard =
       destination.LockPixels();
   const GWorldLockPixelsGuard imageLockPixelsGuard = image.LockPixels();
   const GWorldLockPixelsGuard maskLockPixelsGuard = mask.LockPixels();
 
-  QD_CHECKED(CopyMask(imageLockPixelsGuard.Bits(), maskLockPixelsGuard.Bits(),
-                      destinationLockPixelsGuard.Bits(), &srcRect, &srcRect,
-                      &dstRect),
-             "CopyMask failed");
+  QD_CHECKED(
+      CopyMask(
+          imageLockPixelsGuard.Bits(),
+          maskLockPixelsGuard.Bits(),
+          destinationLockPixelsGuard.Bits(),
+          &srcRect,
+          &srcRect,
+          &dstRect
+      ),
+      "CopyMask failed"
+  );
 }
 
 MaskedImage::MaskedImage(GWorld &&image, GWorld &&mask, const Rect rect)
@@ -92,4 +103,4 @@ void MaskedImage::DrawInto(Picture &picture, const Rect &rect, GWorld &gWorld) {
   picture.Draw(rect);
 }
 
-} // namespace AtelierEsri
+}  // namespace AtelierEsri

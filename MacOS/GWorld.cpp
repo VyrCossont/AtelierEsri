@@ -23,13 +23,13 @@ GWorld::~GWorld() {
   }
 }
 
-GWorldLockPixelsGuard GWorld::LockPixels() {
+GWorldLockPixelsGuard GWorld::LockPixels() const {
   return GWorldLockPixelsGuard::Construct(ptr);
 }
 
-GWorldActiveGuard GWorld::MakeActive() { return GWorldActiveGuard(ptr); }
+GWorldActiveGuard GWorld::MakeActive() const { return GWorldActiveGuard(ptr); }
 
-Rect GWorld::Bounds() {
+Rect GWorld::Bounds() const {
 #if TARGET_API_MAC_CARBON
   Rect bounds;
   GetPortBounds(ptr, &bounds);
@@ -51,8 +51,9 @@ GWorldLockPixelsGuard GWorldLockPixelsGuard::Construct(GWorldPtr ptr) {
 }
 
 // ReSharper disable CppParameterMayBeConst
-GWorldLockPixelsGuard::GWorldLockPixelsGuard(const GWorldPtr ptr,
-                                             PixMapHandle hdl)
+GWorldLockPixelsGuard::GWorldLockPixelsGuard(
+    const GWorldPtr ptr, PixMapHandle hdl
+)
     : ptr(ptr), hdl(hdl) {}
 // ReSharper restore CppParameterMayBeConst
 
@@ -75,4 +76,4 @@ GWorldActiveGuard::GWorldActiveGuard(const GWorldPtr ptr) {
 
 GWorldActiveGuard::~GWorldActiveGuard() { SetGWorld(prevPort, prevDevice); }
 
-} // namespace AtelierEsri
+}  // namespace AtelierEsri

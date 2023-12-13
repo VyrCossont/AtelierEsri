@@ -2,8 +2,9 @@
 
 namespace AtelierEsri {
 
-SpriteSheet SpriteSheet::New(MaskedImage &&maskedImage,
-                             const ResourceID rgnResourceID) {
+SpriteSheet SpriteSheet::New(
+    MaskedImage &&maskedImage, const ResourceID rgnResourceID
+) {
   std::vector<Rect> regions = ReadRGN(rgnResourceID);
   return SpriteSheet(std::move(maskedImage), std::move(regions));
 }
@@ -12,8 +13,8 @@ SpriteSheet::SpriteSheet(MaskedImage &&maskedImage, std::vector<Rect> &&regions)
     : maskedImage(std::move(maskedImage)), regions(std::move(regions)) {}
 
 SpriteSheet::SpriteSheet(SpriteSheet &&src) noexcept
-    : maskedImage(std::move(src.maskedImage)), regions(std::move(src.regions)) {
-}
+    : maskedImage(std::move(src.maskedImage)),
+      regions(std::move(src.regions)) {}
 
 SpriteSheet &SpriteSheet::operator=(SpriteSheet &&src) noexcept {
   this->maskedImage = std::move(src.maskedImage);
@@ -23,8 +24,10 @@ SpriteSheet &SpriteSheet::operator=(SpriteSheet &&src) noexcept {
 
 std::vector<Rect> SpriteSheet::ReadRGN(ResourceID rgnResourceID) {
   RGNResource rgnResource = RGNResource::Get(rgnResourceID);
-  const size_t rgnLen = RES_CHECKED(GetMaxResourceSize(rgnResource.Unmanaged()),
-                                    "Couldn't get RGN# resource size");
+  const size_t rgnLen = RES_CHECKED(
+      GetMaxResourceSize(rgnResource.Unmanaged()),
+      "Couldn't get RGN# resource size"
+  );
   return ReadRGN(rgnLen, reinterpret_cast<uint8_t *>(*rgnResource.Unmanaged()));
 }
 
@@ -66,8 +69,9 @@ std::vector<Rect> SpriteSheet::ReadRGN(size_t rgnLen, uint8_t *rgnPtr) {
   return regions;
 }
 
-void SpriteSheet::Draw(GWorld &gWorld, size_t spriteIndex,
-                       const Rect &dstRect) {
+void SpriteSheet::Draw(
+    const GWorld &gWorld, const size_t spriteIndex, const Rect &dstRect
+) const {
   if (spriteIndex >= regions.size()) {
     BAIL("Invalid sprite index");
   }
@@ -75,4 +79,4 @@ void SpriteSheet::Draw(GWorld &gWorld, size_t spriteIndex,
   return maskedImage.Draw(gWorld, srcRect, dstRect);
 }
 
-} // namespace AtelierEsri
+}  // namespace AtelierEsri

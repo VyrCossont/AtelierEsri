@@ -1,8 +1,8 @@
 #pragma once
 
-#include <vector>
-
 #include <MacTypes.h>
+
+#include <vector>
 
 #include "MaskedImage.hpp"
 #include "Resource.hpp"
@@ -10,18 +10,19 @@
 namespace AtelierEsri {
 
 class SpriteSheet {
-public:
+ public:
   static SpriteSheet New(MaskedImage &&maskedImage, ResourceID rgnResourceID);
 
   /// Copy a sprite into a `GWorld`.
-  void Draw(GWorld &gWorld, size_t spriteIndex, const Rect &dstRect);
+  void Draw(const GWorld &gWorld, size_t spriteIndex, const Rect &dstRect)
+      const;
 
   SpriteSheet(SpriteSheet &&src) noexcept;
   SpriteSheet &operator=(SpriteSheet &&src) noexcept;
   SpriteSheet(const SpriteSheet &src) = delete;
   SpriteSheet &operator=(const SpriteSheet &src) = delete;
 
-private:
+ private:
   explicit SpriteSheet(MaskedImage &&maskedImage, std::vector<Rect> &&regions);
   static std::vector<Rect> ReadRGN(ResourceID rgnResourceID);
   static std::vector<Rect> ReadRGN(size_t rgnLen, uint8_t *rgnPtr);
@@ -30,4 +31,4 @@ private:
   std::vector<Rect> regions;
 };
 
-} // namespace AtelierEsri
+}  // namespace AtelierEsri

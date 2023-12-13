@@ -21,8 +21,12 @@ App App::New() {
   ScrollBar gameVScrollBar(gameVScrollBarCNTLResourceID, gameWindow);
   GWorld offscreenGWorld = gameWindow.FastGWorld();
   Game game = Game::Setup(gameWindow);
-  return {std::move(gameWindow), std::move(gameVScrollBar),
-          std::move(offscreenGWorld), std::move(game)};
+  return {
+      std::move(gameWindow),
+      std::move(gameVScrollBar),
+      std::move(offscreenGWorld),
+      std::move(game)
+  };
 }
 
 void App::SetupMenuBar() {
@@ -48,34 +52,18 @@ void App::SetupMenuBar() {
   DisposeHandle(menuBar);
 }
 
-App::App(Window gameWindow, ScrollBar gameVScrollBar, GWorld offscreenGWorld,
-         Game game)
+App::App(
+    Window gameWindow,
+    ScrollBar gameVScrollBar,
+    GWorld offscreenGWorld,
+    Game game
+)
     : gameWindow(std::move(gameWindow)),
       gameVScrollBar(std::move(gameVScrollBar)),
-      offscreenGWorld(std::move(offscreenGWorld)), game(std::move(game)) {}
+      offscreenGWorld(std::move(offscreenGWorld)),
+      game(std::move(game)) {}
 
-void Copy(GWorld &gWorld, const Window &window) {
-  const GWorldLockPixelsGuard lockPixelsGuard = gWorld.LockPixels();
-
-  Rect gWorldRect = gWorld.Bounds();
-  // Don't draw on top of the vertical scroll bar.
-  gWorldRect.right -= 15;
-  const BitMap *gWorldBits = lockPixelsGuard.Bits();
-
-  Rect windowRect = window.PortBounds();
-  windowRect.right -= 15;
-  CGrafPtr windowPort = window.Port();
-
-#if TARGET_API_MAC_CARBON
-  const BitMap *windowBits = GetPortBitMapForCopyBits(windowPort);
-#else
-  const BitMap *windowBits = &reinterpret_cast<GrafPtr>(windowPort)->portBits;
-#endif
-
-  QD_CHECKED(CopyBits(gWorldBits, windowBits, &gWorldRect, &windowRect, srcCopy,
-                      nullptr),
-             "Couldn't copy from offscreen GWorld");
-}
+void Copy(GWorld &gWorld, const Window &window) {}
 
 void App::EventLoop() {
   EventRecord event;
@@ -106,56 +94,57 @@ void App::EventLoop() {
     WaitNextEvent(everyEvent, &event, sleepTimeTicks, nullptr);
 
     switch (event.what) {
-    case keyDown:
-      if (event.modifiers & cmdKey) {
-        // MenuKey() is an A-line trap and the declaration confuses CLion.
-        // ReSharper disable once CppDFAUnreadVariable
-        // ReSharper disable once CppDFAUnusedValue
-        const auto key = static_cast<int16_t>(event.message & charCodeMask);
-        // ReSharper disable once CppTooWideScope
-        const bool quit = HandleMenuSelection(MenuKey(key));
-        if (quit) {
-          return;
-        }
-      }
-      break;
-
-    case mouseDown: {
-      WindowRef eventWindowRef;
-      switch (FindWindow(event.where, &eventWindowRef)) {
-      case inMenuBar: {
-        // ReSharper disable once CppTooWideScope
-        const bool quit = HandleMenuSelection(MenuSelect(event.where));
-        if (quit) {
-          return;
-        }
-      } break;
-
-      case inSysWindow:
-#if !TARGET_API_MAC_CARBON
-        // Handle desk accessory interactions.
-        SystemClick(&event, eventWindowRef);
-#endif
-        break;
-
-      case inDesk:
-        // Don't need to do anything.
-        break;
-
-      default:
-        if (eventWindowRef) {
-          if (const auto window =
-                  reinterpret_cast<Window *>(GetWRefCon(eventWindowRef))) {
-            window->HandleMouseDown(event.where);
+      case keyDown:
+        if (event.modifiers & cmdKey) {
+          // MenuKey() is an A-line trap and the declaration confuses CLion.
+          // ReSharper disable once CppDFAUnreadVariable
+          // ReSharper disable once CppDFAUnusedValue
+          const auto key = static_cast<int16_t>(event.message & charCodeMask);
+          // ReSharper disable once CppTooWideScope
+          const bool quit = HandleMenuSelection(MenuKey(key));
+          if (quit) {
+            return;
           }
         }
         break;
-      }
-    } break;
 
-    default:
-      // Ignore most kinds of event, including disk formatting events.
-      break;
+      case mouseDown: {
+        WindowRef eventWindowRef;
+        switch (const WindowPartCode part =
+                    FindWindow(event.where, &eventWindowRef)) {
+          case inMenuBar: {
+            // ReSharper disable once CppTooWideScope
+            const bool quit = HandleMenuSelection(MenuSelect(event.where));
+            if (quit) {
+              return;
+            }
+          } break;
+
+          case inSysWindow:
+#if !TARGET_API_MAC_CARBON
+            // Handle desk accessory interactions.
+            SystemClick(&event, eventWindowRef);
+#endif
+            break;
+
+          case inDesk:
+            // Don't need to do anything.
+            break;
+
+          default:
+            if (eventWindowRef) {
+              if (const auto window =
+                      reinterpret_cast<Window *>(GetWRefCon(eventWindowRef))) {
+                window->HandleMouseDown(event.where, part);
+              }
+            }
+            break;
+        }
+      } break;
+
+      default:
+        // Ignore most kinds of event, including disk formatting events.
+        break;
     }
 
     if (const uint64_t currentTimestampUsec = Env::Microseconds();
@@ -167,8 +156,16 @@ void App::EventLoop() {
 
       game.Draw(offscreenGWorld);
 
-      Copy(offscreenGWorld, gameWindow);
-      SetPort(reinterpret_cast<GrafPtr>(gameWindow.Port()));
+      // Exclude scroll bar from copy area.
+      // ReSharper disable CppUseStructuredBinding
+      Rect gWorldRect = offscreenGWorld.Bounds();
+      gWorldRect.right -= 15;
+
+      Rect windowRect = gameWindow.PortBounds();
+      windowRect.right -= 15;
+      // ReSharper restore CppUseStructuredBinding
+
+      gameWindow.CopyFrom(offscreenGWorld, gWorldRect, windowRect);
     }
   }
 }
@@ -187,53 +184,55 @@ enum class FileMenuItems : int16_t {
 bool App::HandleMenuSelection(const int32_t menuSelection) {
   const int16_t menuID = HiWord(menuSelection);
   const int16_t menuItem = LoWord(menuSelection);
-  Debug::Printfln("Menu selection: menuID = %d, menuItem = %d", menuID,
-                  menuItem);
+  Debug::Printfln(
+      "Menu selection: menuID = %d, menuItem = %d", menuID, menuItem
+  );
   switch (menuID) {
-  case appleMenuMENUResourceID:
-    switch (static_cast<AppleMenuItems>(menuItem)) {
-    case AppleMenuItems::about:
-      AboutBox();
-      break;
+    case appleMenuMENUResourceID:
+      switch (static_cast<AppleMenuItems>(menuItem)) {
+        case AppleMenuItems::about:
+          AboutBox();
+          break;
 
-    default: {
+        default: {
 #if !TARGET_API_MAC_CARBON
-      // https://preterhuman.net/macstuff/insidemac/Toolbox/Toolbox-104.html#HEADING104-8
-      Str255 itemName;
-      // ReSharper disable once CppLocalVariableMayBeConst
-      MenuHandle appleMenu = GetMenuHandle(appleMenuMENUResourceID);
-      GetMenuItemText(appleMenu, menuItem, itemName);
-      OpenDeskAcc(itemName);
-      // TODO: implement suspend/resume events
-      //  As is, this will open the Apple menu item only after the app quits.
-      //  https://preterhuman.net/macstuff/insidemac/Toolbox/Toolbox-41.html#HEADING41-14
+          // https://preterhuman.net/macstuff/insidemac/Toolbox/Toolbox-104.html#HEADING104-8
+          Str255 itemName;
+          // ReSharper disable once CppLocalVariableMayBeConst
+          MenuHandle appleMenu = GetMenuHandle(appleMenuMENUResourceID);
+          GetMenuItemText(appleMenu, menuItem, itemName);
+          OpenDeskAcc(itemName);
+          // TODO: implement suspend/resume events
+          //  As is, this will open the Apple menu item only after the app
+          //  quits.
+          //  https://preterhuman.net/macstuff/insidemac/Toolbox/Toolbox-41.html#HEADING41-14
 #endif
-    } break;
-    }
+        } break;
+      }
 
-    break;
-
-  case fileMenuMENUResourceID:
-    switch (static_cast<FileMenuItems>(menuItem)) {
-    case FileMenuItems::open:
-      // TODO
       break;
 
-    case FileMenuItems::save:
-      // TODO
-      break;
+    case fileMenuMENUResourceID:
+      switch (static_cast<FileMenuItems>(menuItem)) {
+        case FileMenuItems::open:
+          // TODO
+          break;
 
-    case FileMenuItems::quit:
-      HiliteMenu(0);
-      return true;
+        case FileMenuItems::save:
+          // TODO
+          break;
+
+        case FileMenuItems::quit:
+          HiliteMenu(0);
+          return true;
+
+        default:
+          break;
+      }
+      break;
 
     default:
       break;
-    }
-    break;
-
-  default:
-    break;
   }
 
   HiliteMenu(0);
@@ -244,4 +243,4 @@ void App::AboutBox() {
   // TODO
 }
 
-} // namespace AtelierEsri
+}  // namespace AtelierEsri

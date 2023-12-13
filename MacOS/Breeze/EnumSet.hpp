@@ -5,8 +5,6 @@
 
 #include <bitset>
 
-#include <better-enums/enum.h>
-
 namespace Breeze {
 
 template <typename Enum>
@@ -17,11 +15,12 @@ constexpr Enum max_loop(Enum accumulator, size_t index) {
              : max_loop<Enum>(accumulator, index + 1);
 }
 
-template <typename Enum> constexpr Enum max() {
+template <typename Enum>
+constexpr Enum max() {
   return max_loop<Enum>(Enum::_values()[0], 1);
 }
 
 template <typename Enum>
 using EnumSet = std::bitset<max<Enum>()._to_integral() + 1>;
 
-} // namespace Breeze
+}  // namespace Breeze

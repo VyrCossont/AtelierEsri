@@ -8,7 +8,7 @@ namespace AtelierEsri {
 
 /// `PICT` resource with typed operations.
 class Picture {
-public:
+ public:
   static Picture Get(ResourceID resourceID);
   Rect Bounds();
   void Draw(const Rect &rect);
@@ -18,25 +18,27 @@ public:
   Picture(const Picture &src) = delete;
   Picture &operator=(const Picture &src) = delete;
 
-private:
+ private:
   explicit Picture(PICTResource &&resource);
   PICTResource resource;
 };
 
 class MaskedImage {
-public:
-  static MaskedImage Get(int16_t imageResourceID, int16_t maskResourceID,
-                         Window &window);
-  Rect Bounds();
+ public:
+  static MaskedImage Get(
+      int16_t imageResourceID, int16_t maskResourceID, Window &window
+  );
+  Rect Bounds() const;
   /// Copy the masked image into a `GWorld`.
-  void Draw(GWorld &gWorld, const Rect &srcRect, const Rect &dstRect);
+  void Draw(const GWorld &gWorld, const Rect &srcRect, const Rect &dstRect)
+      const;
 
   MaskedImage(MaskedImage &&src) noexcept;
   MaskedImage &operator=(MaskedImage &&src) noexcept;
   MaskedImage(const MaskedImage &src) = delete;
   MaskedImage &operator=(const MaskedImage &src) = delete;
 
-private:
+ private:
   explicit MaskedImage(GWorld &&image, GWorld &&mask, Rect rect);
   /// Used to copy an image or mask picture into a `GWorld` during setup.
   static void DrawInto(Picture &picture, const Rect &rect, GWorld &gWorld);
@@ -46,4 +48,4 @@ private:
   Rect rect;
 };
 
-} // namespace AtelierEsri
+}  // namespace AtelierEsri

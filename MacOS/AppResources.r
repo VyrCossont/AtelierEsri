@@ -63,6 +63,27 @@ resource 'CNTL' (gameVScrollBarCNTLResourceID, "game window vertical scroll bar"
     "" /* title */
 };
 
+resource 'WIND' (inventoryWINDResourceID, "inventory window", preload, purgeable) {
+    {43, 206, 203, 366},
+    noGrowDocProc,
+    visible,
+    noGoAway,
+    0x0, /* refCon */
+    "Container",
+    noAutoCenter
+};
+
+resource 'CNTL' (inventoryVScrollBarCNTLResourceID, "inventory window vertical scroll bar", preload, purgeable) {
+    {-1, 345, 144, 361},
+    0, /* initial setting */
+    visible,
+    0, /* max setting */
+    0, /* min setting */
+    scrollBarProc,
+    0x0, /* refCon */
+    "" /* title */
+};
+
 /*
  * Menus are called out as specifically not purgeable here:
  * https://preterhuman.net/macstuff/insidemac/MoreToolbox/MoreToolbox-13.html#HEADING13-0

@@ -10,6 +10,9 @@
 #define gameWINDResourceID 128
 #define gameVScrollBarCNTLResourceID 128
 
+#define inventoryWINDResourceID 129
+#define inventoryVScrollBarCNTLResourceID 129
+
 #define menuBarMBARResourceID 128
 
 #define appleMenuMENUResourceID 128

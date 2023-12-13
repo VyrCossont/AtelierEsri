@@ -1,7 +1,5 @@
 #pragma once
 
-#include <memory>
-
 #include <QDOffscreen.h>
 
 #include "Exception.hpp"
@@ -13,30 +11,30 @@ class GWorldActiveGuard;
 
 /// An offscreen GWorld.
 class GWorld {
-public:
+ public:
   explicit GWorld(GWorldPtr ptr);
   GWorld(GWorld &&src) noexcept;
   GWorld &operator=(GWorld &&src) noexcept;
   GWorld(const GWorld &src) = delete;
   GWorld &operator=(const GWorld &src) = delete;
   ~GWorld();
-  GWorldLockPixelsGuard LockPixels();
-  GWorldActiveGuard MakeActive();
-  Rect Bounds();
+  GWorldLockPixelsGuard LockPixels() const;
+  GWorldActiveGuard MakeActive() const;
+  Rect Bounds() const;
 
-private:
+ private:
   GWorldPtr ptr;
 };
 
 /// Guard object that locks the GWorld's pixels into memory.
 class GWorldLockPixelsGuard {
-public:
+ public:
   static GWorldLockPixelsGuard Construct(GWorldPtr ptr);
   ~GWorldLockPixelsGuard();
   /// Get the GWorld's bits. Should be used *only* with `CopyBits`, etc.
   [[nodiscard]] const BitMap *Bits() const;
 
-private:
+ private:
   GWorldLockPixelsGuard(GWorldPtr ptr, PixMapHandle hdl);
   GWorldPtr ptr;
   PixMapHandle hdl;
@@ -44,13 +42,13 @@ private:
 
 /// Guard object that makes the GWorld active for drawing operations.
 class GWorldActiveGuard {
-public:
+ public:
   explicit GWorldActiveGuard(GWorldPtr ptr);
   ~GWorldActiveGuard();
 
-private:
+ private:
   CGrafPtr prevPort = nullptr;
   GDHandle prevDevice = nullptr;
 };
 
-} // namespace AtelierEsri
+}  // namespace AtelierEsri
