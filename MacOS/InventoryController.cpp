@@ -3,7 +3,6 @@
 #include "AppResources.h"
 #include "Drawing.hpp"
 #include "Material.hpp"
-#include "Strings.hpp"
 
 namespace AtelierEsri {
 
@@ -78,17 +77,12 @@ void InventoryController::Update() const {
     const Rect gWorldRect = gWorld.Bounds();
     EraseRect(&gWorldRect);
 
-    const std::string debug =
-        Strings::FormatShort("%d items", static_cast<int>(inventory.size()));
-    MoveTo(10, 10);
-    DrawText(debug.c_str(), 0, static_cast<int16_t>(debug.size()));
-
     // Draw inventory cells into the content GWorld.
     const size_t itemsPerRow = ItemsPerRow();
     const size_t firstItemIndex =
         ItemsPerRow() * scrollBar.Value() / InventoryCell::Height;
-    const size_t numVisibleRows = PageHeight() / InventoryCell::Height;
-    for (int rowIndex = 0; rowIndex < numVisibleRows; ++rowIndex) {
+    const size_t rowsPerPage = RowsPerPage();
+    for (int rowIndex = 0; rowIndex < rowsPerPage; ++rowIndex) {
       for (int itemIndexWithinRow = 0; itemIndexWithinRow < itemsPerRow;
            ++itemIndexWithinRow) {
         const size_t itemIndex =
@@ -150,10 +144,9 @@ int16_t InventoryController::ScrollHeight() const {
   return static_cast<int16_t>(NumRows() * InventoryCell::Height);
 }
 
-int16_t InventoryController::PageHeight() const {
+size_t InventoryController::RowsPerPage() const {
   const auto [top, left, bottom, right] = gWorld.Bounds();
-  const auto contentHeight = static_cast<int16_t>(bottom - top);
-  return static_cast<int16_t>(contentHeight / InventoryCell::Height);
+  return (bottom - top) / InventoryCell::Height;
 }
 
 void InventoryController::ConfigureScroll() {
@@ -161,7 +154,8 @@ void InventoryController::ConfigureScroll() {
   scrollBar.SetMax(ScrollHeight());
   scrollBar.SetValue(0);
 
-  const int16_t pageHeight = PageHeight();
+  const auto pageHeight =
+      static_cast<int16_t>(RowsPerPage() * InventoryCell::Height);
   scrollBar.onScrollPageUp = [&](const ScrollBar& scrollBar) {
     scrollBar.ScrollBy(static_cast<int16_t>(-pageHeight));
   };

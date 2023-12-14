@@ -56,8 +56,8 @@ class InventoryController {
   /// Vertical size of all rows of inventory.
   [[nodiscard]] int16_t ScrollHeight() const;
 
-  /// Vertical size of one page of inventory given window height.
-  [[nodiscard]] int16_t PageHeight() const;
+  /// Whole number of rows that can fit in the content area at once.
+  [[nodiscard]] size_t RowsPerPage() const;
 
   /// Set scroll bar increments given window size.
   void ConfigureScroll();
