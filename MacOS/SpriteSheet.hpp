@@ -11,7 +11,7 @@ namespace AtelierEsri {
 
 class SpriteSheet {
  public:
-  static SpriteSheet New(MaskedImage &&maskedImage, ResourceID rgnResourceID);
+  explicit SpriteSheet(MaskedImage &&maskedImage, ResourceID rgnResourceID);
 
   /// Copy a sprite into a `GWorld`.
   void Draw(const GWorld &gWorld, size_t spriteIndex, const Rect &dstRect)
@@ -23,7 +23,6 @@ class SpriteSheet {
   SpriteSheet &operator=(const SpriteSheet &src) = delete;
 
  private:
-  explicit SpriteSheet(MaskedImage &&maskedImage, std::vector<Rect> &&regions);
   static std::vector<Rect> ReadRGN(ResourceID rgnResourceID);
   static std::vector<Rect> ReadRGN(size_t rgnLen, uint8_t *rgnPtr);
 

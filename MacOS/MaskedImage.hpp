@@ -26,7 +26,7 @@ class Picture {
 class MaskedImage {
  public:
   static MaskedImage Get(
-      int16_t imageResourceID, int16_t maskResourceID, Window &window
+      int16_t imageResourceID, int16_t maskResourceID, const Window &window
   );
   Rect Bounds() const;
   /// Copy the masked image into a `GWorld`.

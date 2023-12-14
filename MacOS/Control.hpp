@@ -1,8 +1,8 @@
 #pragma once
 
-#include <functional>
-
 #include <Controls.h>
+
+#include <functional>
 
 #include "Resource.hpp"
 #include "Window.hpp"
@@ -11,7 +11,7 @@ namespace AtelierEsri {
 
 /// A control within a window.
 class Control {
-public:
+ public:
   Control(ResourceID resourceID, const Window &owner);
   Control(Control &&src) noexcept;
   Control &operator=(Control &&src) noexcept;
@@ -39,14 +39,14 @@ public:
   /// Handle a mouse down on a given part.
   virtual void HandleMouseDown(Point point, ControlPartCode part) const = 0;
 
-protected:
+ protected:
   void SetRefConToThis();
 
   ControlRef ref;
 };
 
-class Button final : Control {
-public:
+class Button final : public Control {
+ public:
   Button(ResourceID resourceID, const Window &owner);
 
   void HandleMouseDown(Point point, ControlPartCode part) const override;
@@ -55,8 +55,8 @@ public:
 };
 
 /// Common ancestor of checkboxes and radio buttons.
-class Toggle : Control {
-public:
+class Toggle : public Control {
+ public:
   Toggle(ResourceID resourceID, const Window &owner);
 
   void HandleMouseDown(Point point, ControlPartCode part) const override;
@@ -64,30 +64,30 @@ public:
   [[nodiscard]] bool Checked() const;
   void SetChecked(bool checked) const;
 
-protected:
+ protected:
   virtual void HandleClick() const = 0;
 };
 
-class Checkbox final : Toggle {
+class Checkbox final : public Toggle {
   Checkbox(ResourceID resourceID, const Window &owner);
 
   std::function<void(const Checkbox &)> onClick;
 
-protected:
+ protected:
   void HandleClick() const override;
 };
 
-class RadioButton final : Toggle {
+class RadioButton final : public Toggle {
   RadioButton(ResourceID resourceID, const Window &owner);
 
   std::function<void(const RadioButton &)> onClick;
 
-protected:
+ protected:
   void HandleClick() const override;
 };
 
-class ScrollBar final : Control {
-public:
+class ScrollBar final : public Control {
+ public:
   ScrollBar(ResourceID resourceID, const Window &owner);
 
   [[nodiscard]] int16_t Value() const;
@@ -109,10 +109,10 @@ public:
   /// Argument is value of scroll bar at start of drag.
   std::function<void(const ScrollBar &, int16_t)> onScrollBoxDragged;
 
-private:
+ private:
   static pascal void ActionProc(ControlRef ref, ControlPartCode part);
   // We don't bother freeing this because there's only ever one.
   static ControlActionUPP ActionProcUPP;
 };
 
-} // namespace AtelierEsri
+}  // namespace AtelierEsri

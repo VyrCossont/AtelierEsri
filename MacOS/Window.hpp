@@ -33,6 +33,9 @@ class Window {
   /// Copy from a GWorld into this window.
   void CopyFrom(const GWorld &gWorld, Rect gWorldRect, Rect windowRect) const;
 
+  /// Draw all controls attached to this window.
+  void DrawControls() const;
+
   [[nodiscard]] WindowRef Unmanaged() const;
   [[nodiscard]] Rect PortBounds() const;
   [[nodiscard]] CGrafPtr Port() const;

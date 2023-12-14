@@ -3,6 +3,7 @@
 #include "AppResources.h"
 #include "Drawing.hpp"
 #include "Material.hpp"
+#include "Strings.hpp"
 
 namespace AtelierEsri {
 
@@ -70,34 +71,54 @@ InventoryController::InventoryController(
 }
 
 void InventoryController::Update() const {
-  // Draw inventory cells into the content GWorld.
-  const size_t itemsPerRow = ItemsPerRow();
-  const size_t firstItemIndex =
-      ItemsPerRow() * scrollBar.Value() / InventoryCell::Height;
-  const size_t numVisibleRows = PageHeight() / InventoryCell::Height;
-  for (int rowIndex = 0; rowIndex < numVisibleRows; ++rowIndex) {
-    for (int itemIndexWithinRow = 0; itemIndexWithinRow < itemsPerRow;
-         ++itemIndexWithinRow) {
-      const size_t itemIndex =
-          firstItemIndex + (rowIndex * itemsPerRow) + itemIndexWithinRow;
-      if (itemIndex >= inventory.size()) {
-        goto noMoreItems;
-      }
+  {
+    const GWorldActiveGuard activeGuard = gWorld.MakeActive();
+    QD::Reset();
 
-      const Breeze::Item& item = inventory[itemIndex];
-      const Material& material = catalog[item.material.id];
-      const Point point{
-          .v = static_cast<int16_t>(rowIndex * InventoryCell::Height),
-          .h = static_cast<int16_t>(itemIndexWithinRow * InventoryCell::Width)
-      };
-      const InventoryCell cell(item, material, spriteSheet, point);
-      cell.Draw(gWorld);
+    const Rect gWorldRect = gWorld.Bounds();
+    EraseRect(&gWorldRect);
+
+    const std::string debug =
+        Strings::FormatShort("%d items", static_cast<int>(inventory.size()));
+    MoveTo(10, 10);
+    DrawText(debug.c_str(), 0, static_cast<int16_t>(debug.size()));
+
+    // Draw inventory cells into the content GWorld.
+    const size_t itemsPerRow = ItemsPerRow();
+    const size_t firstItemIndex =
+        ItemsPerRow() * scrollBar.Value() / InventoryCell::Height;
+    const size_t numVisibleRows = PageHeight() / InventoryCell::Height;
+    for (int rowIndex = 0; rowIndex < numVisibleRows; ++rowIndex) {
+      for (int itemIndexWithinRow = 0; itemIndexWithinRow < itemsPerRow;
+           ++itemIndexWithinRow) {
+        const size_t itemIndex =
+            firstItemIndex + (rowIndex * itemsPerRow) + itemIndexWithinRow;
+        if (itemIndex >= inventory.size()) {
+          goto noMoreItems;
+        }
+
+        const Breeze::Item& item = inventory[itemIndex];
+        const Material& material = catalog[item.material.id];
+        const Point point{
+            .v = static_cast<int16_t>(rowIndex * InventoryCell::Height),
+            .h =
+                static_cast<int16_t>(itemIndexWithinRow * InventoryCell::Width),
+        };
+        const InventoryCell cell(item, material, spriteSheet, point);
+        cell.Draw(gWorld);
+      }
     }
   }
 
 noMoreItems:
   // Copy the content GWorld into the window.
-  window.CopyFrom(gWorld, gWorld.Bounds(), window.PortBounds());
+  Rect windowRect = window.PortBounds();
+  // Leave room for the scroll bar.
+  windowRect.right -= 15;
+  window.CopyFrom(gWorld, gWorld.Bounds(), windowRect);
+
+  // Draw the window's controls.
+  window.DrawControls();
 }
 
 GWorld InventoryController::ContentGWorld() const {
@@ -106,6 +127,7 @@ GWorld InventoryController::ContentGWorld() const {
       static_cast<int16_t>(right - left - 15),
       static_cast<int16_t>(bottom - top)
   );
+  // TODO: insets here and in draw above also need to account for the title bar
 }
 
 size_t InventoryController::ItemsPerRow() const {
@@ -141,7 +163,7 @@ void InventoryController::ConfigureScroll() {
 
   const int16_t pageHeight = PageHeight();
   scrollBar.onScrollPageUp = [&](const ScrollBar& scrollBar) {
-    scrollBar.ScrollBy(-pageHeight);
+    scrollBar.ScrollBy(static_cast<int16_t>(-pageHeight));
   };
   scrollBar.onScrollPageDown = [&](const ScrollBar& scrollBar) {
     scrollBar.ScrollBy(pageHeight);

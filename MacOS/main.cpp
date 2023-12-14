@@ -24,7 +24,8 @@ void FatalError(const std::string &explanation, const std::string &location) {
   Strings::ToPascal(location, pascalLocation);
   ParamText(pascalExplanation, pascalLocation, nullptr, nullptr);
 
-  AtelierEsri::Alert alert(errorALRTResourceID, AtelierEsri::AlertType::stop);
+  const Alert alert(errorALRTResourceID, stop);
+  // ReSharper disable once CppExpressionWithoutSideEffects
   alert.Show();
 }
 
@@ -32,11 +33,11 @@ void FatalError(const std::string &explanation, const std::string &location) {
 void Run() {
   Env::Initialize();
 
-  App app = App::New();
+  App app{};
   return app.EventLoop();
 }
 
-} // namespace AtelierEsri
+}  // namespace AtelierEsri
 
 int main() {
   using namespace AtelierEsri;

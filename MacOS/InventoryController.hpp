@@ -30,6 +30,7 @@ class InventoryCell {
   bool hilite = false;
 };
 
+/// Note: this type must be re-created if any of the things it references move.
 class InventoryController {
  public:
   InventoryController(
@@ -44,19 +45,19 @@ class InventoryController {
 
  private:
   /// Create a GWorld the size of the content area, excluding scroll bars.
-  GWorld ContentGWorld() const;
+  [[nodiscard]] GWorld ContentGWorld() const;
 
   /// Items per row given window width.
-  size_t ItemsPerRow() const;
+  [[nodiscard]] size_t ItemsPerRow() const;
 
   /// Number of rows given inventory size and items per row.
-  size_t NumRows() const;
+  [[nodiscard]] size_t NumRows() const;
 
   /// Vertical size of all rows of inventory.
-  int16_t ScrollHeight() const;
+  [[nodiscard]] int16_t ScrollHeight() const;
 
   /// Vertical size of one page of inventory given window height.
-  int16_t PageHeight() const;
+  [[nodiscard]] int16_t PageHeight() const;
 
   /// Set scroll bar increments given window size.
   void ConfigureScroll();

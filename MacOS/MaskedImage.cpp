@@ -32,7 +32,9 @@ void Picture::Draw(const Rect &rect) {
 }
 
 MaskedImage MaskedImage::Get(
-    const int16_t imageResourceID, const int16_t maskResourceID, Window &window
+    const int16_t imageResourceID,
+    const int16_t maskResourceID,
+    const Window &window
 ) {
   Picture imagePicture = Picture::Get(imageResourceID);
   const Rect imageRect = imagePicture.Bounds();

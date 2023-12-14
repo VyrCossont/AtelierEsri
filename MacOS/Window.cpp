@@ -92,6 +92,8 @@ void Window::CopyFrom(
   );
 }
 
+void Window::DrawControls() const { ::DrawControls(ref); }
+
 WindowRef Window::Unmanaged() const { return ref; }
 
 Rect Window::PortBounds() const {

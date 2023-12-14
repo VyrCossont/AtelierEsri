@@ -9,16 +9,13 @@ namespace AtelierEsri {
 
 /// Responsible for initing the Toolbox and running the event loop.
 class App {
-public:
-  static App New();
+ public:
+  App();
 
   /// Run the event loop.
   void EventLoop();
 
-private:
-  App(Window gameWindow, ScrollBar gameVScrollBar, GWorld offscreenGWorld,
-      Game game);
-
+ private:
   static void SetupMenuBar();
 
   /// Returns true if we should quit.
@@ -36,4 +33,4 @@ private:
   Game game;
 };
 
-} // namespace AtelierEsri
+}  // namespace AtelierEsri

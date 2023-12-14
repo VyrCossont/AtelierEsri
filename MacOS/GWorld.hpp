@@ -18,9 +18,9 @@ class GWorld {
   GWorld(const GWorld &src) = delete;
   GWorld &operator=(const GWorld &src) = delete;
   ~GWorld();
-  GWorldLockPixelsGuard LockPixels() const;
-  GWorldActiveGuard MakeActive() const;
-  Rect Bounds() const;
+  [[nodiscard]] GWorldLockPixelsGuard LockPixels() const;
+  [[nodiscard]] GWorldActiveGuard MakeActive() const;
+  [[nodiscard]] Rect Bounds() const;
 
  private:
   GWorldPtr ptr;

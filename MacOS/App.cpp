@@ -15,20 +15,6 @@
 
 namespace AtelierEsri {
 
-App App::New() {
-  SetupMenuBar();
-  Window gameWindow = Window::Present(gameWINDResourceID);
-  ScrollBar gameVScrollBar(gameVScrollBarCNTLResourceID, gameWindow);
-  GWorld offscreenGWorld = gameWindow.FastGWorld();
-  Game game = Game::Setup(gameWindow);
-  return {
-      std::move(gameWindow),
-      std::move(gameVScrollBar),
-      std::move(offscreenGWorld),
-      std::move(game)
-  };
-}
-
 void App::SetupMenuBar() {
   const MenuBarHandle menuBar = GetNewMBar(menuBarMBARResourceID);
   REQUIRE_NOT_NULL(menuBar);
@@ -52,18 +38,13 @@ void App::SetupMenuBar() {
   DisposeHandle(menuBar);
 }
 
-App::App(
-    Window gameWindow,
-    ScrollBar gameVScrollBar,
-    GWorld offscreenGWorld,
-    Game game
-)
-    : gameWindow(std::move(gameWindow)),
-      gameVScrollBar(std::move(gameVScrollBar)),
-      offscreenGWorld(std::move(offscreenGWorld)),
-      game(std::move(game)) {}
-
-void Copy(GWorld &gWorld, const Window &window) {}
+App::App()
+    : gameWindow(Window::Present(gameWINDResourceID)),
+      gameVScrollBar(gameVScrollBarCNTLResourceID, gameWindow),
+      offscreenGWorld(gameWindow.FastGWorld()),
+      game(gameWindow) {
+  SetupMenuBar();
+}
 
 void App::EventLoop() {
   EventRecord event;

@@ -2,15 +2,10 @@
 
 namespace AtelierEsri {
 
-SpriteSheet SpriteSheet::New(
+SpriteSheet::SpriteSheet(
     MaskedImage &&maskedImage, const ResourceID rgnResourceID
-) {
-  std::vector<Rect> regions = ReadRGN(rgnResourceID);
-  return SpriteSheet(std::move(maskedImage), std::move(regions));
-}
-
-SpriteSheet::SpriteSheet(MaskedImage &&maskedImage, std::vector<Rect> &&regions)
-    : maskedImage(std::move(maskedImage)), regions(std::move(regions)) {}
+)
+    : maskedImage(std::move(maskedImage)), regions(ReadRGN(rgnResourceID)) {}
 
 SpriteSheet::SpriteSheet(SpriteSheet &&src) noexcept
     : maskedImage(std::move(src.maskedImage)),

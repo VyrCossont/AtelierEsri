@@ -9,19 +9,18 @@
 
 namespace AtelierEsri {
 
-Game Game::Setup(Window &window) {
-  MaskedImage spriteSheetImage = MaskedImage::Get(
-      assetSpriteSheet00ImagePictResourceId,
-      assetSpriteSheet00MaskPictResourceId,
-      window
-  );
-  SpriteSheet spriteSheet = SpriteSheet::New(
-      std::move(spriteSheetImage), assetSpriteSheet00RgnResourceId
-  );
-  auto game = Game(std::move(spriteSheet));
-
-  return game;
-}
+Game::Game(const Window &window)
+    : spriteSheet(
+          MaskedImage::Get(
+              assetSpriteSheet00ImagePictResourceId,
+              assetSpriteSheet00MaskPictResourceId,
+              window
+          ),
+          assetSpriteSheet00RgnResourceId
+      ),
+      catalog(Material::Catalog()),
+      inventory(DemoInventory()),
+      inventoryController(inventory, catalog, spriteSheet) {}
 
 void Game::Update(const int16_t scrollBarPosition) {
   yOffset = static_cast<int16_t>(-(scrollBarPosition - 50));
@@ -30,7 +29,7 @@ void Game::Update(const int16_t scrollBarPosition) {
   inventoryController.Update();
 }
 
-void Game::Draw(GWorld &gWorld) {
+void Game::Draw(const GWorld &gWorld) const {
   QD::Reset();
 
   GWorldActiveGuard activeGuard = gWorld.MakeActive();
@@ -80,18 +79,12 @@ void Game::Draw(GWorld &gWorld) {
   }
 }
 
-Game::Game(SpriteSheet &&spriteSheet)
-    : spriteSheet(std::move(spriteSheet)),
-      catalog(Material::Catalog()),
-      inventory(DemoInventory()),
-      inventoryController(inventory, catalog, spriteSheet) {}
-
 Breeze::PlayerInventory Game::DemoInventory() {
   Breeze::PlayerInventory inventory{};
 
   // Give two of every raw material.
   const std::vector<Material> catalog = Material::Catalog();
-  for (size_t materialIndex = 1; materialIndex < catalog.size();
+  for (size_t materialIndex = 0; materialIndex < catalog.size() - 1;
        ++materialIndex) {
     const Breeze::Material &material = catalog[materialIndex].data;
     Breeze::Item item = {
