@@ -47,6 +47,9 @@ class QD {
   /// Reset graphics port to defaults.
   static void Reset();
 
+  /// Get the bounds of the entire desktop, aka the "gray region".
+  static Rect DesktopBounds();
+
   static Pattern Black();
   static Pattern DarkGray();
   static Pattern Gray();

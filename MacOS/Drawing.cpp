@@ -1,5 +1,7 @@
 #include "Drawing.hpp"
 
+#include <MacWindows.h>
+
 #include <ctgmath>
 
 namespace AtelierEsri {
@@ -55,6 +57,17 @@ void QD::Reset() {
 
   const Pattern defaultBackground = White();
   BackPat(&defaultBackground);
+}
+
+Rect QD::DesktopBounds() {
+  RgnHandle grayRegion = GetGrayRgn();
+#if TARGET_API_MAC_CARBON
+  Rect bounds;
+  GetRegionBounds(grayRegion, &bounds);
+  return bounds;
+#else
+  return grayRegion[0]->rgnBBox;
+#endif
 }
 
 Pattern QD::Black() {

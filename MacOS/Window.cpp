@@ -142,9 +142,10 @@ void Window::HandleMouseDown(Point point, const WindowPartCode part) const {
         SelectWindow(ref);
       }
 
-    case inDrag:
-      // TODO
-      break;
+    case inDrag: {
+      const Rect desktop = QD::DesktopBounds();
+      DragWindow(ref, point, &desktop);
+    } break;
 
     case inGrow:
       // TODO
