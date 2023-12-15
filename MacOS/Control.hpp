@@ -1,8 +1,8 @@
 #pragma once
 
-#include <Controls.h>
-
 #include <functional>
+
+#include <Controls.h>
 
 #include "Resource.hpp"
 #include "Window.hpp"
@@ -24,22 +24,21 @@ class Control {
   void Show() const;
   void Hide() const;
 
-  /// Move control's origin point to this point.
-  void Move(Point point) const;
-  /// Change control's size to this size (stored as a point).
-  void Size(Point size) const;
+  [[nodiscard]] Rect Bounds() const;
+  void Bounds(const Rect &bounds) const;
 
   void Hilite(ControlPartCode part) const;
   static constexpr ControlPartCode HiliteNone = 0;
   static constexpr ControlPartCode HiliteDisable = 255;
 
   [[nodiscard]] std::string Title() const;
-  void SetTitle(const std::string &title) const;
+  void Title(const std::string &title) const;
 
   /// Handle a mouse down on a given part.
   virtual void HandleMouseDown(Point point, ControlPartCode part) const = 0;
 
  protected:
+  static ControlRef GetNewControl(ResourceID resourceID, const Window &owner);
   void SetRefConToThis();
 
   ControlRef ref;

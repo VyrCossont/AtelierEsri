@@ -74,7 +74,7 @@ resource 'WIND' (inventoryWINDResourceID, "inventory window", preload, purgeable
 };
 
 resource 'CNTL' (inventoryVScrollBarCNTLResourceID, "inventory window vertical scroll bar", preload, purgeable) {
-    {-1, 345, 144, 361},
+    {-1, 145, 144, 161},
     0, /* initial setting */
     visible,
     0, /* max setting */

@@ -1,19 +1,25 @@
 #include "Control.hpp"
 
-#include <algorithm>
-
 #include <ControlDefinitions.h>
+
+#include <algorithm>
 
 #include "Strings.hpp"
 
 namespace AtelierEsri {
 
-Control::Control(const ResourceID resourceID, const Window &owner) {
-  // ReSharper disable once CppLocalVariableMayBeConst
-  ControlRef ref = GetNewControl(resourceID, owner.Unmanaged());
-  REQUIRE_NOT_NULL(ref);
-  this->ref = ref;
+Control::Control(const ResourceID resourceID, const Window &owner)
+    : ref(GetNewControl(resourceID, owner)) {
   SetRefConToThis();
+}
+
+ControlRef Control::GetNewControl(
+    const ResourceID resourceID, const Window &owner
+) {
+  // ReSharper disable once CppLocalVariableMayBeConst
+  ControlRef ref = ::GetNewControl(resourceID, owner.Unmanaged());
+  REQUIRE_NOT_NULL(ref);
+  return ref;
 }
 
 Control::Control(Control &&src) noexcept : ref(src.ref) {
@@ -34,11 +40,23 @@ void Control::Show() const { ShowControl(ref); }
 
 void Control::Hide() const { HideControl(ref); }
 
-void Control::Move(const Point point) const {
-  MoveControl(ref, point.h, point.v);
+Rect Control::Bounds() const {
+#if TARGET_API_MAC_CARBON
+  Rect bounds;
+  GetControlBounds(ref, &bounds);
+  return bounds;
+#else
+  return ref[0]->contrlRect;
+#endif
 }
 
-void Control::Size(const Point size) const { SizeControl(ref, size.h, size.v); }
+void Control::Bounds(const Rect &bounds) const {
+#if TARGET_API_MAC_CARBON
+  SetControlBounds(ref, &bounds);
+#else
+  ref[0]->contrlRect = bounds;
+#endif
+}
 
 void Control::Hilite(const ControlPartCode part) const {
   HiliteControl(ref, part);
@@ -50,7 +68,7 @@ std::string Control::Title() const {
   return Strings::FromPascal(pStr);
 }
 
-void Control::SetTitle(const std::string &title) const {
+void Control::Title(const std::string &title) const {
   Str255 pStr;
   Strings::ToPascal(title, pStr);
   SetControlTitle(ref, pStr);
@@ -63,8 +81,8 @@ void Control::SetRefConToThis() {
 Button::Button(const ResourceID resourceID, const Window &owner)
     : Control(resourceID, owner) {}
 
-void Button::HandleMouseDown(const Point point,
-                             const ControlPartCode part) const {
+void Button::HandleMouseDown(const Point point, const ControlPartCode part)
+    const {
   if (part == kControlButtonPart) {
     if (const ControlPartCode mouseUpPart = TrackControl(ref, point, nullptr)) {
       if (mouseUpPart == kControlButtonPart) {
@@ -79,8 +97,8 @@ void Button::HandleMouseDown(const Point point,
 Toggle::Toggle(const ResourceID resourceID, const Window &owner)
     : Control(resourceID, owner) {}
 
-void Toggle::HandleMouseDown(const Point point,
-                             const ControlPartCode part) const {
+void Toggle::HandleMouseDown(const Point point, const ControlPartCode part)
+    const {
   if (part == kControlCheckBoxPart) {
     if (const ControlPartCode mouseUpPart = TrackControl(ref, point, nullptr)) {
       if (mouseUpPart == kControlCheckBoxPart) {
@@ -152,60 +170,60 @@ void ScrollBar::ActionProc(ControlRef ref, const ControlPartCode part) {
   }
 
   switch (part) {
-  case kControlUpButtonPart:
-    if (scrollBar->onScrollLineUp) {
-      scrollBar->onScrollLineUp(*scrollBar);
-    }
-    break;
+    case kControlUpButtonPart:
+      if (scrollBar->onScrollLineUp) {
+        scrollBar->onScrollLineUp(*scrollBar);
+      }
+      break;
 
-  case kControlDownButtonPart:
-    if (scrollBar->onScrollLineDown) {
-      scrollBar->onScrollLineDown(*scrollBar);
-    }
-    break;
+    case kControlDownButtonPart:
+      if (scrollBar->onScrollLineDown) {
+        scrollBar->onScrollLineDown(*scrollBar);
+      }
+      break;
 
-  case kControlPageUpPart:
-    if (scrollBar->onScrollPageUp) {
-      scrollBar->onScrollPageUp(*scrollBar);
-    }
-    break;
+    case kControlPageUpPart:
+      if (scrollBar->onScrollPageUp) {
+        scrollBar->onScrollPageUp(*scrollBar);
+      }
+      break;
 
-  case kControlPageDownPart:
-    if (scrollBar->onScrollPageDown) {
-      scrollBar->onScrollPageDown(*scrollBar);
-    }
-    break;
+    case kControlPageDownPart:
+      if (scrollBar->onScrollPageDown) {
+        scrollBar->onScrollPageDown(*scrollBar);
+      }
+      break;
 
-  default:
-    break;
+    default:
+      break;
   }
 }
 
 ControlActionUPP ScrollBar::ActionProcUPP = NewControlActionUPP(ActionProc);
 
-void ScrollBar::HandleMouseDown(const Point point,
-                                const ControlPartCode part) const {
+void ScrollBar::HandleMouseDown(const Point point, const ControlPartCode part)
+    const {
   // https://preterhuman.net/macstuff/insidemac/Toolbox/Toolbox-312.html#MARKER-9-271
   switch (part) {
-  case kControlIndicatorPart: {
-    const int16_t beginValue = Value();
-    if (kControlIndicatorPart == TrackControl(ref, point, nullptr)) {
-      if (onScrollBoxDragged) {
-        onScrollBoxDragged(*this, beginValue);
+    case kControlIndicatorPart: {
+      const int16_t beginValue = Value();
+      if (kControlIndicatorPart == TrackControl(ref, point, nullptr)) {
+        if (onScrollBoxDragged) {
+          onScrollBoxDragged(*this, beginValue);
+        }
       }
-    }
-  } break;
+    } break;
 
-  case kControlUpButtonPart:
-  case kControlDownButtonPart:
-  case kControlPageUpPart:
-  case kControlPageDownPart:
-    TrackControl(ref, point, ActionProcUPP);
-    break;
+    case kControlUpButtonPart:
+    case kControlDownButtonPart:
+    case kControlPageUpPart:
+    case kControlPageDownPart:
+      TrackControl(ref, point, ActionProcUPP);
+      break;
 
-  default:
-    break;
+    default:
+      break;
   }
 }
 
-} // namespace AtelierEsri
+}  // namespace AtelierEsri

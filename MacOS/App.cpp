@@ -1,6 +1,7 @@
 #include "App.hpp"
 
 #include <Devices.h>
+#include <DiskInit.h>
 #include <Events.h>
 #include <MacWindows.h>
 #include <Menus.h>
@@ -39,7 +40,7 @@ void App::SetupMenuBar() {
 }
 
 App::App()
-    : gameWindow(Window::Present(gameWINDResourceID)),
+    : gameWindow(gameWINDResourceID),
       gameVScrollBar(gameVScrollBarCNTLResourceID, gameWindow),
       offscreenGWorld(gameWindow.FastGWorld()),
       game(gameWindow) {
@@ -123,8 +124,28 @@ void App::EventLoop() {
         }
       } break;
 
+      case updateEvt:
+        if (const auto window = EventWindow(event)) {
+          window->HandleUpdate();
+        }
+        break;
+
+      case activateEvt:
+        if (const auto window = EventWindow(event)) {
+          if (event.modifiers & activeFlag) {
+            window->HandleActivate();
+          } else {
+            window->HandleDeactivate();
+          }
+        }
+        break;
+
+      case diskEvt:
+        DiskInserted(event);
+        break;
+
       default:
-        // Ignore most kinds of event, including disk formatting events.
+        // Ignore other events.
         break;
     }
 
@@ -222,6 +243,33 @@ bool App::HandleMenuSelection(const int32_t menuSelection) {
 
 void App::AboutBox() {
   // TODO
+}
+
+void App::DiskInserted(const EventRecord &event) {
+#if !TARGET_API_MAC_CARBON
+  // https://preterhuman.net/macstuff/insidemac/Files/Files-373.html#MARKER-9-49
+  DILoad();
+  if (HiWord(event.message)) {
+    // Disk mount failed. Offer to initialize it.
+    // First param is the top left of the disk dialog, but System 7 always
+    // ignores that and centers it on the screen for us.
+    DIBadMount({120, 120}, event.message);
+    // This returns an `OSErr`, but failure will also notify the user and
+    // eject the disk, so we don't have to do anything with that error
+    // code.
+  }
+  DIUnload();
+#endif
+}
+
+Window *App::EventWindow(const EventRecord &event) {
+  if (const auto eventWindowRef = reinterpret_cast<WindowRef>(event.message)) {
+    if (const auto window =
+            reinterpret_cast<Window *>(GetWRefCon(eventWindowRef))) {
+      return window;
+    }
+  }
+  return nullptr;
 }
 
 }  // namespace AtelierEsri

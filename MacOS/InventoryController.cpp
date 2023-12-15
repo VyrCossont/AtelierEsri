@@ -49,14 +49,17 @@ InventoryController::InventoryController(
     const Breeze::PlayerInventory& inventory,
     const std::vector<Material>& catalog,
     const SpriteSheet& spriteSheet,
-    const WindowRef inFrontOf
+    const WindowRef behind
 )
     : inventory(inventory),
       catalog(catalog),
       spriteSheet(spriteSheet),
-      window(Window::Present(inventoryWINDResourceID, inFrontOf)),
-      scrollBar(ScrollBar(inventoryVScrollBarCNTLResourceID, window)),
+      window(inventoryWINDResourceID, behind),
+      scrollBar(inventoryVScrollBarCNTLResourceID, window),
       gWorld(ContentGWorld()) {
+  window.onActivate = [&](const Window& window) { scrollBar.Show(); };
+  window.onDeactivate = [&](const Window& window) { scrollBar.Hide(); };
+
   // These scroll increments don't change with window size.
   scrollBar.onScrollLineUp = [&](const ScrollBar& scrollBar) {
     scrollBar.ScrollBy(-InventoryCell::Height);
@@ -121,7 +124,6 @@ GWorld InventoryController::ContentGWorld() const {
       static_cast<int16_t>(right - left - 15),
       static_cast<int16_t>(bottom - top)
   );
-  // TODO: insets here and in draw above also need to account for the title bar
 }
 
 size_t InventoryController::ItemsPerRow() const {
@@ -141,7 +143,10 @@ size_t InventoryController::NumRows() const {
 }
 
 int16_t InventoryController::ScrollHeight() const {
-  return static_cast<int16_t>(NumRows() * InventoryCell::Height);
+  return std::max(
+      static_cast<int16_t>(0),
+      static_cast<int16_t>((NumRows() - RowsPerPage()) * InventoryCell::Height)
+  );
 }
 
 size_t InventoryController::RowsPerPage() const {

@@ -37,7 +37,7 @@ class InventoryController {
       const Breeze::PlayerInventory& inventory,
       const std::vector<Material>& catalog,
       const SpriteSheet& spriteSheet,
-      WindowRef inFrontOf = Window::AllOtherWindows
+      WindowRef behind = Window::InFrontOfAllOtherWindows
   );
 
   /// Draw the inventory controller's window.
@@ -53,7 +53,8 @@ class InventoryController {
   /// Number of rows given inventory size and items per row.
   [[nodiscard]] size_t NumRows() const;
 
-  /// Vertical size of all rows of inventory.
+  /// Vertical size of all rows of inventory minus one page
+  /// (so we can't scroll past the end).
   [[nodiscard]] int16_t ScrollHeight() const;
 
   /// Whole number of rows that can fit in the content area at once.

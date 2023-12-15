@@ -3,13 +3,12 @@
 #include <MacTypes.h>
 
 #include "Control.hpp"
+#include "Debug.hpp"
 #include "Drawing.hpp"
 #include "Exception.hpp"
 #include "GWorld.hpp"
 
 namespace AtelierEsri {
-
-Window::Window(const WindowRef ref) : ref(ref) { SetRefConToThis(); }
 
 Window::Window(Window &&src) noexcept {
   ref = src.ref;
@@ -30,25 +29,31 @@ Window::~Window() {
   }
 }
 
-void Window::SetRefConToThis() {
-  SetWRefCon(ref, reinterpret_cast<long>(this));
-}
-
-const WindowRef Window::AllOtherWindows = reinterpret_cast<WindowRef>(-1);
-
-Window Window::Present(const ResourceID resourceID, const WindowRef inFrontOf) {
-  const bool hasColorQuickDraw = QD::HasColor();
-
+WindowRef Window::GetNewWindow(
+    const ResourceID resourceID, const WindowRef behind
+) {
   WindowRef ref;
   // Not actually identical: these are A-line traps and Clang can't parse them.
-  if (hasColorQuickDraw) {  // NOLINT(*-branch-clone)
-    ref = GetNewCWindow(resourceID, nullptr, inFrontOf);
+  if (QD::HasColor()) {  // NOLINT(*-branch-clone)
+    ref = GetNewCWindow(resourceID, nullptr, behind);
   } else {
-    ref = GetNewWindow(resourceID, nullptr, inFrontOf);
+    ref = ::GetNewWindow(resourceID, nullptr, behind);
   }
   REQUIRE_NOT_NULL(ref);
+  return ref;
+}
 
-  return Window(ref);
+void Window::SetRefConToThis() {
+  SetWRefCon(ref, reinterpret_cast<int32_t>(this));
+}
+
+const WindowRef Window::InFrontOfAllOtherWindows =
+    reinterpret_cast<WindowRef>(-1);
+const WindowRef Window::BehindAllOtherWindows = nullptr;
+
+Window::Window(const ResourceID resourceID, const WindowRef behind)
+    : ref(GetNewWindow(resourceID, behind)) {
+  SetRefConToThis();
 }
 
 GWorld Window::FastGWorld(const int16_t w, const int16_t h) const {
@@ -94,6 +99,11 @@ void Window::CopyFrom(
 
 void Window::DrawControls() const { ::DrawControls(ref); }
 
+// ReSharper disable once CppParameterMayBeConst
+void Window::UpdateControls(RgnHandle updateRegion) const {
+  ::UpdateControls(ref, updateRegion);
+}
+
 WindowRef Window::Unmanaged() const { return ref; }
 
 Rect Window::PortBounds() const {
@@ -124,14 +134,17 @@ void Window::HandleMouseDown(Point point, const WindowPartCode part) const {
         ControlRef eventControlRef;
         if (const ControlPartCode controlPart =
                 FindControl(point, ref, &eventControlRef)) {
+          Debug::Printfln("Control found");
           if (eventControlRef) {
             if (const auto control = reinterpret_cast<Control *>(
                     GetControlReference(eventControlRef)
                 )) {
+              Debug::Printfln("Control object found");
               control->HandleMouseDown(point, controlPart);
             }
           }
         } else {
+          Debug::Printfln("Non-control click in window ref %p", ref);
           // Handle non-control clicks.
           if (onContentMouseDown) {
             onContentMouseDown(*this, point);
@@ -141,6 +154,7 @@ void Window::HandleMouseDown(Point point, const WindowPartCode part) const {
         // If we're not the active window, become the active window.
         SelectWindow(ref);
       }
+      break;
 
     case inDrag: {
       const Rect desktop = QD::DesktopBounds();
@@ -167,6 +181,38 @@ void Window::HandleMouseDown(Point point, const WindowPartCode part) const {
     default:
       break;
   }
+}
+
+void Window::HandleActivate() const {
+  if (onActivate) {
+    onActivate(*this);
+  }
+}
+
+void Window::HandleDeactivate() const {
+  if (onDeactivate) {
+    onDeactivate(*this);
+  }
+}
+
+void Window::HandleUpdate() const {
+  GWorldActiveGuard activeGuard = MakeActivePort();
+
+  BeginUpdate(ref);
+
+  RgnHandle visibleRegion;
+#if TARGET_API_MAC_CARBON
+  GetPortVisibleRegion(Port(), visibleRegion);
+#else
+  visibleRegion = Port()->visRgn;
+#endif
+  UpdateControls(visibleRegion);
+
+  if (onUpdate) {
+    onUpdate(*this);
+  }
+
+  EndUpdate(ref);
 }
 
 GWorldActiveGuard Window::MakeActivePort() const {
