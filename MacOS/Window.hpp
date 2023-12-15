@@ -52,6 +52,8 @@ class Window {
   /// Point is in window-local coordinates.
   std::function<void(const Window &, Point point)> onContentMouseDown;
 
+  std::function<void(const Window &)> onClose;
+
  private:
   explicit Window(WindowRef ref);
   void SetRefConToThis();

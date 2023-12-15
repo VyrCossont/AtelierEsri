@@ -152,7 +152,11 @@ void Window::HandleMouseDown(Point point, const WindowPartCode part) const {
       break;
 
     case inGoAway:
-      // TODO
+      if (TrackGoAway(ref, point)) {
+        if (onClose) {
+          onClose(*this);
+        }
+      }
       break;
 
     case inZoomIn:
