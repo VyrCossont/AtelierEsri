@@ -1,10 +1,23 @@
 #include "Drawing.hpp"
 
+#include <ctgmath>
+
 namespace AtelierEsri {
 
 #if !TARGET_API_MAC_CARBON
 std::optional<SysEnvRec> QD::sysEnvRec = {};
 #endif
+
+V2I::V2I(const int x, const int y) : V2(x, y) {}
+
+V2I::V2I(const Point point) : V2(point.h, point.v) {}
+
+V2I::operator Point() const {
+  return {
+      .v = static_cast<int16_t>(y),
+      .h = static_cast<int16_t>(x),
+  };
+}
 
 bool QD::HasColor() {
 #if TARGET_API_MAC_CARBON
@@ -12,8 +25,9 @@ bool QD::HasColor() {
 #else
   if (!sysEnvRec.has_value()) {
     SysEnvRec newSysEnvRec;
-    OS_CHECKED(SysEnvirons(1, &newSysEnvRec),
-               "Couldn't check QuickDraw capabilities");
+    OS_CHECKED(
+        SysEnvirons(1, &newSysEnvRec), "Couldn't check QuickDraw capabilities"
+    );
     sysEnvRec = newSysEnvRec;
   }
   return sysEnvRec->hasColorQD != 0;
@@ -77,33 +91,45 @@ Pattern QD::White() {
 #endif
 }
 
-Ngon::Ngon(const Point center, const int16_t r, const uint8_t n,
-           const float theta)
-    : center(center), r(r), n(n), theta(theta) {}
+void QD::MoveTo(const V2I point) {
+  ::MoveTo(static_cast<int16_t>(point.x), static_cast<int16_t>(point.y));
+}
 
-Point Ngon::operator[](const uint8_t i) const {
+void QD::LineTo(const V2I point) {
+  ::LineTo(static_cast<int16_t>(point.x), static_cast<int16_t>(point.y));
+}
+
+Ngon::Ngon(
+    const V2I center,
+    const int r,
+    const int n,
+    const float theta,
+    const bool reverse
+)
+    : center(center), r(r), n(n), theta(theta), reverse(reverse) {}
+
+V2I Ngon::operator[](const int i) const {
   const float thetaI =
-      theta + (static_cast<float>(M_TWOPI) * static_cast<float>(i)) /
+      theta + (reverse ? -1.0f : 1.0f) *
+                  (static_cast<float>(M_TWOPI) * static_cast<float>(i)) /
                   static_cast<float>(n);
-  return {
-      static_cast<int16_t>(
-          center.h + static_cast<int16_t>(static_cast<float>(r) * cos(thetaI))),
-      static_cast<int16_t>(
-          center.v +
-          static_cast<int16_t>(static_cast<float>(r) * sin(thetaI)))};
+  return center + V2I{
+                      static_cast<int>(static_cast<float>(r) * cos(thetaI)),
+                      static_cast<int>(static_cast<float>(r) * sin(thetaI)),
+                  };
 }
 
 ManagedPolygon Ngon::Polygon() const {
   // ReSharper disable once CppLocalVariableMayBeConst
   PolyHandle polygon = OpenPoly();
-  Point point = operator[](0);
-  MoveTo(point.h, point.v);
+  V2I point = operator[](0);
+  QD::MoveTo(point);
   for (uint8_t i = 1; i <= n; i++) {
     point = operator[](i);
-    LineTo(point.h, point.v);
+    QD::LineTo(point);
   }
   ClosePoly();
   return ManagedPolygon(polygon);
 }
 
-} // namespace AtelierEsri
+}  // namespace AtelierEsri
