@@ -10,6 +10,10 @@ struct V2 {
 
   V2(Element x, Element y) : x(x), y(y) {}
 
+  Base operator+() const { return {+x, +y}; }
+
+  Base operator-() const { return {-x, -y}; }
+
   Base operator+(const Base& rhs) const { return {x + rhs.x, y + rhs.y}; }
 
   Base operator+=(const Base& rhs) {

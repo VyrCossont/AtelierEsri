@@ -7,13 +7,16 @@
 #include <memory>
 #include <optional>
 
+#include "Breeze/Geometry/R2.hpp"
 #include "Breeze/Geometry/V2.hpp"
 #include "Resource.hpp"
 
 namespace AtelierEsri {
 
-/// 2D vector interoperable with QuickDraw `Point`.
+/// 2D int vector interoperable with QuickDraw `Point`.
 struct V2I : Breeze::V2<V2I, int> {
+  using Element = int;
+
   V2I(int x, int y);
 
   // ReSharper disable once CppNonExplicitConvertingConstructor
@@ -21,6 +24,18 @@ struct V2I : Breeze::V2<V2I, int> {
 
   // ReSharper disable once CppNonExplicitConversionOperator
   operator Point() const;  // NOLINT(*-explicit-constructor)
+};
+
+/// 2D int rectangle interoperable with QuickDraw `Rect`.
+struct R2I : Breeze::R2<V2I> {
+  R2I(V2I origin, V2I size);
+  R2I(int top, int left, int bottom, int right);
+
+  // ReSharper disable once CppNonExplicitConvertingConstructor
+  R2I(Rect rect);  // NOLINT(*-explicit-constructor)
+
+  // ReSharper disable once CppNonExplicitConversionOperator
+  operator Rect() const;  // NOLINT(*-explicit-constructor)
 };
 
 /// QuickDraw global state.

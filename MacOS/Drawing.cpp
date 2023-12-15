@@ -19,6 +19,22 @@ V2I::operator Point() const {
   };
 }
 
+R2I::R2I(const V2I origin, const V2I size) : R2(origin, size) {}
+
+R2I::R2I(const int top, const int left, const int bottom, const int right)
+    : R2(top, left, bottom, right) {}
+
+R2I::R2I(const Rect rect) : R2(rect.top, rect.left, rect.bottom, rect.right) {}
+
+R2I::operator Rect() const {
+  return {
+      .top = static_cast<int16_t>(Top()),
+      .left = static_cast<int16_t>(Left()),
+      .bottom = static_cast<int16_t>(Bottom()),
+      .right = static_cast<int16_t>(Right()),
+  };
+}
+
 bool QD::HasColor() {
 #if TARGET_API_MAC_CARBON
   return true;
