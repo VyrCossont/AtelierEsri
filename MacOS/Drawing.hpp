@@ -32,7 +32,10 @@ struct R2I : Breeze::R2<V2I> {
   constexpr R2I(const V2I origin, const V2I size) : R2(origin, size){};
 
   /// Generate square of a given size around a point.
-  static R2I Around(V2I center, Element halfWidth, Element halfHeight = 0);
+  [[nodiscard]] static R2I Around(V2I center, Element halfWidth);
+  [[nodiscard]] static R2I Around(
+      V2I center, Element halfWidth, Element halfHeight
+  );
 
   // ReSharper disable once CppNonExplicitConvertingConstructor
   R2I(Rect rect);  // NOLINT(*-explicit-constructor)

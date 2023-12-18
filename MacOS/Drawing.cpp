@@ -19,10 +19,13 @@ V2I::operator Point() const {
   };
 }
 
-R2I R2I::Around(const V2I center, const Element halfWidth, Element halfHeight) {
-  if (!halfHeight) {
-    halfHeight = halfWidth;
-  }
+R2I R2I::Around(const V2I center, const Element halfWidth) {
+  return Around(center, halfWidth, halfWidth);
+}
+
+R2I R2I::Around(
+    const V2I center, const Element halfWidth, const Element halfHeight
+) {
   return {
       center - V2I{halfWidth, halfHeight},
       {2 * halfWidth, 2 * halfHeight},

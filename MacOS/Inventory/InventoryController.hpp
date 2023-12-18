@@ -38,8 +38,8 @@ class InventoryController {
   const SpriteSheet& spriteSheet;
 
   // TODO: track which items are in use and should not be shown
-  /// List of pointers to items in `inventory`.
-  std::vector<Breeze::Item*> itemsInUse{};
+  /// List of references to items in `inventory`.
+  std::vector<std::reference_wrapper<Breeze::Item>> itemsInUse{};
 
   Window window;
   /// Vertical scroll bar.
