@@ -5,6 +5,7 @@
 
 #include <functional>
 
+#include "Drawing.hpp"
 #include "GWorld.hpp"
 #include "Resource.hpp"
 
@@ -66,6 +67,8 @@ class Window {
   std::function<void(const Window &, Point point)> onContentMouseDown;
 
   std::function<void(const Window &)> onClose;
+
+  std::function<void(const Window &, V2I prevSize)> onResize;
 
   std::function<void(const Window &)> onActivate;
   std::function<void(const Window &)> onDeactivate;

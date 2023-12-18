@@ -1,9 +1,9 @@
 #include "Window.hpp"
 
 #include <MacTypes.h>
+#include <ToolUtils.h>
 
 #include "Control.hpp"
-#include "Debug.hpp"
 #include "Drawing.hpp"
 #include "Exception.hpp"
 #include "GWorld.hpp"
@@ -134,17 +134,14 @@ void Window::HandleMouseDown(Point point, const WindowPartCode part) const {
         ControlRef eventControlRef;
         if (const ControlPartCode controlPart =
                 FindControl(point, ref, &eventControlRef)) {
-          Debug::Printfln("Control found");
           if (eventControlRef) {
             if (const auto control = reinterpret_cast<Control *>(
                     GetControlReference(eventControlRef)
                 )) {
-              Debug::Printfln("Control object found");
               control->HandleMouseDown(point, controlPart);
             }
           }
         } else {
-          Debug::Printfln("Non-control click in window ref %p", ref);
           // Handle non-control clicks.
           if (onContentMouseDown) {
             onContentMouseDown(*this, point);
@@ -161,9 +158,33 @@ void Window::HandleMouseDown(Point point, const WindowPartCode part) const {
       DragWindow(ref, point, &desktop);
     } break;
 
-    case inGrow:
-      // TODO
-      break;
+    case inGrow: {
+      // Arbitrary limits; windows should be able to customize this.
+      // This is not a real Rect, but min and max limits for each dimension:
+      // https://preterhuman.net/macstuff/insidemac/Toolbox/Toolbox-250.html
+      // Note that 32767 is the actual max; 65535 is wrong and causes the
+      // window to vanish when resized.
+      //
+      // `limits` is used but `GrowWindow` is an A-line trap;
+      // you know the deal.
+      // ReSharper disable once CppDFAUnreadVariable
+      // ReSharper disable once CppDFAUnusedValue
+      constexpr Rect limits{
+          .top = 64,
+          .left = 64,
+          .bottom = 32767,
+          .right = 32767,
+      };
+      const R2I prevBounds = PortBounds();
+      if (const int32_t newDimensions = GrowWindow(ref, point, &limits)) {
+        const int16_t width = LoWord(newDimensions);
+        const int16_t height = HiWord(newDimensions);
+        SizeWindow(ref, width, height, true);
+        if (onResize) {
+          onResize(*this, prevBounds.size);
+        }
+      }
+    } break;
 
     case inGoAway:
       if (TrackGoAway(ref, point)) {
@@ -207,6 +228,8 @@ void Window::HandleUpdate() const {
   visibleRegion = Port()->visRgn;
 #endif
   UpdateControls(visibleRegion);
+
+  DrawGrowIcon(ref);
 
   if (onUpdate) {
     onUpdate(*this);

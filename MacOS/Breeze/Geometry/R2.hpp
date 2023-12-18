@@ -12,8 +12,8 @@ struct R2 {
   R2(const Vector origin, const Vector size) : origin(origin), size(size) {}
 
   R2(const Element left,
-     const Element right,
      const Element top,
+     const Element right,
      const Element bottom)
       : origin(left, top), size(right - left, bottom - top) {}
 

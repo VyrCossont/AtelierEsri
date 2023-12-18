@@ -1,8 +1,8 @@
 #pragma once
 
-#include <functional>
-
 #include <Controls.h>
+
+#include <functional>
 
 #include "Resource.hpp"
 #include "Window.hpp"

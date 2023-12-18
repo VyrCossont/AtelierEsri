@@ -28,9 +28,9 @@ class MaskedImage {
   static MaskedImage Get(
       int16_t imageResourceID, int16_t maskResourceID, const Window &window
   );
-  Rect Bounds() const;
+  [[nodiscard]] Rect Bounds() const;
   /// Copy the masked image into a `GWorld`.
-  void Draw(const GWorld &gWorld, const Rect &srcRect, const Rect &dstRect)
+  void Draw(const GWorld &destination, const Rect &srcRect, const Rect &dstRect)
       const;
 
   MaskedImage(MaskedImage &&src) noexcept;

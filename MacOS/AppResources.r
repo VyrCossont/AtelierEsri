@@ -53,7 +53,7 @@ resource 'WIND' (gameWINDResourceID, "game window", preload, purgeable) {
 };
 
 resource 'CNTL' (gameVScrollBarCNTLResourceID, "game window vertical scroll bar", preload, purgeable) {
-    {-1, 145, 144, 161},
+    {-1, 145, 146, 161},
     0, /* initial setting */
     visible,
     0, /* max setting */
@@ -65,7 +65,7 @@ resource 'CNTL' (gameVScrollBarCNTLResourceID, "game window vertical scroll bar"
 
 resource 'WIND' (inventoryWINDResourceID, "inventory window", preload, purgeable) {
     {43, 206, 203, 366},
-    noGrowDocProc,
+    zoomDocProc,
     visible,
     noGoAway,
     0x0, /* refCon */
@@ -74,7 +74,7 @@ resource 'WIND' (inventoryWINDResourceID, "inventory window", preload, purgeable
 };
 
 resource 'CNTL' (inventoryVScrollBarCNTLResourceID, "inventory window vertical scroll bar", preload, purgeable) {
-    {-1, 145, 144, 161},
+    {-1, 145, 146, 161},
     0, /* initial setting */
     visible,
     0, /* max setting */

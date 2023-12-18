@@ -2,6 +2,7 @@
 
 #include "AppResources.h"
 #include "Drawing.hpp"
+#include "MacWindows.h"
 #include "Material.hpp"
 
 namespace AtelierEsri {
@@ -57,6 +58,18 @@ InventoryController::InventoryController(
       window(inventoryWINDResourceID, behind),
       scrollBar(inventoryVScrollBarCNTLResourceID, window),
       gWorld(ContentGWorld()) {
+  window.onResize = [&](const Window& window, const V2I prevSize) {
+    PositionScrollBar();
+    const Rect windowBounds = window.PortBounds();
+#if TARGET_API_MAC_CARBON
+    InvalWindowRect(window.Unmanaged(), &windowBounds);
+#else
+    InvalRect(&windowBounds);
+#endif
+    gWorld = ContentGWorld();
+  };
+  window.onUpdate = [&](const Window& window) { scrollBar.Draw(); };
+
   window.onActivate = [&](const Window& window) { scrollBar.Show(); };
   window.onDeactivate = [&](const Window& window) { scrollBar.Hide(); };
 
@@ -113,9 +126,7 @@ noMoreItems:
   // Leave room for the scroll bar.
   windowRect.right -= 15;
   window.CopyFrom(gWorld, gWorld.Bounds(), windowRect);
-
-  // Draw the window's controls.
-  window.DrawControls();
+  scrollBar.Draw();
 }
 
 GWorld InventoryController::ContentGWorld() const {
@@ -162,11 +173,20 @@ void InventoryController::ConfigureScroll() {
   const auto pageHeight =
       static_cast<int16_t>(RowsPerPage() * InventoryCell::Height);
   scrollBar.onScrollPageUp = [&](const ScrollBar& scrollBar) {
-    scrollBar.ScrollBy(static_cast<int16_t>(-pageHeight));
-  };
-  scrollBar.onScrollPageDown = [&](const ScrollBar& scrollBar) {
     scrollBar.ScrollBy(pageHeight);
   };
+  scrollBar.onScrollPageDown = [&](const ScrollBar& scrollBar) {
+    scrollBar.ScrollBy(static_cast<int16_t>(-pageHeight));
+  };
+}
+
+void InventoryController::PositionScrollBar() const {
+  const R2I windowBounds = window.PortBounds();
+  const R2I bounds = {
+      {windowBounds.size.x - 15, -1},
+      {16, windowBounds.size.y - 13},
+  };
+  scrollBar.Bounds(bounds);
 }
 
 }  // namespace AtelierEsri

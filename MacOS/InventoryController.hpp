@@ -63,6 +63,9 @@ class InventoryController {
   /// Set scroll bar increments given window size.
   void ConfigureScroll();
 
+  /// Move scroll bar to appropriate location for window size.
+  void PositionScrollBar() const;
+
   const Breeze::PlayerInventory& inventory;
   const std::vector<Material>& catalog;
   const SpriteSheet& spriteSheet;
