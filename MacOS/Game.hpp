@@ -2,7 +2,7 @@
 
 #include "Breeze/Alchemy.hpp"
 #include "GWorld.hpp"
-#include "InventoryController.hpp"
+#include "Inventory/InventoryController.hpp"
 #include "Material.hpp"
 #include "SpriteSheet.hpp"
 

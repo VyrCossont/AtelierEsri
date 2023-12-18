@@ -8,7 +8,7 @@ struct V2 {
   Element x;
   Element y;
 
-  V2(Element x, Element y) : x(x), y(y) {}
+  constexpr V2(Element x, Element y) : x(x), y(y) {}
 
   Base operator+() const { return {+x, +y}; }
 

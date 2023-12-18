@@ -8,28 +8,6 @@
 
 namespace AtelierEsri {
 
-class InventoryCell {
- public:
-  InventoryCell(
-      const Breeze::Item& item,
-      const Material& material,
-      const SpriteSheet& spriteSheet,
-      Point point
-  );
-
-  static constexpr int16_t Width = 32;
-  static constexpr int16_t Height = 32;
-
-  void Draw(const GWorld& gWorld) const;
-
- private:
-  const Breeze::Item& item;
-  const Material& material;
-  const SpriteSheet& spriteSheet;
-  Point point;
-  bool hilite = false;
-};
-
 /// Note: this type must be re-created if any of the things it references move.
 class InventoryController {
  public:

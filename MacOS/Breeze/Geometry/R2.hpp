@@ -9,7 +9,8 @@ struct R2 {
   Vector origin;
   Vector size;
 
-  R2(const Vector origin, const Vector size) : origin(origin), size(size) {}
+  constexpr R2(const Vector origin, const Vector size)
+      : origin(origin), size(size) {}
 
   R2(const Element left,
      const Element top,

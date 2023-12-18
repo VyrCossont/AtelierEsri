@@ -10,8 +10,6 @@ namespace AtelierEsri {
 std::optional<SysEnvRec> QD::sysEnvRec = {};
 #endif
 
-V2I::V2I(const int x, const int y) : V2(x, y) {}
-
 V2I::V2I(const Point point) : V2(point.h, point.v) {}
 
 V2I::operator Point() const {
@@ -20,11 +18,6 @@ V2I::operator Point() const {
       .h = static_cast<int16_t>(x),
   };
 }
-
-R2I::R2I(const V2I origin, const V2I size) : R2(origin, size) {}
-
-R2I::R2I(const int top, const int left, const int bottom, const int right)
-    : R2(left, top, right, bottom) {}
 
 R2I::R2I(const Rect rect) : R2(rect.left, rect.top, rect.right, rect.bottom) {}
 

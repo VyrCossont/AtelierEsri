@@ -17,7 +17,7 @@ namespace AtelierEsri {
 struct V2I : Breeze::V2<V2I, int> {
   using Element = int;
 
-  V2I(int x, int y);
+  constexpr V2I(const int x, const int y) : V2(x, y){};
 
   // ReSharper disable once CppNonExplicitConvertingConstructor
   V2I(Point point);  // NOLINT(*-explicit-constructor)
@@ -28,8 +28,7 @@ struct V2I : Breeze::V2<V2I, int> {
 
 /// 2D int rectangle interoperable with QuickDraw `Rect`.
 struct R2I : Breeze::R2<V2I> {
-  R2I(V2I origin, V2I size);
-  R2I(int top, int left, int bottom, int right);
+  constexpr R2I(const V2I origin, const V2I size) : R2(origin, size){};
 
   // ReSharper disable once CppNonExplicitConvertingConstructor
   R2I(Rect rect);  // NOLINT(*-explicit-constructor)

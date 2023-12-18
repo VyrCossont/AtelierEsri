@@ -2,49 +2,10 @@
 
 #include "AppResources.h"
 #include "Drawing.hpp"
-#include "MacWindows.h"
+#include "InventoryCell.hpp"
 #include "Material.hpp"
 
 namespace AtelierEsri {
-
-InventoryCell::InventoryCell(
-    const Breeze::Item& item,
-    const Material& material,
-    const SpriteSheet& spriteSheet,
-    const Point point
-)
-    : item(item), material(material), spriteSheet(spriteSheet), point(point) {}
-
-void InventoryCell::Draw(const GWorld& gWorld) const {
-  const GWorldActiveGuard activeGuard = gWorld.MakeActive();
-  QD::Reset();
-
-  // Draw item icon.
-  Rect iconRect;
-  iconRect.left = static_cast<int16_t>(point.h + 8);
-  iconRect.right = static_cast<int16_t>(iconRect.left + 16);
-  iconRect.top = static_cast<int16_t>(point.v + 8);
-  iconRect.bottom = static_cast<int16_t>(iconRect.top + 16);
-  spriteSheet.Draw(gWorld, material.spriteIndex, iconRect);
-
-  // Draw separator lines on bottom and right edges.
-  constexpr int16_t lineWidth = 1;
-  const Point bottomLeft = {
-      .v = static_cast<int16_t>(point.v + Height - lineWidth),
-      .h = point.h,
-  };
-  const Point bottomRight = {
-      .v = static_cast<int16_t>(point.v + Height - lineWidth),
-      .h = static_cast<int16_t>(point.h + Width - lineWidth),
-  };
-  const Point topRight = {
-      .v = point.v,
-      .h = static_cast<int16_t>(point.h + Width - lineWidth),
-  };
-  MoveTo(bottomLeft.h, bottomLeft.v);
-  LineTo(bottomRight.h, bottomRight.v);
-  LineTo(topRight.h, topRight.v);
-}
 
 InventoryController::InventoryController(
     const Breeze::PlayerInventory& inventory,
@@ -75,10 +36,10 @@ InventoryController::InventoryController(
 
   // These scroll increments don't change with window size.
   scrollBar.onScrollLineUp = [&](const ScrollBar& scrollBar) {
-    scrollBar.ScrollBy(-InventoryCell::Height);
+    scrollBar.ScrollBy(-InventoryCell::Size.y);
   };
   scrollBar.onScrollLineDown = [&](const ScrollBar& scrollBar) {
-    scrollBar.ScrollBy(InventoryCell::Height);
+    scrollBar.ScrollBy(InventoryCell::Size.y);
   };
 
   // These do.
@@ -96,7 +57,7 @@ void InventoryController::Update() const {
     // Draw inventory cells into the content GWorld.
     const size_t itemsPerRow = ItemsPerRow();
     const size_t firstItemIndex =
-        ItemsPerRow() * scrollBar.Value() / InventoryCell::Height;
+        ItemsPerRow() * scrollBar.Value() / InventoryCell::Size.y;
     const size_t rowsPerPage = RowsPerPage();
     for (int rowIndex = 0; rowIndex < rowsPerPage; ++rowIndex) {
       for (int itemIndexWithinRow = 0; itemIndexWithinRow < itemsPerRow;
@@ -109,12 +70,9 @@ void InventoryController::Update() const {
 
         const Breeze::Item& item = inventory[itemIndex];
         const Material& material = catalog[item.material.id];
-        const Point point{
-            .v = static_cast<int16_t>(rowIndex * InventoryCell::Height),
-            .h =
-                static_cast<int16_t>(itemIndexWithinRow * InventoryCell::Width),
-        };
-        const InventoryCell cell(item, material, spriteSheet, point);
+        const V2I origin =
+            V2I{itemIndexWithinRow, rowIndex} * InventoryCell::Size;
+        const InventoryCell cell(item, material, spriteSheet, origin);
         cell.Draw(gWorld);
       }
     }
@@ -140,7 +98,7 @@ GWorld InventoryController::ContentGWorld() const {
 size_t InventoryController::ItemsPerRow() const {
   const auto [top, left, bottom, right] = gWorld.Bounds();
   const auto contentWidth = static_cast<int16_t>(right - left);
-  return contentWidth / InventoryCell::Width;
+  return contentWidth / InventoryCell::Size.x;
 }
 
 size_t InventoryController::NumRows() const {
@@ -156,13 +114,13 @@ size_t InventoryController::NumRows() const {
 int16_t InventoryController::ScrollHeight() const {
   return std::max(
       static_cast<int16_t>(0),
-      static_cast<int16_t>((NumRows() - RowsPerPage()) * InventoryCell::Height)
+      static_cast<int16_t>((NumRows() - RowsPerPage()) * InventoryCell::Size.y)
   );
 }
 
 size_t InventoryController::RowsPerPage() const {
   const auto [top, left, bottom, right] = gWorld.Bounds();
-  return (bottom - top) / InventoryCell::Height;
+  return (bottom - top) / InventoryCell::Size.y;
 }
 
 void InventoryController::ConfigureScroll() {
@@ -171,7 +129,7 @@ void InventoryController::ConfigureScroll() {
   scrollBar.SetValue(0);
 
   const auto pageHeight =
-      static_cast<int16_t>(RowsPerPage() * InventoryCell::Height);
+      static_cast<int16_t>(RowsPerPage() * InventoryCell::Size.y);
   scrollBar.onScrollPageUp = [&](const ScrollBar& scrollBar) {
     scrollBar.ScrollBy(pageHeight);
   };

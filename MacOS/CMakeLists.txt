@@ -30,6 +30,8 @@ if (NOT RETRO68)
             Breeze/AlchemyTest.cpp
     )
     target_link_libraries(BreezeTests PUBLIC Breeze)
+    target_include_directories(BreezeTests PUBLIC "${PROJECT_SOURCE_DIR}")
+
     find_package(Catch2 3 REQUIRED)
     target_link_libraries(BreezeTests PRIVATE Catch2::Catch2WithMain)
 
@@ -54,7 +56,8 @@ if (RETRO68)
             Exception.cpp
             Game.cpp
             GWorld.cpp
-            InventoryController.cpp
+            Inventory/InventoryCell.cpp
+            Inventory/InventoryController.cpp
             MaskedImage.cpp
             Material.cpp
             SpriteSheet.cpp
@@ -62,6 +65,7 @@ if (RETRO68)
             Window.cpp
     )
     target_link_libraries(AtelierEsri PUBLIC Breeze)
+    target_include_directories(AtelierEsri PUBLIC "${PROJECT_SOURCE_DIR}")
 endif ()
 
 # Size reduction disabled because it breaks exceptions on 68k:
