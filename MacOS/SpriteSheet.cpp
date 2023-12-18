@@ -64,14 +64,12 @@ std::vector<Rect> SpriteSheet::ReadRGN(size_t rgnLen, uint8_t *rgnPtr) {
   return regions;
 }
 
-void SpriteSheet::Draw(
-    const GWorld &gWorld, const size_t spriteIndex, const Rect &dstRect
-) const {
+void SpriteSheet::Draw(const size_t spriteIndex, const Rect &dstRect) const {
   if (spriteIndex >= regions.size()) {
     BAIL("Invalid sprite index");
   }
   const Rect srcRect = regions[spriteIndex];
-  return maskedImage.Draw(gWorld, srcRect, dstRect);
+  return maskedImage.Draw(srcRect, dstRect);
 }
 
 }  // namespace AtelierEsri

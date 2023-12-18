@@ -39,41 +39,40 @@ void Game::Draw(const GWorld &gWorld) const {
   FillRect(&rect, &background);
 
   const Rect dstRect = {yOffset, 0, static_cast<int16_t>(64 + yOffset), 64};
-  spriteSheet.Draw(gWorld, assetSpriteSheet00AvatarEsriSpriteIndex, dstRect);
+  spriteSheet.Draw(assetSpriteSheet00AvatarEsriSpriteIndex, dstRect);
 
-  const auto hex =
-      Ngon({120, static_cast<int16_t>(120 + yOffset)}, 32, 6, M_PI + M_PI_2);
+  constexpr int nodeR = 32;
+  constexpr int numPoints = 6;
+  const auto hex = Ngon(
+      {120, static_cast<int16_t>(120 + yOffset)},
+      nodeR,
+      numPoints,
+      M_PI + M_PI_2
+  );
   {
+    // Draw polygon, adjusted to center it in its own frame
+    // (rectangles, ovals, etc. don't need this).
+    constexpr int halfPenWidth = 2;
     const ManagedPolygon polygon = hex.Polygon();
-    OffsetPoly(polygon.get(), -2, -2);
+    OffsetPoly(polygon.get(), -halfPenWidth, -halfPenWidth);
     QD_CHECKED(ErasePoly(polygon.get()), "Couldn't clear hexagon");
-    PenSize(4, 4);
+    PenSize(2 * halfPenWidth, 2 * halfPenWidth);
     QD_CHECKED(FramePoly(polygon.get()), "Couldn't draw hexagon");
   }
   {
     const Pattern pattern = QD::White();
     PenSize(2, 2);
-    for (uint8_t i = 0; i < 6; i++) {
-      // ReSharper disable once CppUseStructuredBinding
-      const Point center = hex[i];
-      Rect nodeRect;
-      constexpr int16_t nodeR = 6;
-      nodeRect.left = static_cast<int16_t>(center.h - nodeR);
-      nodeRect.right = static_cast<int16_t>(center.h + nodeR);
-      nodeRect.top = static_cast<int16_t>(center.v - nodeR);
-      nodeRect.bottom = static_cast<int16_t>(center.v + nodeR);
-      FillOval(&nodeRect, &pattern);
-      FrameOval(&nodeRect);
+    for (auto i = 0; i < numPoints; i++) {
+      const V2I center = hex[i];
+      constexpr int pipSlotHalfWidth = 6;
+      const Rect pipSlotRect = R2I::Around(center, pipSlotHalfWidth);
+      FillOval(&pipSlotRect, &pattern);
+      FrameOval(&pipSlotRect);
 
       if (i < 3) {
-        Rect pipRect;
-        pipRect.left = static_cast<int16_t>(center.h - 4);
-        pipRect.right = static_cast<int16_t>(center.h + 4);
-        pipRect.top = static_cast<int16_t>(center.v - 4);
-        pipRect.bottom = static_cast<int16_t>(center.v + 4);
-        spriteSheet.Draw(
-            gWorld, assetSpriteSheet00ElementFireSpriteIndex, pipRect
-        );
+        constexpr int pipHalfWidth = 4;
+        const auto pipRect = R2I::Around(center, pipHalfWidth);
+        spriteSheet.Draw(assetSpriteSheet00ElementFireSpriteIndex, pipRect);
       }
     }
   }

@@ -167,6 +167,7 @@ void App::EventLoop() {
       windowRect.right -= 15;
       // ReSharper restore CppUseStructuredBinding
 
+      GWorldActiveGuard activeGuard = gameWindow.MakeActivePort();
       gameWindow.CopyFrom(offscreenGWorld, gWorldRect, windowRect);
     }
   }

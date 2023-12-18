@@ -83,15 +83,14 @@ void Window::CopyFrom(
   const BitMap *gWorldBits = lockPixelsGuard.Bits();
   CGrafPtr windowPort = Port();
 
-#if TARGET_API_MAC_CARBON
-  const BitMap *windowBits = GetPortBitMapForCopyBits(windowPort);
-#else
-  const BitMap *windowBits = &reinterpret_cast<GrafPtr>(windowPort)->portBits;
-#endif
-
   QD_CHECKED(
       CopyBits(
-          gWorldBits, windowBits, &gWorldRect, &windowRect, srcCopy, nullptr
+          gWorldBits,
+          QD::CurrentPortBits(),
+          &gWorldRect,
+          &windowRect,
+          srcCopy,
+          nullptr
       ),
       "Couldn't copy from offscreen GWorld"
   );

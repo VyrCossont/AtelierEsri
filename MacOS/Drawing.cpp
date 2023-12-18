@@ -19,6 +19,16 @@ V2I::operator Point() const {
   };
 }
 
+R2I R2I::Around(const V2I center, const Element halfWidth, Element halfHeight) {
+  if (!halfHeight) {
+    halfHeight = halfWidth;
+  }
+  return {
+      center - V2I{halfWidth, halfHeight},
+      {2 * halfWidth, 2 * halfHeight},
+  };
+}
+
 R2I::R2I(const Rect rect) : R2(rect.left, rect.top, rect.right, rect.bottom) {}
 
 R2I::operator Rect() const {
@@ -60,6 +70,17 @@ Rect QD::DesktopBounds() {
   return bounds;
 #else
   return grayRegion[0]->rgnBBox;
+#endif
+}
+
+const BitMap* QD::CurrentPortBits() {
+  GWorldPtr port;
+  GDHandle device;
+  GetGWorld(&port, &device);
+#if TARGET_API_MAC_CARBON
+  return GetPortBitMapForCopyBits(port);
+#else
+  return &reinterpret_cast<GrafPtr>(port)->portBits;
 #endif
 }
 
@@ -113,12 +134,17 @@ Pattern QD::White() {
 #endif
 }
 
-void QD::MoveTo(const V2I point) {
+void QD::MoveTo(const V2I& point) {
   ::MoveTo(static_cast<int16_t>(point.x), static_cast<int16_t>(point.y));
 }
 
-void QD::LineTo(const V2I point) {
+void QD::LineTo(const V2I& point) {
   ::LineTo(static_cast<int16_t>(point.x), static_cast<int16_t>(point.y));
+}
+
+void QD::Erase(const R2I& rect) {
+  const Rect qdRect(rect);
+  EraseRect(&qdRect);
 }
 
 Ngon::Ngon(

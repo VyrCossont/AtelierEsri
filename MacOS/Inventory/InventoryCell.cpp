@@ -13,13 +13,10 @@ InventoryCell::InventoryCell(
       spriteSheet(spriteSheet),
       origin(origin) {}
 
-void InventoryCell::Draw(const GWorld& gWorld) const {
-  const GWorldActiveGuard activeGuard = gWorld.MakeActive();
-  QD::Reset();
-
+void InventoryCell::Draw() const {
   // Draw item icon.
   const R2I iconRect = {origin + V2I{8, 8}, {16, 16}};
-  spriteSheet.Draw(gWorld, material.spriteIndex, iconRect);
+  spriteSheet.Draw(material.spriteIndex, iconRect);
 
   // Draw separator lines on bottom and right edges.
   constexpr int16_t lineWidth = 1;

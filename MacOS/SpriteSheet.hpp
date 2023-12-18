@@ -13,9 +13,8 @@ class SpriteSheet {
  public:
   explicit SpriteSheet(MaskedImage &&maskedImage, ResourceID rgnResourceID);
 
-  /// Copy a sprite into a `GWorld`.
-  void Draw(const GWorld &gWorld, size_t spriteIndex, const Rect &dstRect)
-      const;
+  /// Copy a sprite into the current graphics port.
+  void Draw(size_t spriteIndex, const Rect &dstRect) const;
 
   SpriteSheet(SpriteSheet &&src) noexcept;
   SpriteSheet &operator=(SpriteSheet &&src) noexcept;

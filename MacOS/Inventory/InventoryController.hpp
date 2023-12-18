@@ -22,24 +22,11 @@ class InventoryController {
   void Update() const;
 
  private:
-  /// Create a GWorld the size of the content area, excluding scroll bars.
-  [[nodiscard]] GWorld ContentGWorld() const;
-
-  /// Items per row given window width.
-  [[nodiscard]] size_t ItemsPerRow() const;
-
-  /// Number of rows given inventory size and items per row.
-  [[nodiscard]] size_t NumRows() const;
-
-  /// Vertical size of all rows of inventory minus one page
-  /// (so we can't scroll past the end).
-  [[nodiscard]] int16_t ScrollHeight() const;
-
-  /// Whole number of rows that can fit in the content area at once.
-  [[nodiscard]] size_t RowsPerPage() const;
+  /// Set layout counts and dimensions given window size.
+  void CalculateLayout();
 
   /// Set scroll bar increments given window size.
-  void ConfigureScroll();
+  void ConfigureScroll() const;
 
   /// Move scroll bar to appropriate location for window size.
   void PositionScrollBar() const;
@@ -54,7 +41,25 @@ class InventoryController {
 
   Window window;
   ScrollBar scrollBar;
-  GWorld gWorld;
+
+  // Layout counts and dimensions.
+
+  /// The scroll bar is actually 16 pixels wide, but 1 pixel is outside the
+  /// window port proper, overlapping with the window decorations.
+  static constexpr int scrollBarInset = 15;
+  /// Area within window occupied by inventory cells and background.
+  R2I inventoryRect = {{0, 0}, {0, 0}};
+  /// Items per row given window width.
+  int itemsPerRow = 0;
+  /// Number of rows given inventory size and items per row.
+  int numRows = 0;
+  /// Vertical size of all rows of inventory minus one page
+  /// (so we can't scroll past the end).
+  int scrollHeight = 0;
+  /// Whole number of rows that can fit in the content area at once.
+  int rowsPerPage = 0;
+  /// Height of one page of whole cells.
+  int pageHeight = 0;
 };
 
 }  // namespace AtelierEsri

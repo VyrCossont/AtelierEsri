@@ -74,11 +74,7 @@ MaskedImage &MaskedImage::operator=(MaskedImage &&src) noexcept {
 
 Rect MaskedImage::Bounds() const { return rect; }
 
-void MaskedImage::Draw(
-    const GWorld &destination, const Rect &srcRect, const Rect &dstRect
-) const {
-  const GWorldLockPixelsGuard destinationLockPixelsGuard =
-      destination.LockPixels();
+void MaskedImage::Draw(const Rect &srcRect, const Rect &dstRect) const {
   const GWorldLockPixelsGuard imageLockPixelsGuard = image.LockPixels();
   const GWorldLockPixelsGuard maskLockPixelsGuard = mask.LockPixels();
 
@@ -86,7 +82,7 @@ void MaskedImage::Draw(
       CopyMask(
           imageLockPixelsGuard.Bits(),
           maskLockPixelsGuard.Bits(),
-          destinationLockPixelsGuard.Bits(),
+          QD::CurrentPortBits(),
           &srcRect,
           &srcRect,
           &dstRect

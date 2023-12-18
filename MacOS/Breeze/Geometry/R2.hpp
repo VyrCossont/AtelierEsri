@@ -18,14 +18,16 @@ struct R2 {
      const Element bottom)
       : origin(left, top), size(right - left, bottom - top) {}
 
-  Element Left() const { return origin.x; }
-  Element Right() const { return origin.x + size.x; }
-  Element Top() const { return origin.y; }
-  Element Bottom() const { return origin.y + size.y; }
+  [[nodiscard]] Element Left() const { return origin.x; }
+  [[nodiscard]] Element Right() const { return origin.x + size.x; }
+  [[nodiscard]] Element Top() const { return origin.y; }
+  [[nodiscard]] Element Bottom() const { return origin.y + size.y; }
+  [[nodiscard]] Element Width() const { return size.x; }
+  [[nodiscard]] Element Height() const { return size.y; }
 
-  bool Contains(Vector point) const {
-    return point.x >= origin.x && point.y >= origin.y &&
-           point.x <= origin.x + size.x && point.y <= origin.y + size.y;
+  [[nodiscard]] bool Contains(const Vector point) const {
+    return point.x >= Left() && point.y >= Top() && point.x <= Right() &&
+           point.y <= Bottom();
   }
 };
 

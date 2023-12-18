@@ -18,7 +18,8 @@ class InventoryCell {
 
   static constexpr V2I Size = {32, 32};
 
-  void Draw(const GWorld& gWorld) const;
+  /// Draw the inventory cell into the current graphics port.
+  void Draw() const;
 
   [[nodiscard]] Rect Bounds() const;
 

@@ -2,6 +2,7 @@
 
 #include <MacTypes.h>
 #include <OSUtils.h>
+#include <QDOffscreen.h>
 #include <Quickdraw.h>
 
 #include <memory>
@@ -30,6 +31,9 @@ struct V2I : Breeze::V2<V2I, int> {
 struct R2I : Breeze::R2<V2I> {
   constexpr R2I(const V2I origin, const V2I size) : R2(origin, size){};
 
+  /// Generate square of a given size around a point.
+  static R2I Around(V2I center, Element halfWidth, Element halfHeight = 0);
+
   // ReSharper disable once CppNonExplicitConvertingConstructor
   R2I(Rect rect);  // NOLINT(*-explicit-constructor)
 
@@ -49,14 +53,19 @@ class QD {
   /// Get the bounds of the entire desktop, aka the "gray region".
   static Rect DesktopBounds();
 
+  /// Get the port's bits. Should be used *only* with `CopyBits`, etc.
+  static const BitMap* CurrentPortBits();
+
   static Pattern Black();
   static Pattern DarkGray();
   static Pattern Gray();
   static Pattern LightGray();
   static Pattern White();
 
-  static void MoveTo(V2I point);
-  static void LineTo(V2I point);
+  static void MoveTo(const V2I& point);
+  static void LineTo(const V2I& point);
+
+  static void Erase(const R2I& rect);
 
  private:
 #if !TARGET_API_MAC_CARBON
