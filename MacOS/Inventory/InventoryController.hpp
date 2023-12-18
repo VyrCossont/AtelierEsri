@@ -8,6 +8,8 @@
 
 namespace AtelierEsri {
 
+/// Vertically scrolling resizable list of available alchemy materials.
+///
 /// Note: this type must be re-created if any of the things it references move.
 class InventoryController {
  public:
@@ -40,6 +42,7 @@ class InventoryController {
   std::vector<Breeze::Item*> itemsInUse{};
 
   Window window;
+  /// Vertical scroll bar.
   ScrollBar scrollBar;
 
   // Layout counts and dimensions.
@@ -52,6 +55,7 @@ class InventoryController {
   /// Items per row given window width.
   int itemsPerRow = 0;
   /// Number of rows given inventory size and items per row.
+  /// Includes the partial row if items don't divide evenly.
   int numRows = 0;
   /// Vertical size of all rows of inventory minus one page
   /// (so we can't scroll past the end).

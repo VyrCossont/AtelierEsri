@@ -33,10 +33,6 @@ InventoryController::InventoryController(
 #endif
   };
 
-  window.onUpdate = [&]([[maybe_unused]] const Window& window) {
-    scrollBar.Draw();
-  };
-
   window.onActivate = [&]([[maybe_unused]] const Window& window) {
     scrollBar.Show();
   };
@@ -107,6 +103,7 @@ void InventoryController::CalculateLayout() {
 }
 
 void InventoryController::ConfigureScroll() const {
+  // TODO: currently loses position when window is resized
   scrollBar.SetMin(0);
   scrollBar.SetMax(static_cast<int16_t>(scrollHeight));
   scrollBar.SetValue(0);
