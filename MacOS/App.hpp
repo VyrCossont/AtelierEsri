@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Control.hpp"
-#include "GWorld.hpp"
 #include "Game.hpp"
 #include "Window.hpp"
 
@@ -29,13 +27,6 @@ class App {
   /// if there is one. Result will be null otherwise.
   static Window* EventWindow(const EventRecord& event);
 
-  /// Window in which the game world gets drawn.
-  /// Auxiliary windows or dialogs may be used, but we'll always need this
-  /// one.
-  Window gameWindow;
-  ScrollBar gameVScrollBar;
-
-  GWorld offscreenGWorld;
   Game game;
 };
 

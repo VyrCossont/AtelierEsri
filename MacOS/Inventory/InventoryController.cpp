@@ -18,7 +18,7 @@ InventoryController::InventoryController(
       spriteSheet(spriteSheet),
       window(inventoryWINDResourceID, behind),
       scrollBar(inventoryVScrollBarCNTLResourceID, window) {
-  CalculateLayout();
+  window.GrowIcon(true);
 
   window.onResize = [&](const Window& window, const V2I prevSize) {
     CalculateLayout();
@@ -53,6 +53,7 @@ InventoryController::InventoryController(
     scrollBar.ScrollBy(InventoryCell::Size.y);
   };
 
+  CalculateLayout();
   ConfigureScroll();
 }
 

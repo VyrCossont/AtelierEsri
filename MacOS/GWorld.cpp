@@ -4,6 +4,17 @@
 
 namespace AtelierEsri {
 
+GWorld::GWorld(const V2I size) : ptr(nullptr) {
+  const Rect rect = R2I({0, 0}, size);
+  constexpr int16_t pixelDepth = 16;
+  constexpr uint32_t flags = 0;
+  OS_CHECKED(
+      NewGWorld(&ptr, pixelDepth, &rect, nullptr, nullptr, flags),
+      "Couldn't create GWorld"
+  );
+  REQUIRE_NOT_NULL(ptr);
+}
+
 GWorld::GWorld(const GWorldPtr ptr) : ptr(ptr) {}
 
 GWorld::GWorld(GWorld &&src) noexcept {

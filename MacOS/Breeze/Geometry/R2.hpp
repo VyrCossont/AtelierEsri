@@ -2,7 +2,7 @@
 
 namespace Breeze {
 /// Rectangle mixin.
-template <typename Vector>
+template <typename Base, typename Vector>
 struct R2 {
   using Element = typename Vector::Element;
 
@@ -28,6 +28,14 @@ struct R2 {
   [[nodiscard]] bool Contains(const Vector point) const {
     return point.x >= Left() && point.y >= Top() && point.x <= Right() &&
            point.y <= Bottom();
+  }
+
+  bool operator==(const Base& rhs) const {
+    return size == rhs.size && origin == rhs.origin;
+  }
+
+  bool operator!=(const Base& rhs) const {
+    return size != rhs.size || origin != rhs.origin;
   }
 };
 

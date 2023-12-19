@@ -13,6 +13,10 @@
 #define inventoryWINDResourceID 129
 #define inventoryVScrollBarCNTLResourceID 129
 
+#define titleScreenWINDResourceID 130
+
+#define atelierInteriorWINDResourceID 131
+
 #define menuBarMBARResourceID 128
 
 #define appleMenuMENUResourceID 128

@@ -11,7 +11,6 @@
 #include "Debug.hpp"
 #include "Env.hpp"
 #include "Exception.hpp"
-#include "GWorld.hpp"
 #include "Game.hpp"
 
 namespace AtelierEsri {
@@ -39,36 +38,13 @@ void App::SetupMenuBar() {
   DisposeHandle(menuBar);
 }
 
-App::App()
-    : gameWindow(gameWINDResourceID),
-      gameVScrollBar(gameVScrollBarCNTLResourceID, gameWindow),
-      offscreenGWorld(gameWindow.FastGWorld()),
-      game(gameWindow) {
-  SetupMenuBar();
-}
+App::App() { SetupMenuBar(); }
 
 void App::EventLoop() {
   EventRecord event;
   /// Ticks (approx. 1/60th of a second)
   constexpr uint32_t sleepTimeTicks = 1;
   constexpr uint64_t frameDurationUsec = sleepTimeTicks * 1000 * 1000 / 60;
-
-  gameVScrollBar.SetMin(0);
-  gameVScrollBar.SetMax(100);
-  gameVScrollBar.SetValue(50);
-  gameVScrollBar.onScrollLineUp = [&](const ScrollBar &scrollBar) {
-    scrollBar.ScrollBy(-1);
-  };
-  gameVScrollBar.onScrollLineDown = [&](const ScrollBar &scrollBar) {
-    scrollBar.ScrollBy(1);
-  };
-  gameVScrollBar.onScrollPageUp = [&](const ScrollBar &scrollBar) {
-    scrollBar.ScrollBy(-10);
-  };
-  gameVScrollBar.onScrollPageDown = [&](const ScrollBar &scrollBar) {
-    scrollBar.ScrollBy(10);
-  };
-  // Don't need to do anything to handle drags.
 
   uint64_t lastFrameTimestampUsec = Env::Microseconds();
   while (true) {
@@ -154,21 +130,7 @@ void App::EventLoop() {
       // TODO: handle multiple elapsed frames
       lastFrameTimestampUsec = currentTimestampUsec;
 
-      game.Update(gameVScrollBar.Value());
-
-      game.Draw(offscreenGWorld);
-
-      // Exclude scroll bar from copy area.
-      // ReSharper disable CppUseStructuredBinding
-      Rect gWorldRect = offscreenGWorld.Bounds();
-      gWorldRect.right -= 15;
-
-      Rect windowRect = gameWindow.PortBounds();
-      windowRect.right -= 15;
-      // ReSharper restore CppUseStructuredBinding
-
-      GWorldActiveGuard activeGuard = gameWindow.MakeActivePort();
-      gameWindow.CopyFrom(offscreenGWorld, gWorldRect, windowRect);
+      game.Tick(currentTimestampUsec);
     }
   }
 }

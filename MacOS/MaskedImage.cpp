@@ -32,31 +32,30 @@ void Picture::Draw(const Rect &rect) {
 }
 
 MaskedImage MaskedImage::Get(
-    const int16_t imageResourceID,
-    const int16_t maskResourceID,
-    const Window &window
+    const ResourceID imageResourceID, const ResourceID maskResourceID
 ) {
+  constexpr V2I origin = {0, 0};
+
   Picture imagePicture = Picture::Get(imageResourceID);
-  const Rect imageRect = imagePicture.Bounds();
-  if (imageRect.left != 0 || imageRect.top != 0) {
+  const R2I imageRect = imagePicture.Bounds();
+  if (imageRect.origin != origin) {
     BAIL("Image rect doesn't start at origin");
   }
 
   Picture maskPicture = Picture::Get(maskResourceID);
-  const Rect maskRect = imagePicture.Bounds();
-  if (maskRect.left != 0 || maskRect.top != 0) {
+  const R2I maskRect = imagePicture.Bounds();
+  if (imageRect.origin != origin) {
     BAIL("Mask rect doesn't start at origin");
   }
 
-  if (imageRect.right != maskRect.right ||
-      imageRect.bottom != maskRect.bottom) {
+  if (imageRect != maskRect) {
     BAIL("Image dimensions don't match mask dimensions");
   }
 
-  GWorld image = window.FastGWorld(imageRect.right, imageRect.bottom);
+  GWorld image(imageRect.size);
   DrawInto(imagePicture, imageRect, image);
 
-  GWorld mask = window.FastGWorld(imageRect.right, imageRect.bottom);
+  GWorld mask(maskRect.size);
   DrawInto(maskPicture, maskRect, mask);
 
   return MaskedImage(std::move(image), std::move(mask), imageRect);

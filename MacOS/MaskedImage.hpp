@@ -25,9 +25,7 @@ class Picture {
 
 class MaskedImage {
  public:
-  static MaskedImage Get(
-      int16_t imageResourceID, int16_t maskResourceID, const Window &window
-  );
+  static MaskedImage Get(ResourceID imageResourceID, ResourceID maskResourceID);
   [[nodiscard]] Rect Bounds() const;
   /// Copy the masked image into the current graphics port.
   void Draw(const Rect &srcRect, const Rect &dstRect) const;

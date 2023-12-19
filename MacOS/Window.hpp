@@ -75,11 +75,15 @@ class Window {
 
   std::function<void(const Window &)> onUpdate;
 
+  [[nodiscard]] bool GrowIcon() const;
+  void GrowIcon(bool value);
+
  private:
   static WindowRef GetNewWindow(ResourceID resourceID, WindowRef behind);
   void SetRefConToThis();
 
   WindowRef ref;
+  bool growIcon = true;
 };
 
 }  // namespace AtelierEsri

@@ -84,6 +84,26 @@ resource 'CNTL' (inventoryVScrollBarCNTLResourceID, "inventory window vertical s
     "" /* title */
 };
 
+resource 'WIND' (titleScreenWINDResourceID, "title screen window", preload, purgeable) {
+    {120, 240, 280, 400},
+    altDBoxProc,
+    visible,
+    noGoAway,
+    0x0, /* refCon */
+    "", /* title */
+    centerMainScreen
+};
+
+resource 'WIND' (atelierInteriorWINDResourceID, "atelier interior window", preload, purgeable) {
+    {43, 6, 343, 406},
+    noGrowDocProc,
+    visible,
+    noGoAway,
+    0x0, /* refCon */
+    "", /* title */
+    centerMainScreen
+};
+
 /*
  * Menus are called out as specifically not purgeable here:
  * https://preterhuman.net/macstuff/insidemac/MoreToolbox/MoreToolbox-13.html#HEADING13-0

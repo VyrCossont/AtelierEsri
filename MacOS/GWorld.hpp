@@ -2,7 +2,7 @@
 
 #include <QDOffscreen.h>
 
-#include "Exception.hpp"
+#include "Drawing.hpp"
 
 namespace AtelierEsri {
 
@@ -12,6 +12,8 @@ class GWorldActiveGuard;
 /// An offscreen GWorld.
 class GWorld {
  public:
+  /// Create a 32-bit direct-color GWorld.
+  explicit GWorld(V2I size);
   explicit GWorld(GWorldPtr ptr);
   GWorld(GWorld &&src) noexcept;
   GWorld &operator=(GWorld &&src) noexcept;

@@ -29,6 +29,10 @@ Window::~Window() {
   }
 }
 
+bool Window::GrowIcon() const { return growIcon; }
+
+void Window::GrowIcon(const bool value) { growIcon = value; }
+
 WindowRef Window::GetNewWindow(
     const ResourceID resourceID, const WindowRef behind
 ) {
@@ -81,7 +85,6 @@ void Window::CopyFrom(
 ) const {
   const GWorldLockPixelsGuard lockPixelsGuard = gWorld.LockPixels();
   const BitMap *gWorldBits = lockPixelsGuard.Bits();
-  CGrafPtr windowPort = Port();
 
   QD_CHECKED(
       CopyBits(
@@ -228,7 +231,9 @@ void Window::HandleUpdate() const {
 #endif
   UpdateControls(visibleRegion);
 
-  DrawGrowIcon(ref);
+  if (growIcon) {
+    DrawGrowIcon(ref);
+  }
 
   if (onUpdate) {
     onUpdate(*this);

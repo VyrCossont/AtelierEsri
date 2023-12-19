@@ -28,7 +28,7 @@ struct V2I : Breeze::V2<V2I, int> {
 };
 
 /// 2D int rectangle interoperable with QuickDraw `Rect`.
-struct R2I : Breeze::R2<V2I> {
+struct R2I : Breeze::R2<R2I, V2I> {
   constexpr R2I(const V2I origin, const V2I size) : R2(origin, size){};
 
   /// Generate square of a given size around a point.

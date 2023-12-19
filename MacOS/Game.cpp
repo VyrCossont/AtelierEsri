@@ -2,35 +2,97 @@
 
 #include <ctgmath>
 
+#include "AppResources.h"
 #include "Assets.h"
 #include "Breeze/Alchemy.hpp"
 #include "Drawing.hpp"
+#include "Env.hpp"
 #include "MaskedImage.hpp"
 
 namespace AtelierEsri {
 
-Game::Game(const Window &window)
-    : spriteSheet(
+void GameMode::Tick(const uint64_t currentTimestampUsec) {
+  // Default implementation does nothing.
+}
+
+GameMode::GameMode(Game& game) : game(game) {}
+
+GameModeTitleScreen::GameModeTitleScreen(Game& game)
+    : GameMode(game),
+      window(titleScreenWINDResourceID),
+      titleScreen(MaskedImage::Get(
+          assetSceneNewTitleScreenImagePictResourceId,
+          assetSceneNewTitleScreenMaskPictResourceId
+      )),
+      dismissTimestampUsec(Env::Microseconds() + displayDurationUsec) {
+  window.onUpdate = [&](const Window& window) {
+    GWorldActiveGuard activeGuard = window.MakeActivePort();
+    titleScreen.Draw(titleScreen.Bounds(), window.PortBounds());
+  };
+
+  window.onContentMouseDown = [&]([[maybe_unused]] const Window& window,
+                                  [[maybe_unused]] const Point point) {
+    EnterAtelier();
+  };
+}
+
+void GameModeTitleScreen::Tick(const uint64_t currentTimestampUsec) {
+  if (currentTimestampUsec > dismissTimestampUsec) {
+    EnterAtelier();
+  }
+}
+
+void GameModeTitleScreen::EnterAtelier() const {
+  game.PopTo(this);
+  game.Push(new GameModeAtelierInterior(game));
+}
+
+GameModeAtelierInterior::GameModeAtelierInterior(Game& game)
+    : GameMode(game),
+      window(atelierInteriorWINDResourceID),
+      atelierInterior(MaskedImage::Get(
+          assetSceneAtelierInteriorImagePictResourceId,
+          assetSceneAtelierInteriorMaskPictResourceId
+      )) {
+  window.onUpdate = [&](const Window& window) {
+    GWorldActiveGuard activeGuard = window.MakeActivePort();
+    atelierInterior.Draw(atelierInterior.Bounds(), window.PortBounds());
+  };
+}
+
+Game::Game()
+    : modeStack{new GameModeTitleScreen(*this)},
+      spriteSheet(
           MaskedImage::Get(
               assetSpriteSheet00ImagePictResourceId,
-              assetSpriteSheet00MaskPictResourceId,
-              window
+              assetSpriteSheet00MaskPictResourceId
           ),
           assetSpriteSheet00RgnResourceId
       ),
       breezeCatalog(Breeze::Material::Catalog()),
       catalog(Material::Catalog(breezeCatalog)),
-      inventory(DemoInventory(breezeCatalog)),
-      inventoryController(inventory, catalog, spriteSheet) {}
+      inventory(DemoInventory(breezeCatalog)) {}
 
-void Game::Update(const int16_t scrollBarPosition) {
-  yOffset = static_cast<int16_t>(-(scrollBarPosition - 50));
-
-  // TODO: separate this thing's Update() from its Draw()?
-  inventoryController.Update();
+void Game::Tick(const uint64_t currentTimestampUsec) const {
+  for (const auto mode : modeStack) {
+    mode->Tick(currentTimestampUsec);
+  }
 }
 
-void Game::Draw(const GWorld &gWorld) const {
+void Game::Push(GameMode* mode) { modeStack.push_back(mode); }
+
+void Game::PopTo(const GameMode* mode) {
+  while (!modeStack.empty()) {
+    const GameMode* popped = modeStack.back();
+    modeStack.pop_back();
+    delete popped;
+    if (popped == mode) {
+      return;
+    }
+  }
+}
+
+void XXXDraw(const GWorld& gWorld) {
   QD::Reset();
 
   GWorldActiveGuard activeGuard = gWorld.MakeActive();
@@ -39,17 +101,9 @@ void Game::Draw(const GWorld &gWorld) const {
   const Pattern background = QD::Gray();
   FillRect(&rect, &background);
 
-  const Rect dstRect = {yOffset, 0, static_cast<int16_t>(64 + yOffset), 64};
-  spriteSheet.Draw(assetSpriteSheet00AvatarEsriSpriteIndex, dstRect);
-
   constexpr int nodeR = 32;
   constexpr int numPoints = 6;
-  const auto hex = Ngon(
-      {120, static_cast<int16_t>(120 + yOffset)},
-      nodeR,
-      numPoints,
-      M_PI + M_PI_2
-  );
+  const auto hex = Ngon({120, 120}, nodeR, numPoints, M_PI + M_PI_2);
   {
     // Draw polygon, adjusted to center it in its own frame
     // (rectangles, ovals, etc. don't need this).
@@ -73,7 +127,7 @@ void Game::Draw(const GWorld &gWorld) const {
       if (i < 3) {
         constexpr int pipHalfWidth = 4;
         const auto pipRect = R2I::Around(center, pipHalfWidth);
-        spriteSheet.Draw(assetSpriteSheet00ElementFireSpriteIndex, pipRect);
+        // spriteSheet.Draw(assetSpriteSheet00ElementFireSpriteIndex, pipRect);
       }
     }
   }

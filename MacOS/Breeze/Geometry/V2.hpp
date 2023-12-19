@@ -10,6 +10,10 @@ struct V2 {
 
   constexpr V2(Element x, Element y) : x(x), y(y) {}
 
+  bool operator==(const Base& rhs) const { return x == rhs.x && y == rhs.y; }
+
+  bool operator!=(const Base& rhs) const { return x != rhs.x || y != rhs.y; }
+
   Base operator+() const { return {+x, +y}; }
 
   Base operator-() const { return {-x, -y}; }
