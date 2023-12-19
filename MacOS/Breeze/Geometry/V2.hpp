@@ -89,6 +89,11 @@ struct V2 {
   friend Base operator%(const Element lhs, const Base& rhs) {
     return {lhs % rhs.x, lhs % rhs.y};
   }
+
+  friend std::ostream& operator<<(std::ostream& os, const Base& rhs) {
+    os << std::string("{") << rhs.x << ", " << rhs.y << "}";
+    return os;
+  }
 };
 
 }  // namespace Breeze

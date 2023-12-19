@@ -17,10 +17,8 @@ class Game {
   void Draw(const GWorld &gWorld) const;
 
  private:
-  /// Generate a fresh inventory for demo purposes.
-  static Breeze::PlayerInventory DemoInventory();
-
   SpriteSheet spriteSheet;
+  std::vector<Breeze::Material> breezeCatalog;
   std::vector<Material> catalog;
   Breeze::PlayerInventory inventory;
   InventoryController inventoryController;

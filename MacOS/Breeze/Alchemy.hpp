@@ -15,11 +15,15 @@
 namespace Breeze {
 
 using Quality = int;
+
 using ElementCount = int;
+
 using EffectSlot = int;
 constexpr int NumEffectSlots = 4;
 
-struct RecipeGridPoint : V2<RecipeGridPoint, int> {};
+struct RecipeGridPoint : V2<RecipeGridPoint, int> {
+  RecipeGridPoint(const int x, const int y) : V2(x, y) {}
+};
 
 // NOLINTBEGIN(*-explicit-constructor, *-no-recursion)
 
@@ -63,7 +67,35 @@ BETTER_ENUM(
     Accessories
 )
 
+BETTER_ENUM(Stat, uint8_t, ATK, DEF, SPD)
+
+BETTER_ENUM(
+    EquipmentKind,
+    uint8_t,
+    None,
+    Weapon,
+    Armor,
+    Accessory,
+    Attack,
+    Heal,
+    Buff,
+    Debuff,
+    Tool
+)
+
 // NOLINTEND(*-explicit-constructor, *-no-recursion)
+
+// TODO: figure out how to document these enums.
+//  The below highlight in CLion but don't show up in hover docs.
+
+/*! \enum EquipmentKind::None
+ * Not equippable. Raw materials, synthesis materials, key items, etc.
+ */
+
+/*! \enum EquipmentKind::Tool
+ * Includes harvesting tools used in the field: axes, fishing rods, etc.
+ * as well as field utility items like hiking boots and backpacks.
+ */
 
 /// Consumed in synthesis.
 struct EffectQuality {
@@ -90,6 +122,11 @@ struct EffectElementalDamage {
   int amount;
 };
 
+struct EffectEquipmentStat {
+  Stat stat;
+  int bonus;
+};
+
 /// Does not stack with itself.
 struct EffectSingleTarget {};
 
@@ -99,12 +136,61 @@ using Effect = std::variant<
     EffectAddElement,
     EffectAddCategory,
     EffectElementalDamage,
+    EffectEquipmentStat,
     EffectSingleTarget>;
+
+struct Material;
+
+/// Recipe nodes can take either a specific material or a category.
+using RecipeNodeInput =
+    std::variant<std::reference_wrapper<const Material>, Category>;
+
+/// This is a requirement on the node's *parent*:
+/// when the parent has an elemental value of this much, enable this node.
+struct RecipeNodeElementalRequirement {
+  Element element;
+  ElementCount count;
+};
+
+struct RecipeNodeEffect {
+  ElementCount count;
+  Effect effect;
+  std::optional<EffectSlot> slot;
+};
+
+/// Node in an abstract recipe.
+///
+/// Nodes that do not have an elemental or quality unlock requirement are
+/// considered mandatory by the recipe, and must have items placed in them to
+/// finish the synthesis.
+struct RecipeNode {
+  RecipeGridPoint gridPos;
+  Element element;
+  RecipeNodeInput input;
+  std::vector<RecipeNodeEffect> effects;
+  std::optional<std::reference_wrapper<const RecipeNode>> parent;
+  std::optional<RecipeNodeElementalRequirement> elementalUnlockRequirement;
+  std::optional<Quality> qualityUnlockRequirement;
+};
+
+/// Recipe for a material.
+struct Recipe {
+  std::vector<RecipeNode> nodes;
+  // TODO: recipes will have plot, level, or recipe book requirements
+};
 
 /// An abstract material, such as red neutralizer.
 struct Material {
   /// Material catalog ID, used to look up display info, etc.
   size_t id;
+
+  /// Raw materials, key items, etc. don't have recipes.
+  std::optional<Recipe> recipe;
+
+  EquipmentKind equipmentKind = EquipmentKind::None;
+
+  // Defaults for generating materials.
+  // Syntheses or field gathering bonuses may give individual items more.
   EnumSet<Element> elements;
   ElementCount elementValue;
   EnumSet<Category> categories;
@@ -140,69 +226,34 @@ struct Item {
   ) const;
 };
 
-/// Recipe nodes can take either a specific material or a category.
-using RecipeNodeInput =
-    std::variant<std::reference_wrapper<Material>, Category>;
-
-/// This is a requirement on the node's *parent*:
-/// when the parent has an elemental value of this much, enable this node.
-struct RecipeNodeElementalRequirement {
-  Element element;
-  ElementCount count;
-};
-
-struct RecipeNodeEffect {
-  Effect effect;
-  std::optional<EffectSlot> slot;
-  ElementCount count;
-};
-
-/// Node in an abstract recipe.
-///
-/// Nodes that do not have an elemental or quality unlock requirement are
-/// considered mandatory by the recipe, and must have items placed in them to
-/// finish the synthesis.
-struct RecipeNode {
-  RecipeGridPoint gridPos;
-  Element element;
-  RecipeNodeInput input;
-  std::vector<RecipeNodeEffect> effects;
-  std::optional<RecipeNodeElementalRequirement> elementalUnlockRequirement;
-  std::optional<Quality> qualityUnlockRequirement;
-  std::optional<std::reference_wrapper<const RecipeNode>> parent;
-};
-
-struct Recipe {
-  std::vector<RecipeNode> nodes;
-  Material &material;
-};
-
 /// Item placed at a node. Mostly useful as an undo stack entry.
 struct SynthesisPlacement {
   const RecipeNode &node;
   const Item &item;
 };
 
+/// Output of a synthesis.
+/// Depending on stage, may have more traits than legal for an inventory item.
 struct SynthesisResult {
   Item item;
-  int quantity{};
+  int quantity = 1;
 };
 
 using PlayerInventory = std::vector<Item>;
 
-struct SynthesisState {
-  Recipe &recipe;
+PlayerInventory DemoInventory(const std::vector<Material> &catalog);
 
-  /// Determined by your alchemy level and skills.
-  int maxPlacements;
-  /// Determined by your alchemy level and skills.
-  int maxQuality;
-
-  /// Input: your inventory.
-  PlayerInventory inventory;
-
-  /// Items you've placed on nodes.
-  std::vector<SynthesisPlacement> placements;
+class SynthesisState {
+ public:
+  SynthesisState(
+      const Material &material,
+      int maxPlacements,
+      int maxQuality,
+      const PlayerInventory &inventory
+  );
+  // This type has internal pointers and can't be trivially copied.
+  SynthesisState(const SynthesisState &src) = delete;
+  SynthesisState operator=(const SynthesisState &src) = delete;
 
   /// Items allowed for a given node.
   /// Skips items you've already used.
@@ -210,11 +261,11 @@ struct SynthesisState {
       const RecipeNode &node
   ) const;
 
-  /// Add an item to a node.
-  void Place(const RecipeNode &node, const Item &item);
-
   /// Can we finish the synthesis?
   [[nodiscard]] bool CanFinish() const;
+
+  /// Can we add any more items?
+  [[nodiscard]] int PlacementsRemaining() const;
 
   /// Can we add any more items?
   [[nodiscard]] bool CanPlace() const;
@@ -238,6 +289,29 @@ struct SynthesisState {
   /// Return the current state of the item being synthesized,
   /// including *all* available traits.
   [[nodiscard]] SynthesisResult Result() const;
+
+  /// Add an item to a node.
+  void Place(const RecipeNode &node, const Item &item);
+
+  /// Undo the last item placement.
+  /// Returns true if there was something to undo,
+  /// or false if the undo stack is empty.
+  bool Undo();
+
+ private:
+  /// Material being synthesized. Must have a recipe.
+  const Material &material;
+
+  /// Determined by your alchemy level and skills.
+  int maxPlacements;
+  /// Determined by your alchemy level and skills.
+  int maxQuality;
+
+  /// Your inventory.
+  const PlayerInventory &inventory;
+
+  /// Items you've placed on nodes.
+  std::vector<SynthesisPlacement> placements;
 };
 
 }  // namespace Breeze

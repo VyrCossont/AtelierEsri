@@ -1,8 +1,52 @@
 #include "Alchemy.hpp"
 
 #include <cassert>
+#include <iostream>
+#include <sstream>
+#include <stdexcept>
 
 namespace Breeze {
+
+PlayerInventory DemoInventory(const std::vector<Material> &catalog) {
+  PlayerInventory inventory{};
+
+  // Give five of every raw material.
+  for (size_t materialIndex = 0; materialIndex < catalog.size() - 1;
+       ++materialIndex) {
+    const Material &material = catalog[materialIndex];
+    Item item = {
+        .material = material,
+        .elements = material.elements,
+        .elementValue = material.elementValue,
+        .quality = 50,
+        .categories = material.categories,
+        .traits = material.traits
+    };
+    for (size_t itemIndex = 0; itemIndex < 5; ++itemIndex) {
+      inventory.push_back(item);
+    }
+  }
+
+  return inventory;
+}
+
+SynthesisState::SynthesisState(
+    const Material &material,
+    const int maxPlacements,
+    const int maxQuality,
+    const PlayerInventory &inventory
+)
+    : material(material),
+      maxPlacements(maxPlacements),
+      maxQuality(maxQuality),
+      inventory(inventory) {
+  if (!material.recipe) {
+    std::stringstream message;
+    message << "Can't synthesize material with ID " << material.id
+            << ": material doesn't have a recipe";
+    throw std::invalid_argument(message.str());
+  }
+}
 
 std::vector<std::reference_wrapper<const Item>> SynthesisState::AllowedItemsFor(
     const RecipeNode &node
@@ -10,7 +54,7 @@ std::vector<std::reference_wrapper<const Item>> SynthesisState::AllowedItemsFor(
   std::vector<std::reference_wrapper<const Item>> items{};
 
   if (const auto materialInput =
-          std::get_if<std::reference_wrapper<Material>>(&node.input)) {
+          std::get_if<std::reference_wrapper<const Material>>(&node.input)) {
     const Material &material = *materialInput;
     for (const Item &item : inventory) {
       if (&item.material == &material) {
@@ -27,19 +71,57 @@ std::vector<std::reference_wrapper<const Item>> SynthesisState::AllowedItemsFor(
     }
 
   } else {
-    assert(false, "Unknown material input type");
+    throw std::logic_error("Unknown recipe input type.");
   }
 
   return items;
 }
 
 void SynthesisState::Place(const RecipeNode &node, const Item &item) {
+  bool itemAcceptable = false;
+  // ReSharper disable once CppRangeBasedForIncompatibleReference
+  for (const Item &allowedItem : AllowedItemsFor(node)) {
+    if (&item == &allowedItem) {
+      itemAcceptable = true;
+      break;
+    }
+  }
+  if (!itemAcceptable) {
+    std::stringstream message;
+    message << "Node @ " << node.gridPos
+            << " can't accept item with material ID " << item.material.id
+            << " and categories {";
+    bool first = true;
+    for (auto category : Category::_values()) {
+      if (!item.categories.test(category)) {
+        continue;
+      }
+
+      if (first) {
+        first = false;
+      } else {
+        message << ", ";
+      }
+      message << category._to_string();
+    }
+    message << "}";
+    throw std::invalid_argument(message.str());
+  }
+
   placements.push_back({node, item});
+}
+
+bool SynthesisState::Undo() {
+  if (placements.empty()) {
+    return false;
+  }
+  placements.pop_back();
+  return true;
 }
 
 bool SynthesisState::CanFinish() const {
   // ReSharper disable once CppUseStructuredBinding
-  for (const auto &node : recipe.nodes) {  // NOLINT(*-use-anyofallof)
+  for (const auto &node : material.recipe->nodes) {  // NOLINT(*-use-anyofallof)
     if (node.elementalUnlockRequirement.has_value() ||
         node.qualityUnlockRequirement.has_value()) {
       // This node is not mandatory. Ignore it.
@@ -55,17 +137,17 @@ bool SynthesisState::CanFinish() const {
   return true;
 }
 
-bool SynthesisState::CanPlace() const {
-  return maxPlacements > placements.size();
+int SynthesisState::PlacementsRemaining() const {
+  return maxPlacements - static_cast<int>(placements.size());
 }
+
+bool SynthesisState::CanPlace() const { return PlacementsRemaining() > 0; }
 
 bool SynthesisState::Unlocked(const RecipeNode &node) const {
   if (node.elementalUnlockRequirement) {
-    assert(
-        node.parent,
-        "Malformed recipe: "
-        "node has elemental unlock requirement but no parent"
-    );
+    // Malformed recipe: node has elemental unlock requirement but no parent.
+    assert(node.parent);
+
     const Element element = node.elementalUnlockRequirement->element;
     const ElementCount requiredValue = node.elementalUnlockRequirement->count;
     const RecipeNode &parent = *node.parent;
@@ -105,15 +187,14 @@ SynthesisResult SynthesisState::Result() const {
   SynthesisResult result = {
       .item =
           Item{
-              .material = recipe.material,
-              .elements = recipe.material.elements,
-              .elementValue = recipe.material.elementValue,
-              .categories = recipe.material.categories,
-              .traits = recipe.material.traits,
+              .material = material,
+              .elements = material.elements,
+              .elementValue = material.elementValue,
+              .categories = material.categories,
+              .traits = material.traits,
               .effects = {},
               .slotEffects = {},
           },
-      .quantity = 1
   };
 
   // Start quality at the average of the ingredient qualities.
@@ -123,7 +204,7 @@ SynthesisResult SynthesisState::Result() const {
   result.item.quality /= static_cast<int>(placements.size());
 
   // For each node, apply any unlocked effects.
-  for (auto &node : recipe.nodes) {
+  for (auto &node : material.recipe->nodes) {
     ElementCount elementValue = 0;
     for (const auto &[placementNode, item] : placements) {
       if (&node == &placementNode && item.elements[node.element]) {
@@ -131,7 +212,7 @@ SynthesisResult SynthesisState::Result() const {
       }
     }
 
-    for (auto &[effect, slot, count] : node.effects) {
+    for (auto &[count, effect, slot] : node.effects) {
       if (count < elementValue) {
         break;
       }
@@ -148,6 +229,7 @@ SynthesisResult SynthesisState::Result() const {
       } else if (const auto e = std::get_if<EffectAddCategory>(&effect)) {
         result.item.categories[e->category] = true;
       } else {
+        // Effects that aren't consumed.
         if (slot) {
           result.item.slotEffects[*slot] = effect;
         } else {
@@ -159,7 +241,7 @@ SynthesisResult SynthesisState::Result() const {
     }
   }
 
-  // Quality cap.
+  // Apply quality cap.
   result.item.quality = std::min(maxQuality, result.item.quality);
 
   return result;
@@ -192,14 +274,65 @@ std::vector<Material> Material::Catalog() {
     catalog.push_back(material);
   }
 
-  // Copper ingot.
-  const Material material{
+  // Override defaults for a few items:
+
+  // Elerium.
+  catalog[5].elementValue = 3;
+  catalog[5].elements = 1 << Element::Wind;
+  catalog[5].categories = 1 << Category::Gemstones | 1 << Category::Poisons;
+
+  // Lump.
+  catalog[16].elements = 1 << Element::Wind;
+  catalog[16].categories = 1 << Category::Fuel;
+
+  // Page.
+  catalog[24].categories = 1 << Category::Fuel;
+
+  // Water.
+  catalog[39].elements = 1 << Element::Ice;
+  catalog[39].categories = 1 << Category::Water;
+
+  // Wood.
+  catalog[40].elementValue = 2;
+  catalog[40].categories = 1 << Category::Fuel;
+
+  // Copper ingot: our first synthesizable item.
+  Recipe copperIngotRecipe;
+  copperIngotRecipe.nodes.push_back(  // NOLINT(*-use-emplace)
+      {
+          .gridPos = {0, 0},
+          .element = Element::Fire,
+          .input = catalog[19],  // copper ore
+          .effects =
+              {
+                  {.count = 1, .effect = EffectEquipmentStat{Stat::DEF, 1}},
+                  {.count = 2, .effect = EffectEquipmentStat{Stat::DEF, 2}},
+                  {.count = 3, .effect = EffectEquipmentStat{Stat::DEF, 3}},
+              },
+      }
+  );
+  copperIngotRecipe.nodes.push_back(  // NOLINT(*-use-emplace)
+      {
+          .gridPos = {1, 0},
+          .element = Element::Fire,
+          .input = Category::Fuel,
+          .effects =
+              {
+                  {.count = 1, .effect = EffectEquipmentStat{Stat::ATK, 1}},
+                  {.count = 2, .effect = EffectEquipmentStat{Stat::ATK, 2}},
+                  {.count = 3, .effect = EffectEquipmentStat{Stat::ATK, 3}},
+              },
+          .parent = copperIngotRecipe.nodes[0],
+      }
+  );
+  const Material copperIngot{
       .id = 42,
+      .recipe = copperIngotRecipe,
       .elements = 1 << Element::Fire,
       .elementValue = 1,
-      .categories = 1 << Category::Ore
+      .categories = 1 << Category::Ingots,
   };
-  catalog.push_back(material);
+  catalog.push_back(copperIngot);
 
   return catalog;
 }

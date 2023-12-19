@@ -5,13 +5,16 @@
 namespace AtelierEsri {
 
 /// Adds name and icon to a Breeze material.
+/// Look these up by Breeze material ID.
 struct Material {
-  Breeze::Material data;
   std::string name;
   std::string description;
   size_t spriteIndex;
 
-  static std::vector<Material> Catalog();
+  /// Provide metadata for Breeze demo catalog.
+  static std::vector<Material> Catalog(
+      const std::vector<Breeze::Material>& breezeCatalog
+  );
 };
 
 }  // namespace AtelierEsri

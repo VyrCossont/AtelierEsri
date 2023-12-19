@@ -18,8 +18,9 @@ Game::Game(const Window &window)
           ),
           assetSpriteSheet00RgnResourceId
       ),
-      catalog(Material::Catalog()),
-      inventory(DemoInventory()),
+      breezeCatalog(Breeze::Material::Catalog()),
+      catalog(Material::Catalog(breezeCatalog)),
+      inventory(DemoInventory(breezeCatalog)),
       inventoryController(inventory, catalog, spriteSheet) {}
 
 void Game::Update(const int16_t scrollBarPosition) {
@@ -76,30 +77,6 @@ void Game::Draw(const GWorld &gWorld) const {
       }
     }
   }
-}
-
-Breeze::PlayerInventory Game::DemoInventory() {
-  Breeze::PlayerInventory inventory{};
-
-  // Give two of every raw material.
-  const std::vector<Material> catalog = Material::Catalog();
-  for (size_t materialIndex = 0; materialIndex < catalog.size() - 1;
-       ++materialIndex) {
-    const Breeze::Material &material = catalog[materialIndex].data;
-    Breeze::Item item = {
-        .material = material,
-        .elements = material.elements,
-        .elementValue = material.elementValue,
-        .quality = 50,
-        .categories = material.categories,
-        .traits = material.traits
-    };
-    for (size_t itemIndex = 0; itemIndex < 2; ++itemIndex) {
-      inventory.push_back(item);
-    }
-  }
-
-  return inventory;
 }
 
 }  // namespace AtelierEsri
