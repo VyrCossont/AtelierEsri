@@ -19,16 +19,18 @@ class InventoryController {
       const SpriteSheet& spriteSheet,
       WindowRef behind = Window::InFrontOfAllOtherWindows
   );
-
-  /// Draw the inventory controller's window.
-  void Update() const;
+  InventoryController(const InventoryController& src) = delete;
+  InventoryController& operator=(const InventoryController& src) = delete;
 
  private:
+  /// Draw the controller's window contents.
+  void Update() const;
+
   /// Set layout counts and dimensions given window size.
   void CalculateLayout();
 
   /// Set scroll bar increments given window size.
-  void ConfigureScroll() const;
+  void ConfigureScrollBar() const;
 
   /// Move scroll bar to appropriate location for window size.
   void PositionScrollBar() const;
@@ -36,10 +38,6 @@ class InventoryController {
   const Breeze::PlayerInventory& inventory;
   const std::vector<Material>& catalog;
   const SpriteSheet& spriteSheet;
-
-  // TODO: track which items are in use and should not be shown
-  /// List of references to items in `inventory`.
-  std::vector<std::reference_wrapper<Breeze::Item>> itemsInUse{};
 
   Window window;
   /// Vertical scroll bar.

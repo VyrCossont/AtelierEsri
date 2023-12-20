@@ -42,17 +42,28 @@ resource 'DITL' (errorDITLResourceID, "exception alert", purgeable) {
 	}
 };
 
-resource 'WIND' (gameWINDResourceID, "game window", preload, purgeable) {
+resource 'WIND' (synthesisWINDResourceID, "synthesis window", preload, purgeable) {
     {43, 6, 203, 166},
-    noGrowDocProc,
+    zoomDocProc,
     visible,
-    noGoAway,
+    goAway,
     0x0, /* refCon */
-    "Atelier Esri",
+    "Synthesis",
     noAutoCenter
 };
 
-resource 'CNTL' (gameVScrollBarCNTLResourceID, "game window vertical scroll bar", preload, purgeable) {
+resource 'CNTL' (synthesisHScrollBarCNTLResourceID, "synthesis window horizontal scroll bar", preload, purgeable) {
+    {145, -1, 161, 146},
+    0, /* initial setting */
+    visible,
+    0, /* max setting */
+    0, /* min setting */
+    scrollBarProc,
+    0x0, /* refCon */
+    "" /* title */
+};
+
+resource 'CNTL' (synthesisVScrollBarCNTLResourceID, "synthesis window vertical scroll bar", preload, purgeable) {
     {-1, 145, 146, 161},
     0, /* initial setting */
     visible,
@@ -67,7 +78,7 @@ resource 'WIND' (inventoryWINDResourceID, "inventory window", preload, purgeable
     {43, 206, 203, 366},
     zoomDocProc,
     visible,
-    noGoAway,
+    goAway,
     0x0, /* refCon */
     "Container",
     noAutoCenter
@@ -100,8 +111,19 @@ resource 'WIND' (atelierInteriorWINDResourceID, "atelier interior window", prelo
     visible,
     noGoAway,
     0x0, /* refCon */
-    "", /* title */
+    "Atelier Esri", /* title */
     centerMainScreen
+};
+
+resource 'CNTL' (atelierInteriorSynthesizeButtonCNTLResourceID, "atelier interior synthesize button", preload, purgeable) {
+    {197, 175, 217, 235},
+    0, /* initial setting */
+    visible,
+    1, /* max setting */
+    0, /* min setting */
+    pushButProc,
+    0x0, /* refCon */
+    "Synthesize" /* title */
 };
 
 /*

@@ -20,7 +20,10 @@ InventoryController::InventoryController(
       scrollBar(inventoryVScrollBarCNTLResourceID, window) {
   window.GrowIcon(true);
 
-  window.onResize = [&](const Window& window, const V2I prevSize) {
+  window.onUpdate = [&]([[maybe_unused]] const Window& window) { Update(); };
+
+  window.onResize = [&](const Window& window,
+                        [[maybe_unused]] const V2I prevSize) {
     CalculateLayout();
     PositionScrollBar();
 
@@ -54,7 +57,7 @@ InventoryController::InventoryController(
   };
 
   CalculateLayout();
-  ConfigureScroll();
+  ConfigureScrollBar();
 }
 
 void InventoryController::Update() const {
@@ -103,10 +106,9 @@ void InventoryController::CalculateLayout() {
   pageHeight = rowsPerPage * InventoryCell::Size.y;
 }
 
-void InventoryController::ConfigureScroll() const {
-  // TODO: currently loses position when window is resized
-  scrollBar.SetMin(0);
+void InventoryController::ConfigureScrollBar() const {
   scrollBar.SetMax(static_cast<int16_t>(scrollHeight));
+  // TODO: currently loses position when window is resized
   scrollBar.SetValue(0);
 }
 

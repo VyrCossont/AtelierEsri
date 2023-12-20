@@ -31,11 +31,7 @@ struct V2I : Breeze::V2<V2I, int> {
 struct R2I : Breeze::R2<R2I, V2I> {
   constexpr R2I(const V2I origin, const V2I size) : R2(origin, size){};
 
-  /// Generate square of a given size around a point.
-  [[nodiscard]] static R2I Around(V2I center, Element halfWidth);
-  [[nodiscard]] static R2I Around(
-      V2I center, Element halfWidth, Element halfHeight
-  );
+  R2I(Element left, Element top, Element right, Element bottom);
 
   // ReSharper disable once CppNonExplicitConvertingConstructor
   R2I(Rect rect);  // NOLINT(*-explicit-constructor)
@@ -50,7 +46,9 @@ class QD {
   /// Return whether Color QuickDraw is available.
   static bool HasColor();
 
-  /// Reset graphics port to defaults.
+  // TODO: rename this to something more specific
+  /// Reset graphics port to default color and pattern.
+  /// Doesn't affect the clipping region or origin translation.
   static void Reset();
 
   /// Get the bounds of the entire desktop, aka the "gray region".
@@ -101,6 +99,15 @@ class Ngon {
   int n;
   float theta;
   bool reverse;
+};
+
+/// RAII wrapper for changing the origin coordinates of the current port.
+class ChangeOrigin {
+ public:
+  explicit ChangeOrigin(const V2I& translation);
+  ChangeOrigin(const ChangeOrigin& other) = delete;
+  ChangeOrigin& operator=(const ChangeOrigin& other) = delete;
+  ~ChangeOrigin();
 };
 
 }  // namespace AtelierEsri

@@ -58,10 +58,14 @@ if (RETRO68)
             GWorld.cpp
             Inventory/InventoryCell.cpp
             Inventory/InventoryController.cpp
+            Inventory/InventoryPickerGameMode.cpp
             MaskedImage.cpp
             Material.cpp
             SpriteSheet.cpp
             Strings.cpp
+            Synthesis/SynthesisCell.cpp
+            Synthesis/SynthesisController.cpp
+            Synthesis/SynthesisGameMode.cpp
             Window.cpp
     )
     target_link_libraries(AtelierEsri PUBLIC Breeze)

@@ -1,8 +1,11 @@
 #pragma once
 
 #include "Breeze/Alchemy.hpp"
+#include "Control.hpp"
+#include "MaskedImage.hpp"
 #include "Material.hpp"
 #include "SpriteSheet.hpp"
+#include "Window.hpp"
 
 namespace AtelierEsri {
 
@@ -15,12 +18,13 @@ class GameMode {
 
  protected:
   explicit GameMode(Game& game);
+
   Game& game;
 };
 
-class GameModeTitleScreen final : public GameMode {
+class TitleScreenGameMode final : public GameMode {
  public:
-  explicit GameModeTitleScreen(Game& game);
+  explicit TitleScreenGameMode(Game& game);
   void Tick(uint64_t currentTimestampUsec) override;
 
  private:
@@ -35,15 +39,21 @@ class GameModeTitleScreen final : public GameMode {
   static constexpr uint64_t displayDurationUsec = 5'000'000;  // 5s
 };
 
-class GameModeAtelierInterior final : public GameMode {
+class AtelierInteriorGameMode final : public GameMode {
  public:
-  explicit GameModeAtelierInterior(Game& game);
+  explicit AtelierInteriorGameMode(Game& game);
 
  private:
+  /// Start synthesis.
+  void Synthesize() const;
+
   Window window;
+  Button synthesizeButton;
   MaskedImage atelierInterior;
 };
 
+/// Holds a stack of game modes and distributes animation ticks to them.
+/// Also holds data likely to be used by multiple game modes.
 class Game {
  public:
   explicit Game();
@@ -60,14 +70,31 @@ class Game {
   /// Pop the mode stack until we've popped off the requested mode.
   void PopTo(const GameMode* mode);
 
+  /// Alchemy icons and avatars.
+  [[nodiscard]] const SpriteSheet& MainSpriteSheet() const;
+
+  /// Material data.
+  [[nodiscard]] const std::vector<Breeze::Material>& BreezeCatalog() const;
+
+  /// Material metadata (names and icons).
+  [[nodiscard]] const std::vector<Material>& Catalog() const;
+
+  /// All items in player's container.
+  /// Intentionally mutable: some game modes will modify this.
+  [[nodiscard]] Breeze::PlayerInventory& Inventory();
+
  private:
   std::vector<GameMode*> modeStack;
 
-  // Storage for things used by multiple modes.
+  // Storage for resources used by multiple modes.
 
   SpriteSheet spriteSheet;
   std::vector<Breeze::Material> breezeCatalog;
   std::vector<Material> catalog;
+
+  // Mutable persistent game state.
+  // TODO: save/load games
+
   Breeze::PlayerInventory inventory;
 };
 

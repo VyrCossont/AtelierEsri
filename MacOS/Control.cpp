@@ -149,12 +149,45 @@ int16_t ScrollBar::Max() const { return GetControlMaximum(ref); }
 
 void ScrollBar::SetMax(const int16_t max) const { SetControlMaximum(ref, max); }
 
-void ScrollBar::ScrollBy(const int16_t amount) const {
-  int32_t value = Value();
-  value += amount;
-  value = std::max(static_cast<int32_t>(Min()), value);
-  value = std::min(value, static_cast<int32_t>(Max()));
+void ScrollBar::ScrollBy(const int amount) const {
+  const int min = Min();
+  const int max = Max();
+  const int value = std::max(min, std::min(Value() + amount, max));
   SetValue(static_cast<int16_t>(value));
+}
+
+void ScrollBar::PositionHScrollBar(
+    const V2I windowSize, const int preScrollAreaWidth
+) const {
+  const R2I bounds = {
+      {
+          preScrollAreaWidth - WindowOverlap,
+          windowSize.y - (MinorDimension - WindowOverlap),
+      },
+      {
+          windowSize.x - (MinorDimension - 3 * WindowOverlap) -
+              preScrollAreaWidth,
+          MinorDimension,
+      },
+  };
+  Bounds(bounds);
+}
+
+void ScrollBar::PositionVScrollBar(
+    const V2I windowSize, const int preScrollAreaHeight
+) const {
+  const R2I bounds = {
+      {
+          windowSize.x - (MinorDimension - WindowOverlap),
+          preScrollAreaHeight - WindowOverlap,
+      },
+      {
+          MinorDimension,
+          windowSize.y - (MinorDimension - 3 * WindowOverlap) -
+              preScrollAreaHeight,
+      },
+  };
+  Bounds(bounds);
 }
 
 // ReSharper disable once CppParameterMayBeConst

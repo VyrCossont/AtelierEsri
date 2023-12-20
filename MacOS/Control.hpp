@@ -97,7 +97,7 @@ class ScrollBar final : public Control {
   void SetMax(int16_t max) const;
 
   /// Scroll by some amount, within the bounds of the scroll bar.
-  void ScrollBy(int16_t amount) const;
+  void ScrollBy(int amount) const;
 
   void HandleMouseDown(Point point, ControlPartCode part) const override;
 
@@ -108,10 +108,22 @@ class ScrollBar final : public Control {
   /// Argument is value of scroll bar at start of drag.
   std::function<void(const ScrollBar &, int16_t)> onScrollBoxDragged;
 
+  /// Position a horizontal scrollbar according to the HIG:
+  /// https://preterhuman.net/macstuff/insidemac/Toolbox/Toolbox-313.html
+  void PositionHScrollBar(V2I windowSize, int preScrollAreaWidth = 0) const;
+
+  /// Position a vertical scrollbar according to the HIG:
+  /// https://preterhuman.net/macstuff/insidemac/Toolbox/Toolbox-313.html
+  void PositionVScrollBar(V2I windowSize, int preScrollAreaHeight = 0) const;
+
  private:
   static pascal void ActionProc(ControlRef ref, ControlPartCode part);
   // We don't bother freeing this because there's only ever one.
   static ControlActionUPP ActionProcUPP;
+
+  /// Height for horizontal scroll bar or width for vertical scroll bar.
+  static constexpr int16_t MinorDimension = 16;
+  static constexpr int16_t WindowOverlap = 1;
 };
 
 }  // namespace AtelierEsri

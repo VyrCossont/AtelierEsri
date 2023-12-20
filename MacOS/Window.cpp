@@ -161,7 +161,7 @@ void Window::HandleMouseDown(Point point, const WindowPartCode part) const {
     } break;
 
     case inGrow: {
-      // Arbitrary limits; windows should be able to customize this.
+      // TODO: Arbitrary limits; windows should be able to customize this.
       // This is not a real Rect, but min and max limits for each dimension:
       // https://preterhuman.net/macstuff/insidemac/Toolbox/Toolbox-250.html
       // Note that 32767 is the actual max; 65535 is wrong and causes the
@@ -223,6 +223,10 @@ void Window::HandleUpdate() const {
 
   BeginUpdate(ref);
 
+  if (onUpdate) {
+    onUpdate(*this);
+  }
+
   RgnHandle visibleRegion;
 #if TARGET_API_MAC_CARBON
   GetPortVisibleRegion(Port(), visibleRegion);
@@ -233,10 +237,6 @@ void Window::HandleUpdate() const {
 
   if (growIcon) {
     DrawGrowIcon(ref);
-  }
-
-  if (onUpdate) {
-    onUpdate(*this);
   }
 
   EndUpdate(ref);

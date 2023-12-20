@@ -7,8 +7,9 @@
 #define errorALRTResourceID 128
 #define errorDITLResourceID errorALRTResourceID
 
-#define gameWINDResourceID 128
-#define gameVScrollBarCNTLResourceID 128
+#define synthesisWINDResourceID 128
+#define synthesisHScrollBarCNTLResourceID 130
+#define synthesisVScrollBarCNTLResourceID 128
 
 #define inventoryWINDResourceID 129
 #define inventoryVScrollBarCNTLResourceID 129
@@ -16,6 +17,7 @@
 #define titleScreenWINDResourceID 130
 
 #define atelierInteriorWINDResourceID 131
+#define atelierInteriorSynthesizeButtonCNTLResourceID 131
 
 #define menuBarMBARResourceID 128
 

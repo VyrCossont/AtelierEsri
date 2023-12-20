@@ -1,13 +1,12 @@
 #include "Game.hpp"
 
-#include <ctgmath>
-
 #include "AppResources.h"
 #include "Assets.h"
 #include "Breeze/Alchemy.hpp"
 #include "Drawing.hpp"
 #include "Env.hpp"
 #include "MaskedImage.hpp"
+#include "Synthesis/SynthesisGameMode.hpp"
 
 namespace AtelierEsri {
 
@@ -17,7 +16,7 @@ void GameMode::Tick(const uint64_t currentTimestampUsec) {
 
 GameMode::GameMode(Game& game) : game(game) {}
 
-GameModeTitleScreen::GameModeTitleScreen(Game& game)
+TitleScreenGameMode::TitleScreenGameMode(Game& game)
     : GameMode(game),
       window(titleScreenWINDResourceID),
       titleScreen(MaskedImage::Get(
@@ -36,20 +35,21 @@ GameModeTitleScreen::GameModeTitleScreen(Game& game)
   };
 }
 
-void GameModeTitleScreen::Tick(const uint64_t currentTimestampUsec) {
+void TitleScreenGameMode::Tick(const uint64_t currentTimestampUsec) {
   if (currentTimestampUsec > dismissTimestampUsec) {
     EnterAtelier();
   }
 }
 
-void GameModeTitleScreen::EnterAtelier() const {
+void TitleScreenGameMode::EnterAtelier() const {
   game.PopTo(this);
-  game.Push(new GameModeAtelierInterior(game));
+  game.Push(new AtelierInteriorGameMode(game));
 }
 
-GameModeAtelierInterior::GameModeAtelierInterior(Game& game)
+AtelierInteriorGameMode::AtelierInteriorGameMode(Game& game)
     : GameMode(game),
       window(atelierInteriorWINDResourceID),
+      synthesizeButton(atelierInteriorSynthesizeButtonCNTLResourceID, window),
       atelierInterior(MaskedImage::Get(
           assetSceneAtelierInteriorImagePictResourceId,
           assetSceneAtelierInteriorMaskPictResourceId
@@ -58,10 +58,18 @@ GameModeAtelierInterior::GameModeAtelierInterior(Game& game)
     GWorldActiveGuard activeGuard = window.MakeActivePort();
     atelierInterior.Draw(atelierInterior.Bounds(), window.PortBounds());
   };
+
+  synthesizeButton.onClick = [&]([[maybe_unused]] const Button& button) {
+    Synthesize();
+  };
+}
+
+void AtelierInteriorGameMode::Synthesize() const {
+  game.Push(new SynthesisGameMode(game));
 }
 
 Game::Game()
-    : modeStack{new GameModeTitleScreen(*this)},
+    : modeStack{new TitleScreenGameMode(*this)},
       spriteSheet(
           MaskedImage::Get(
               assetSpriteSheet00ImagePictResourceId,
@@ -91,46 +99,14 @@ void Game::PopTo(const GameMode* mode) {
     }
   }
 }
+const SpriteSheet& Game::MainSpriteSheet() const { return spriteSheet; }
 
-void XXXDraw(const GWorld& gWorld) {
-  QD::Reset();
-
-  GWorldActiveGuard activeGuard = gWorld.MakeActive();
-
-  const Rect rect = gWorld.Bounds();
-  const Pattern background = QD::Gray();
-  FillRect(&rect, &background);
-
-  constexpr int nodeR = 32;
-  constexpr int numPoints = 6;
-  const auto hex = Ngon({120, 120}, nodeR, numPoints, M_PI + M_PI_2);
-  {
-    // Draw polygon, adjusted to center it in its own frame
-    // (rectangles, ovals, etc. don't need this).
-    constexpr int halfPenWidth = 2;
-    const ManagedPolygon polygon = hex.Polygon();
-    OffsetPoly(polygon.get(), -halfPenWidth, -halfPenWidth);
-    QD_CHECKED(ErasePoly(polygon.get()), "Couldn't clear hexagon");
-    PenSize(2 * halfPenWidth, 2 * halfPenWidth);
-    QD_CHECKED(FramePoly(polygon.get()), "Couldn't draw hexagon");
-  }
-  {
-    const Pattern pattern = QD::White();
-    PenSize(2, 2);
-    for (auto i = 0; i < numPoints; i++) {
-      const V2I center = hex[i];
-      constexpr int pipSlotHalfWidth = 6;
-      const Rect pipSlotRect = R2I::Around(center, pipSlotHalfWidth);
-      FillOval(&pipSlotRect, &pattern);
-      FrameOval(&pipSlotRect);
-
-      if (i < 3) {
-        constexpr int pipHalfWidth = 4;
-        const auto pipRect = R2I::Around(center, pipHalfWidth);
-        // spriteSheet.Draw(assetSpriteSheet00ElementFireSpriteIndex, pipRect);
-      }
-    }
-  }
+const std::vector<Breeze::Material>& Game::BreezeCatalog() const {
+  return breezeCatalog;
 }
+
+const std::vector<Material>& Game::Catalog() const { return catalog; }
+
+Breeze::PlayerInventory& Game::Inventory() { return inventory; }
 
 }  // namespace AtelierEsri

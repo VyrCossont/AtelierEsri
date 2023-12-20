@@ -19,18 +19,13 @@ V2I::operator Point() const {
   };
 }
 
-R2I R2I::Around(const V2I center, const Element halfWidth) {
-  return Around(center, halfWidth, halfWidth);
-}
-
-R2I R2I::Around(
-    const V2I center, const Element halfWidth, const Element halfHeight
-) {
-  return {
-      center - V2I{halfWidth, halfHeight},
-      {2 * halfWidth, 2 * halfHeight},
-  };
-}
+R2I::R2I(
+    const Element left,
+    const Element top,
+    const Element right,
+    const Element bottom
+)
+    : R2(left, top, right, bottom) {}
 
 R2I::R2I(const Rect rect) : R2(rect.left, rect.top, rect.right, rect.bottom) {}
 
@@ -182,5 +177,13 @@ ManagedPolygon Ngon::Polygon() const {
   ClosePoly();
   return ManagedPolygon(polygon);
 }
+
+ChangeOrigin::ChangeOrigin(const V2I& translation) {
+  SetOrigin(
+      static_cast<int16_t>(translation.x), static_cast<int16_t>(translation.y)
+  );
+}
+
+ChangeOrigin::~ChangeOrigin() { SetOrigin(0, 0); }
 
 }  // namespace AtelierEsri

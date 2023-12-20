@@ -315,3 +315,22 @@ class SynthesisState {
 };
 
 }  // namespace Breeze
+
+// Specializations so we can use `std::unordered_set` with
+// `std::reference_wrapper<const Breeze::Item>` elements,
+// which can only meaningfully be compared by address equality.
+
+template <>
+struct std::hash<std::reference_wrapper<const Breeze::Item>> {
+  size_t operator()(const Breeze::Item &item) const noexcept {
+    return std::hash<const Breeze::Item *>()(&item);
+  }
+};
+
+template <>
+struct std::equal_to<std::reference_wrapper<const Breeze::Item>> {
+  constexpr bool operator()(const Breeze::Item &lhs, const Breeze::Item &rhs)
+      const {
+    return &lhs == &rhs;
+  }
+};

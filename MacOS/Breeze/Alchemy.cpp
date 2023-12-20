@@ -4,6 +4,7 @@
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
+#include <unordered_set>
 
 namespace Breeze {
 
@@ -53,11 +54,20 @@ std::vector<std::reference_wrapper<const Item>> SynthesisState::AllowedItemsFor(
 ) const {
   std::vector<std::reference_wrapper<const Item>> items{};
 
+  /// Set of all items that have already been placed.
+  std::unordered_set<std::reference_wrapper<const Item>> itemsInUse{};
+  for (const RecipeNode &recipeNode : material.recipe->nodes) {
+    for (std::reference_wrapper<const Item> placedItem :
+         ItemsPlacedIn(recipeNode)) {
+      itemsInUse.insert(placedItem);
+    }
+  }
+
   if (const auto materialInput =
           std::get_if<std::reference_wrapper<const Material>>(&node.input)) {
     const Material &material = *materialInput;
     for (const Item &item : inventory) {
-      if (&item.material == &material) {
+      if (&item.material == &material && !itemsInUse.count(item)) {
         items.emplace_back(item);
       }
     }
@@ -65,7 +75,7 @@ std::vector<std::reference_wrapper<const Item>> SynthesisState::AllowedItemsFor(
   } else if (const auto categoryInput = std::get_if<Category>(&node.input)) {
     const Category category = *categoryInput;
     for (const Item &item : inventory) {
-      if (item.categories.test(category)) {
+      if (item.categories.test(category) && !itemsInUse.count(item)) {
         items.emplace_back(item);
       }
     }
