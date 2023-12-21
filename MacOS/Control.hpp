@@ -21,15 +21,19 @@ class Control {
 
   void Draw() const;
 
-  void Show() const;
-  void Hide() const;
+  [[nodiscard]] bool Visible() const;
+  void Visible(bool visible) const;
 
   [[nodiscard]] Rect Bounds() const;
   void Bounds(const Rect &bounds) const;
 
+  [[nodiscard]] ControlPartCode Hilite() const;
   void Hilite(ControlPartCode part) const;
   static constexpr ControlPartCode HiliteNone = 0;
   static constexpr ControlPartCode HiliteDisable = 255;
+
+  [[nodiscard]] bool Enabled() const;
+  void Enabled(bool enabled) const;
 
   [[nodiscard]] std::string Title() const;
   void Title(const std::string &title) const;

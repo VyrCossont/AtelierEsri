@@ -36,9 +36,29 @@ Control &Control::operator=(Control &&src) noexcept {
 
 void Control::Draw() const { Draw1Control(ref); }
 
-void Control::Show() const { ShowControl(ref); }
+[[nodiscard]] bool Control::Visible() const {
+#if TARGET_API_MAC_CARBON
+  return IsControlVisible(ref);
+#else
+  return ref[0]->contrlVis;
+#endif
+}
 
-void Control::Hide() const { HideControl(ref); }
+void Control::Visible(bool visible) const {
+#if TARGET_API_MAC_CARBON
+  // TODO: not sure what that third param does
+  OS_CHECKED(
+      SetControlVisibility(ref, visible, visible),
+      "Couldn't set control visibility"
+  );
+#else
+  if (visible) {
+    ShowControl(ref);
+  } else {
+    HideControl(ref);
+  }
+#endif
+}
 
 Rect Control::Bounds() const {
 #if TARGET_API_MAC_CARBON
@@ -58,8 +78,22 @@ void Control::Bounds(const Rect &bounds) const {
 #endif
 }
 
+ControlPartCode Control::Hilite() const {
+#if TARGET_API_MAC_CARBON
+  return static_cast<ControlPartCode>(GetControlHilite(ref));
+#else
+  return ref[0]->contrlHilite;
+#endif
+}
+
 void Control::Hilite(const ControlPartCode part) const {
   HiliteControl(ref, part);
+}
+
+bool Control::Enabled() const { return Hilite() != HiliteDisable; }
+
+void Control::Enabled(const bool enabled) const {
+  Hilite(enabled ? HiliteNone : HiliteDisable);
 }
 
 std::string Control::Title() const {

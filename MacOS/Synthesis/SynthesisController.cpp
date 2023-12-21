@@ -31,12 +31,12 @@ SynthesisController::SynthesisController(
   };
 
   window.onActivate = [&]([[maybe_unused]] const Window& window) {
-    hScrollBar.Show();
-    vScrollBar.Show();
+    hScrollBar.Visible(true);
+    vScrollBar.Visible(true);
   };
   window.onDeactivate = [&]([[maybe_unused]] const Window& window) {
-    hScrollBar.Hide();
-    vScrollBar.Hide();
+    hScrollBar.Visible(false);
+    vScrollBar.Visible(false);
   };
 
   // TODO: `InvalidateEverything` is *probably* overkill
@@ -96,8 +96,13 @@ void SynthesisController::Update() const {
 
   QD::Erase(window.PortBounds());
 
+  // Shift the recipe (which may extend past its own origin in recipe space
+  // in the negative direction) into the visible area, and add the scroll
+  // offset.
   const V2I scrollOffset{hScrollBar.Value(), vScrollBar.Value()};
-  ChangeOrigin changeOrigin(-(scrollOffset - recipeBounds.origin));
+  const ChangeOrigin changeOrigin(recipeBounds.origin - scrollOffset);
+
+  // Draw the cells.
   for (const SynthesisCell& cell : cells) {
     cell.Update();
   }

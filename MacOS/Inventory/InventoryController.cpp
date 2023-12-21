@@ -37,10 +37,10 @@ InventoryController::InventoryController(
   };
 
   window.onActivate = [&]([[maybe_unused]] const Window& window) {
-    scrollBar.Show();
+    scrollBar.Visible(true);
   };
   window.onDeactivate = [&]([[maybe_unused]] const Window& window) {
-    scrollBar.Hide();
+    scrollBar.Visible(false);
   };
 
   scrollBar.onScrollPageUp = [&](const ScrollBar& scrollBar) {
