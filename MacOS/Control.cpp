@@ -193,6 +193,7 @@ void ScrollBar::ScrollBy(const int amount) const {
 void ScrollBar::PositionHScrollBar(
     const V2I windowSize, const int preScrollAreaWidth
 ) const {
+  Visible(false);
   const R2I bounds = {
       {
           preScrollAreaWidth - WindowOverlap,
@@ -205,11 +206,13 @@ void ScrollBar::PositionHScrollBar(
       },
   };
   Bounds(bounds);
+  Visible(true);
 }
 
 void ScrollBar::PositionVScrollBar(
     const V2I windowSize, const int preScrollAreaHeight
 ) const {
+  Visible(false);
   const R2I bounds = {
       {
           windowSize.x - (MinorDimension - WindowOverlap),
@@ -222,6 +225,7 @@ void ScrollBar::PositionVScrollBar(
       },
   };
   Bounds(bounds);
+  Visible(true);
 }
 
 // ReSharper disable once CppParameterMayBeConst
