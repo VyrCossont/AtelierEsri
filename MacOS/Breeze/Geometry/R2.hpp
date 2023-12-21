@@ -76,6 +76,11 @@ struct R2 {
     size.y = maxBottom - minTop;
   }
 
+  friend std::ostream& operator<<(std::ostream& os, const Base& rhs) {
+    os << std::string("{") << rhs.origin << ", " << rhs.size << "}";
+    return os;
+  }
+
  private:
   struct UnionCoreResult {
     Element minLeft, minTop, maxRight, maxBottom;
