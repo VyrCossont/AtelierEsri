@@ -6,6 +6,7 @@
 #include <functional>
 #include <optional>
 #include <string>
+#include <unordered_set>
 #include <variant>
 #include <vector>
 
@@ -13,7 +14,6 @@
 #include "Geometry/V2.hpp"
 
 namespace Breeze {
-
 using Quality = int;
 
 using ElementCount = int;
@@ -226,20 +226,49 @@ struct Item {
   ) const;
 };
 
+}  // namespace Breeze
+
+// Specializations so we can use `std::unordered_set` with
+// `std::reference_wrapper<const Breeze::Item>` elements,
+// which can only meaningfully be compared by address equality.
+
+template <>
+struct std::hash<std::reference_wrapper<const Breeze::Item>> {
+  size_t operator()(const Breeze::Item &item) const noexcept {
+    return std::hash<const Breeze::Item *>()(&item);
+  }
+};
+
+template <>
+struct std::equal_to<std::reference_wrapper<const Breeze::Item>> {
+  constexpr bool operator()(const Breeze::Item &lhs, const Breeze::Item &rhs)
+      const {
+    return &lhs == &rhs;
+  }
+};
+
+namespace Breeze {
+
 /// Item placed at a node. Mostly useful as an undo stack entry.
 struct SynthesisPlacement {
   const RecipeNode &node;
   const Item &item;
 };
 
+using PlayerInventory = std::vector<Item>;
+
 /// Output of a synthesis.
 /// Depending on stage, may have more traits than legal for an inventory item.
 struct SynthesisResult {
   Item item;
   int quantity = 1;
-};
+  /// References to inventory items that would be consumed.
+  std::unordered_set<std::reference_wrapper<const Item>> usedItems;
 
-using PlayerInventory = std::vector<Item>;
+  /// Consume the used items and add the synthesis results.
+  /// Should be called at most once.
+  void ApplyToInventory(PlayerInventory &inventory) const;
+};
 
 PlayerInventory DemoInventory(const std::vector<Material> &catalog);
 
@@ -254,6 +283,8 @@ class SynthesisState {
   // This type has internal pointers and can't be trivially copied.
   SynthesisState(const SynthesisState &src) = delete;
   SynthesisState operator=(const SynthesisState &src) = delete;
+
+  [[nodiscard]] const Material &Output() const;
 
   /// Items allowed for a given node.
   /// Skips items you've already used.
@@ -315,22 +346,3 @@ class SynthesisState {
 };
 
 }  // namespace Breeze
-
-// Specializations so we can use `std::unordered_set` with
-// `std::reference_wrapper<const Breeze::Item>` elements,
-// which can only meaningfully be compared by address equality.
-
-template <>
-struct std::hash<std::reference_wrapper<const Breeze::Item>> {
-  size_t operator()(const Breeze::Item &item) const noexcept {
-    return std::hash<const Breeze::Item *>()(&item);
-  }
-};
-
-template <>
-struct std::equal_to<std::reference_wrapper<const Breeze::Item>> {
-  constexpr bool operator()(const Breeze::Item &lhs, const Breeze::Item &rhs)
-      const {
-    return &lhs == &rhs;
-  }
-};

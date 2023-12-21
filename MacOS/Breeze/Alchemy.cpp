@@ -1,12 +1,30 @@
 #include "Alchemy.hpp"
 
-#include <cassert>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
-#include <unordered_set>
 
 namespace Breeze {
+
+void SynthesisResult::ApplyToInventory(PlayerInventory &inventory) const {
+  // TODO: Item contains a const reference and can't be move-assigned.
+  //  Consider replacing const refs and ref wrappers with pointers to consts.
+
+  PlayerInventory temp;
+  for (const Item &item : inventory) {
+    if (!usedItems.count(item)) {
+      temp.push_back(item);
+    }
+  }
+  for (int i = 0; i < quantity; ++i) {
+    temp.push_back(item);
+  }
+
+  inventory.clear();
+  for (const Item &item : temp) {
+    inventory.push_back(item);
+  }
+}
 
 PlayerInventory DemoInventory(const std::vector<Material> &catalog) {
   PlayerInventory inventory{};
@@ -48,6 +66,8 @@ SynthesisState::SynthesisState(
     throw std::invalid_argument(message.str());
   }
 }
+
+const Material &SynthesisState::Output() const { return material; }
 
 std::vector<std::reference_wrapper<const Item>> SynthesisState::AllowedItemsFor(
     const RecipeNode &node
@@ -155,8 +175,12 @@ bool SynthesisState::CanPlace() const { return PlacementsRemaining() > 0; }
 
 bool SynthesisState::Unlocked(const RecipeNode &node) const {
   if (node.elementalUnlockRequirement) {
-    // Malformed recipe: node has elemental unlock requirement but no parent.
-    assert(node.parent);
+    if (!node.parent) {
+      std::stringstream message;
+      message << "Malformed recipe: node @ " << node.gridPos
+              << " has elemental unlock requirement but no parent";
+      throw std::invalid_argument(message.str());
+    }
 
     const Element element = node.elementalUnlockRequirement->element;
     const ElementCount requiredValue = node.elementalUnlockRequirement->count;
@@ -253,6 +277,11 @@ SynthesisResult SynthesisState::Result() const {
 
   // Apply quality cap.
   result.item.quality = std::min(maxQuality, result.item.quality);
+
+  // Collect items that would be consumed by this synthesis.
+  for (const auto [node, placementItem] : placements) {
+    result.usedItems.insert(placementItem);
+  }
 
   return result;
 }
