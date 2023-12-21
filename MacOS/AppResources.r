@@ -116,7 +116,7 @@ resource 'WIND' (atelierInteriorWINDResourceID, "atelier interior window", prelo
 };
 
 resource 'CNTL' (atelierInteriorSynthesizeButtonCNTLResourceID, "atelier interior synthesize button", preload, purgeable) {
-    {197, 175, 217, 235},
+    {197, 165, 217, 245},
     0, /* initial setting */
     visible,
     1, /* max setting */
