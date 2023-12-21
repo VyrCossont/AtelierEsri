@@ -18,6 +18,8 @@ SynthesisController::SynthesisController(
       window(synthesisWINDResourceID, behind),
       hScrollBar(synthesisHScrollBarCNTLResourceID, window),
       vScrollBar(synthesisVScrollBarCNTLResourceID, window) {
+  window.GrowIcon(true);
+
   window.onUpdate = [&]([[maybe_unused]] const Window& window) { Update(); };
 
   window.onResize = [&]([[maybe_unused]] const Window& window,

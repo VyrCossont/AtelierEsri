@@ -236,6 +236,8 @@ void Window::HandleUpdate() const {
   UpdateControls(visibleRegion);
 
   if (growIcon) {
+    // Also draws disabled scroll bar tracks in document windows:
+    // https://preterhuman.net/macstuff/insidemac/Toolbox/Toolbox-233.html
     DrawGrowIcon(ref);
   }
 

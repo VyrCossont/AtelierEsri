@@ -73,6 +73,7 @@ class Window {
   std::function<void(const Window &)> onActivate;
   std::function<void(const Window &)> onDeactivate;
 
+  /// Called *before* we draw the window's controls.
   std::function<void(const Window &)> onUpdate;
 
   [[nodiscard]] bool GrowIcon() const;
@@ -83,7 +84,7 @@ class Window {
   void SetRefConToThis();
 
   WindowRef ref;
-  bool growIcon = true;
+  bool growIcon = false;
 };
 
 }  // namespace AtelierEsri
