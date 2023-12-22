@@ -9,7 +9,7 @@ namespace AtelierEsri {
 class SynthesisController {
  public:
   SynthesisController(
-      const Breeze::Material& breezeMaterial,
+      Breeze::SynthesisState& state,
       const std::vector<Material>& catalog,
       const SpriteSheet& spriteSheet,
       WindowRef behind = Window::InFrontOfAllOtherWindows
@@ -17,7 +17,16 @@ class SynthesisController {
   SynthesisController(const SynthesisController& src) = delete;
   SynthesisController& operator=(const SynthesisController& src) = delete;
 
+  std::function<void(const SynthesisController&)> onCompleteSynthesis;
+
+  std::function<void(const SynthesisController&)> onCancelSynthesis;
+
  private:
+  // One-time setup methods to keep the constructor readable.
+  void SetupWindow();
+  void SetupHScrollBar();
+  void SetupVScrollBar();
+
   /// Draw the controller's window contents.
   void Update() const;
 
@@ -27,8 +36,20 @@ class SynthesisController {
   /// Move scroll bars and adjust max values given window size and recipe size.
   void ConfigureScrollBars() const;
 
-  /// Material being synthesized.
-  const Breeze::Material& breezeMaterial;
+  /// Add this to a window space point to get a recipe space point.
+  [[nodiscard]] V2I RecipeSpaceTranslation() const;
+
+  /// Handle a content area click. Point is in window space.
+  void Click(V2I point);
+
+  /// Called to complete the synthesis.
+  void CompleteSynthesis() const;
+
+  /// Called to cancel the synthesis.
+  void CancelSynthesis() const;
+
+  /// Synthesis model.
+  Breeze::SynthesisState& state;
   /// Metadata for all materials.
   const std::vector<Material>& catalog;
   /// Icons for all materials.
@@ -38,7 +59,7 @@ class SynthesisController {
   std::vector<SynthesisCell> cells;
 
   static std::vector<SynthesisCell> CreateCells(
-      const Breeze::Recipe& recipe,
+      const std::vector<Breeze::RecipeNode>& nodes,
       const std::vector<Material>& catalog,
       const SpriteSheet& spriteSheet
   );

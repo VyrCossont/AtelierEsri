@@ -19,13 +19,21 @@ const R2I& SynthesisCell::Bounds() const { return bounds; }
 
 void SynthesisCell::Update() const {
   QD::Reset();
+  QD::Erase(bounds);
+
+  if (selected) {
+    constexpr int haloR = 40;
+    const Pattern pattern = QD::LightGray();
+    const Rect halo = R2I::Around(center, haloR);
+    FillOval(&halo, &pattern);
+  }
 
   // TODO: polygon can probably be cached too
   //  Heck, we might be able to make a `Picture` or `GWorld` of this whole deal.
 
   constexpr int nodeR = 32;
   constexpr int numPoints = 6;
-  const auto ngon = Ngon(center, nodeR, numPoints, M_PI + M_PI_2);
+  const auto ngon = Ngon(center, nodeR, numPoints, 0, true);
   {
     // Draw polygon, adjusted to center it in its own frame
     // (rectangles, ovals, etc. don't need this).
@@ -54,6 +62,10 @@ void SynthesisCell::Update() const {
     }
   }
 }
+
+bool SynthesisCell::Selected() const { return selected; }
+
+void SynthesisCell::Selected(const bool value) { selected = value; }
 
 R2I SynthesisCell::CalculateBounds(const V2I& center) {
   return R2I::Around(center, HalfSpace);

@@ -18,18 +18,22 @@ class SynthesisCell {
   );
 
   /// Inter-center vertical spacing.
-  static constexpr int YHalfSpace = 40;
+  static constexpr int YHalfSpace = 50;
   /// Inter-center horizontal spacing.
-  static constexpr int XHalfSpace = static_cast<int>(YHalfSpace * 2 / sqrt(3));
+  static constexpr int XHalfSpace = static_cast<int>(YHalfSpace * sqrt(3) / 2);
   static constexpr V2I HalfSpace = {XHalfSpace, YHalfSpace};
 
+  /// These bounds are in recipe space.
+  /// The transformation from recipe to window space is variable
+  /// and must be set up by the controller before drawing.
   [[nodiscard]] const R2I& Bounds() const;
 
   void Update() const;
 
- private:
-  // TODO: calc this in constructor, it doesn't change
+  [[nodiscard]] bool Selected() const;
+  void Selected(bool value);
 
+ private:
   [[nodiscard]] static V2I CalculateCenter(const Breeze::RecipeNode& node);
   [[nodiscard]] static R2I CalculateBounds(const V2I& center);
 
@@ -46,6 +50,7 @@ class SynthesisCell {
 
   V2I center;
   R2I bounds;
+  bool selected = false;
 };
 
 }  // namespace AtelierEsri

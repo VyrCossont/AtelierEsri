@@ -59,13 +59,47 @@ AtelierInteriorGameMode::AtelierInteriorGameMode(Game& game)
     atelierInterior.Draw(atelierInterior.Bounds(), window.PortBounds());
   };
 
+  window.onActivate = [&]([[maybe_unused]] const Window& window) {
+    synthesizeButton.Enabled(!synthesisInProgress);
+  };
+  window.onDeactivate = [&]([[maybe_unused]] const Window& window) {
+    synthesizeButton.Enabled(false);
+  };
+
   synthesizeButton.onClick = [&]([[maybe_unused]] const Button& button) {
     Synthesize();
   };
 }
 
-void AtelierInteriorGameMode::Synthesize() const {
-  game.Push(new SynthesisGameMode(game));
+void AtelierInteriorGameMode::CompleteSynthesis(Breeze::SynthesisResult result
+) {
+  EndSynthesis();
+
+  // TODO: display a summary modal
+}
+
+void AtelierInteriorGameMode::CancelSynthesis() { EndSynthesis(); }
+
+void AtelierInteriorGameMode::EndSynthesis() {
+  if (!synthesisInProgress) {
+    BAIL("Can't end a synthesis without starting one");
+  }
+
+  synthesisInProgress = false;
+  synthesizeButton.Enabled(true);
+}
+
+// Reachable from lambda above.
+// ReSharper disable once CppDFAUnreachableFunctionCall
+void AtelierInteriorGameMode::Synthesize() {
+  if (synthesisInProgress) {
+    BAIL("Can't start two syntheses at once");
+  }
+
+  synthesisInProgress = true;
+  synthesizeButton.Enabled(false);
+
+  game.Push(new SynthesisGameMode(game, *this));
 }
 
 Game::Game()
@@ -99,6 +133,7 @@ void Game::PopTo(const GameMode* mode) {
     }
   }
 }
+
 const SpriteSheet& Game::MainSpriteSheet() const { return spriteSheet; }
 
 const std::vector<Breeze::Material>& Game::BreezeCatalog() const {
@@ -108,5 +143,9 @@ const std::vector<Breeze::Material>& Game::BreezeCatalog() const {
 const std::vector<Material>& Game::Catalog() const { return catalog; }
 
 Breeze::PlayerInventory& Game::Inventory() { return inventory; }
+
+Breeze::Quality Game::PlayerMaxQuality() { return 120; }
+
+int Game::PlayerMaxPlacements() { return 5; }
 
 }  // namespace AtelierEsri

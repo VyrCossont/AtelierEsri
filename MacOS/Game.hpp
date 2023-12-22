@@ -43,12 +43,24 @@ class AtelierInteriorGameMode final : public GameMode {
  public:
   explicit AtelierInteriorGameMode(Game& game);
 
+  /// Called when a synthesis is completed successfully.
+  /// At this point, the items should have already been added to the inventory.
+  void CompleteSynthesis(Breeze::SynthesisResult result);
+
+  /// Called when a synthesis is cancelled.
+  void CancelSynthesis();
+
  private:
-  /// Start synthesis.
-  void Synthesize() const;
+  /// Disable controls that shouldn't be used during synthesis.
+  /// Start synthesis gqme mode.
+  void Synthesize();
+
+  /// Re-enable controls after synthesis.
+  void EndSynthesis();
 
   Window window;
   Button synthesizeButton;
+  bool synthesisInProgress = false;
   MaskedImage atelierInterior;
 };
 
@@ -82,6 +94,10 @@ class Game {
   /// All items in player's container.
   /// Intentionally mutable: some game modes will modify this.
   [[nodiscard]] Breeze::PlayerInventory& Inventory();
+
+  // TODO: extract these to a Breeze alchemy level/skills class
+  [[nodiscard]] Breeze::Quality PlayerMaxQuality();
+  [[nodiscard]] int PlayerMaxPlacements();
 
  private:
   std::vector<GameMode*> modeStack;

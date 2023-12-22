@@ -4,20 +4,29 @@
 
 namespace AtelierEsri {
 SynthesisController::SynthesisController(
-    const Breeze::Material& breezeMaterial,
+    Breeze::SynthesisState& state,
     const std::vector<Material>& catalog,
     const SpriteSheet& spriteSheet,
     const WindowRef behind
 )
-    : breezeMaterial(breezeMaterial),
+    : state(state),
       catalog(catalog),
       spriteSheet(spriteSheet),
-      cells(std::move(CreateCells(*breezeMaterial.recipe, catalog, spriteSheet))
-      ),
+      cells(std::move(
+          CreateCells(state.Output().recipe->nodes, catalog, spriteSheet)
+      )),
       recipeBounds(CalculateRecipeBounds(cells)),
       window(synthesisWINDResourceID, behind),
       hScrollBar(synthesisHScrollBarCNTLResourceID, window),
       vScrollBar(synthesisVScrollBarCNTLResourceID, window) {
+  SetupWindow();
+  SetupHScrollBar();
+  SetupVScrollBar();
+
+  ConfigureScrollBars();
+}
+
+void SynthesisController::SetupWindow() {
   window.GrowIcon(true);
 
   window.onUpdate = [&]([[maybe_unused]] const Window& window) { Update(); };
@@ -39,6 +48,15 @@ SynthesisController::SynthesisController(
     vScrollBar.Visible(false);
   };
 
+  window.onClose = [&]([[maybe_unused]] const Window& window) {
+    CancelSynthesis();
+  };
+
+  window.onContentMouseDown = [&]([[maybe_unused]] const Window& window,
+                                  const Point point) { Click(point); };
+}
+
+void SynthesisController::SetupHScrollBar() {
   // TODO: `InvalidateEverything` is *probably* overkill
   // TODO: should be using `ScrollRect` for scroll-triggered updates: see
   //  https://preterhuman.net/macstuff/insidemac/QuickDraw/QuickDraw-20.html#MARKER-9-78
@@ -64,7 +82,9 @@ SynthesisController::SynthesisController(
           [[maybe_unused]] const int16_t startValue) {
         InvalidateEverything();
       };
+}
 
+void SynthesisController::SetupVScrollBar() {
   vScrollBar.onScrollPageUp = [&](const ScrollBar& scrollBar) {
     scrollBar.ScrollBy(-SynthesisCell::YHalfSpace);
     InvalidateEverything();
@@ -86,8 +106,6 @@ SynthesisController::SynthesisController(
           [[maybe_unused]] const int16_t startValue) {
         InvalidateEverything();
       };
-
-  ConfigureScrollBars();
 }
 
 void SynthesisController::Update() const {
@@ -96,18 +114,14 @@ void SynthesisController::Update() const {
 
   QD::Erase(window.PortBounds());
 
-  // Shift the recipe (which may extend past its own origin in recipe space
-  // in the negative direction) into the visible area, and add the scroll
-  // offset.
-  const V2I scrollOffset{hScrollBar.Value(), vScrollBar.Value()};
-  const ChangeOrigin changeOrigin(recipeBounds.origin - scrollOffset);
-
   // Draw the cells.
+  const ChangeOrigin changeOrigin(RecipeSpaceTranslation());
   for (const SynthesisCell& cell : cells) {
     cell.Update();
   }
 }
 
+// TODO: if this ends up being useful, move it up to `Window`.
 void SynthesisController::InvalidateEverything() const {
   const Rect windowBounds = window.PortBounds();
 #if TARGET_API_MAC_CARBON
@@ -151,14 +165,48 @@ void SynthesisController::ConfigureScrollBars() const {
   }
 }
 
+V2I SynthesisController::RecipeSpaceTranslation() const {
+  const V2I scrollOffset{hScrollBar.Value(), vScrollBar.Value()};
+  return recipeBounds.origin - scrollOffset;
+}
+
+// This member function cannot in fact be const.
+// ReSharper disable once CppMemberFunctionMayBeConst
+void SynthesisController::Click(const V2I point) {
+  const V2I recipePoint = point + RecipeSpaceTranslation();
+  for (auto& cell : cells) {
+    if (cell.Bounds().Contains(recipePoint)) {
+      cell.Selected(!cell.Selected());
+      // TODO: deselect other cells
+      // TODO: InvalidateEverything() doesn't actually trigger a redraw,
+      //  but calling Update() directly wipes out the scroll bars.
+      //  We're doing something wrong with invalid regions and update events.
+      Update();
+      break;
+    }
+  }
+}
+
+void SynthesisController::CompleteSynthesis() const {
+  if (onCompleteSynthesis) {
+    onCompleteSynthesis(*this);
+  }
+}
+
+void SynthesisController::CancelSynthesis() const {
+  if (onCancelSynthesis) {
+    onCancelSynthesis(*this);
+  }
+}
+
 std::vector<SynthesisCell> SynthesisController::CreateCells(
-    const Breeze::Recipe& recipe,
+    const std::vector<Breeze::RecipeNode>& nodes,
     const std::vector<Material>& catalog,
     const SpriteSheet& spriteSheet
 ) {
   std::vector<SynthesisCell> cells;
-  cells.reserve(recipe.nodes.size());
-  for (const Breeze::RecipeNode& node : recipe.nodes) {
+  cells.reserve(nodes.size());
+  for (const Breeze::RecipeNode& node : nodes) {
     cells.emplace_back(node, catalog, spriteSheet);
   }
   return cells;
