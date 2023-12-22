@@ -68,6 +68,9 @@ class QD {
 
   static void Erase(const R2I& rect);
 
+  static int TextWidth(const std::string& text);
+  static void DrawText(const std::string& text);
+
  private:
 #if !TARGET_API_MAC_CARBON
   static std::optional<SysEnvRec> sysEnvRec;

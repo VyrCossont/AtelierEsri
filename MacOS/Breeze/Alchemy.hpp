@@ -277,7 +277,7 @@ class SynthesisState {
   SynthesisState(
       const Material &material,
       int maxPlacements,
-      int maxQuality,
+      Quality maxQuality,
       const PlayerInventory &inventory
   );
   // This type has internal pointers and can't be trivially copied.
@@ -324,6 +324,9 @@ class SynthesisState {
   /// Add an item to a node.
   void Place(const RecipeNode &node, const Item &item);
 
+  /// Is there anything to undo?
+  bool CanUndo() const;
+
   /// Undo the last item placement.
   /// Returns true if there was something to undo,
   /// or false if the undo stack is empty.
@@ -336,7 +339,7 @@ class SynthesisState {
   /// Determined by your alchemy level and skills.
   int maxPlacements;
   /// Determined by your alchemy level and skills.
-  int maxQuality;
+  Quality maxQuality;
 
   /// Your inventory.
   const PlayerInventory &inventory;

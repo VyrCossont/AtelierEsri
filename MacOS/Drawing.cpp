@@ -145,6 +145,14 @@ void QD::Erase(const R2I& rect) {
   EraseRect(&qdRect);
 }
 
+int QD::TextWidth(const std::string& text) {
+  return ::TextWidth(text.c_str(), 0, static_cast<int16_t>(text.size()));
+}
+
+void QD::DrawText(const std::string& text) {
+  ::DrawText(text.c_str(), 0, static_cast<int16_t>(text.size()));
+}
+
 Ngon::Ngon(
     const V2I center,
     const int r,

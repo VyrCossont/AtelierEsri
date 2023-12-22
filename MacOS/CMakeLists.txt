@@ -63,8 +63,10 @@ if (RETRO68)
             Material.cpp
             SpriteSheet.cpp
             Strings.cpp
+            Synthesis/ElementValueDisplay.cpp
             Synthesis/SynthesisCell.cpp
             Synthesis/SynthesisController.cpp
+            Synthesis/SynthesisDashboard.cpp
             Synthesis/SynthesisGameMode.cpp
             Window.cpp
     )

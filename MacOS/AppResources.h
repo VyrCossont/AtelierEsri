@@ -10,6 +10,9 @@
 #define synthesisWINDResourceID 128
 #define synthesisHScrollBarCNTLResourceID 130
 #define synthesisVScrollBarCNTLResourceID 128
+#define synthesisCompleteButtonCNTLResourceID 132
+#define synthesisCancelButtonCNTLResourceID 133
+#define synthesisUndoButtonCNTLResourceID 134
 
 #define inventoryWINDResourceID 129
 #define inventoryVScrollBarCNTLResourceID 129

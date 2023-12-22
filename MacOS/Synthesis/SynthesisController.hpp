@@ -1,8 +1,10 @@
 #pragma once
 
 #include "Breeze/Alchemy.hpp"
+#include "Design.hpp"
 #include "Game.hpp"
 #include "SynthesisCell.hpp"
+#include "SynthesisDashboard.hpp"
 
 namespace AtelierEsri {
 
@@ -26,6 +28,9 @@ class SynthesisController {
   void SetupWindow();
   void SetupHScrollBar();
   void SetupVScrollBar();
+  void SetupCompleteButton();
+  void SetupCancelButton();
+  void SetupUndoButton();
 
   /// Draw the controller's window contents.
   void Update() const;
@@ -34,13 +39,26 @@ class SynthesisController {
   void InvalidateEverything() const;
 
   /// Move scroll bars and adjust max values given window size and recipe size.
-  void ConfigureScrollBars() const;
+  void LayoutAndConfigureScrollBars() const;
+
+  /// Move buttons given window size.
+  void LayoutButtons() const;
+
+  /// Show/hide and enable/disable buttons given synthesis state.
+  void ConfigureButtons() const;
 
   /// Add this to a window space point to get a recipe space point.
   [[nodiscard]] V2I RecipeSpaceTranslation() const;
 
   /// Handle a content area click. Point is in window space.
   void Click(V2I point);
+
+  // TODO: trigger on Undo menu item and ⌘Z as well
+  /// Called when the undo button is clicked.
+  void Undo();
+
+  /// Called when an ingredient is added or removed.
+  void SynthesisStateChanged();
 
   /// Called to complete the synthesis.
   void CompleteSynthesis() const;
@@ -73,6 +91,19 @@ class SynthesisController {
   Window window;
   ScrollBar hScrollBar;
   ScrollBar vScrollBar;
+
+  SynthesisDashboard dashboard;
+
+  Button completeButton;
+  Button cancelButton;
+  Button undoButton;
+
+  /// Height of dashboard and button area above recipe grid.
+  static constexpr int DashboardHeight = 100;
+
+  /// Width of area reserved for buttons to right of dashboard.
+  static constexpr int DashboardButtonWidth =
+      DashboardHeight - 2 * Design::MinorSpacing;
 };
 
 }  // namespace AtelierEsri

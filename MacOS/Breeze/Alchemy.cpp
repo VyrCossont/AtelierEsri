@@ -141,6 +141,8 @@ void SynthesisState::Place(const RecipeNode &node, const Item &item) {
   placements.push_back({node, item});
 }
 
+bool SynthesisState::CanUndo() const { return !placements.empty(); }
+
 bool SynthesisState::Undo() {
   if (placements.empty()) {
     return false;

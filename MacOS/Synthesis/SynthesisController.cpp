@@ -18,12 +18,19 @@ SynthesisController::SynthesisController(
       recipeBounds(CalculateRecipeBounds(cells)),
       window(synthesisWINDResourceID, behind),
       hScrollBar(synthesisHScrollBarCNTLResourceID, window),
-      vScrollBar(synthesisVScrollBarCNTLResourceID, window) {
+      vScrollBar(synthesisVScrollBarCNTLResourceID, window),
+      dashboard(state, catalog, spriteSheet),
+      completeButton(synthesisCompleteButtonCNTLResourceID, window),
+      cancelButton(synthesisCancelButtonCNTLResourceID, window),
+      undoButton(synthesisUndoButtonCNTLResourceID, window) {
   SetupWindow();
   SetupHScrollBar();
   SetupVScrollBar();
+  SetupCompleteButton();
+  SetupCancelButton();
+  SetupUndoButton();
 
-  ConfigureScrollBars();
+  LayoutAndConfigureScrollBars();
 }
 
 void SynthesisController::SetupWindow() {
@@ -33,7 +40,8 @@ void SynthesisController::SetupWindow() {
 
   window.onResize = [&]([[maybe_unused]] const Window& window,
                         [[maybe_unused]] const V2I prevSize) {
-    ConfigureScrollBars();
+    LayoutAndConfigureScrollBars();
+    LayoutButtons();
 
     // TODO: can be more conservative, see Apple example using regions
     InvalidateEverything();
@@ -108,16 +116,36 @@ void SynthesisController::SetupVScrollBar() {
       };
 }
 
+void SynthesisController::SetupCompleteButton() {
+  completeButton.onClick = [&]([[maybe_unused]] const Button& button) {
+    CompleteSynthesis();
+  };
+}
+
+void SynthesisController::SetupCancelButton() {
+  cancelButton.onClick = [&]([[maybe_unused]] const Button& button) {
+    CancelSynthesis();
+  };
+}
+
+void SynthesisController::SetupUndoButton() {
+  undoButton.onClick = [&]([[maybe_unused]] const Button& button) { Undo(); };
+}
+
 void SynthesisController::Update() const {
   const GWorldActiveGuard activeGuard = window.MakeActivePort();
   QD::Reset();
 
   QD::Erase(window.PortBounds());
 
+  dashboard.Update();
+
   // Draw the cells.
-  const ChangeOrigin changeOrigin(RecipeSpaceTranslation());
-  for (const SynthesisCell& cell : cells) {
-    cell.Update();
+  {
+    const ChangeOrigin changeOrigin(RecipeSpaceTranslation());
+    for (const SynthesisCell& cell : cells) {
+      cell.Update();
+    }
   }
 }
 
@@ -131,10 +159,10 @@ void SynthesisController::InvalidateEverything() const {
 #endif
 }
 
-void SynthesisController::ConfigureScrollBars() const {
+void SynthesisController::LayoutAndConfigureScrollBars() const {
   const V2I windowSize = R2I{window.PortBounds()}.size;
   hScrollBar.PositionHScrollBar(windowSize);
-  vScrollBar.PositionVScrollBar(windowSize);
+  vScrollBar.PositionVScrollBar(windowSize, DashboardHeight);
 
   const V2I recipeSize = recipeBounds.size;
 
@@ -165,9 +193,48 @@ void SynthesisController::ConfigureScrollBars() const {
   }
 }
 
+void SynthesisController::LayoutButtons() const {
+  completeButton.Visible(false);
+  cancelButton.Visible(false);
+  undoButton.Visible(false);
+
+  const V2I windowSize = R2I{window.PortBounds()}.size;
+  constexpr V2I buttonSize = {Design::ButtonWidth, Design::ButtonHeight};
+  const R2I completeButtonRect = {
+      {windowSize.x - buttonSize.x - Design::MinorSpacing, Design::MinorSpacing
+      },
+      buttonSize
+  };
+  // Cancel and undo buttons share the same position.
+  const R2I cancelUndoButtonRect = {
+      {completeButtonRect.Left(),
+       completeButtonRect.Bottom() + Design::MinorSpacing},
+      buttonSize
+  };
+
+  completeButton.Bounds(completeButtonRect);
+  cancelButton.Bounds(cancelUndoButtonRect);
+  undoButton.Bounds(cancelUndoButtonRect);
+
+  ConfigureButtons();
+}
+
+void SynthesisController::ConfigureButtons() const {
+  completeButton.Enabled(state.CanFinish());
+  completeButton.Visible(true);
+
+  const bool canUndo = state.CanUndo();
+
+  cancelButton.Enabled(!canUndo);
+  cancelButton.Visible(!canUndo);
+
+  undoButton.Enabled(canUndo);
+  undoButton.Visible(canUndo);
+}
+
 V2I SynthesisController::RecipeSpaceTranslation() const {
   const V2I scrollOffset{hScrollBar.Value(), vScrollBar.Value()};
-  return recipeBounds.origin - scrollOffset;
+  return recipeBounds.origin - scrollOffset - V2I{0, DashboardHeight};
 }
 
 // This member function cannot in fact be const.
@@ -181,8 +248,8 @@ void SynthesisController::Click(const V2I point) {
   for (auto& cell : cells) {
     if (cell.Bounds().Contains(recipePoint)) {
       cellSelectionChanged = true;
-      const bool selected = !cell.Selected();
-      cell.Selected(selected);
+      const bool selected = !cell.selected;
+      cell.selected = selected;
       if (selected) {
         newSelectedCell = &cell;
       }
@@ -194,7 +261,7 @@ void SynthesisController::Click(const V2I point) {
   if (newSelectedCell) {
     for (auto& cell : cells) {
       if (&cell != newSelectedCell) {
-        cell.Selected(false);
+        cell.selected = false;
       }
     }
   }
@@ -210,6 +277,17 @@ void SynthesisController::Click(const V2I point) {
   }
 }
 
+void SynthesisController::Undo() {
+  // TODO: select previous cell to which something was added, if there is one
+  state.Undo();
+  SynthesisStateChanged();
+}
+
+void SynthesisController::SynthesisStateChanged() {
+  ConfigureButtons();
+  InvalidateEverything();
+}
+
 void SynthesisController::CompleteSynthesis() const {
   if (onCompleteSynthesis) {
     onCompleteSynthesis(*this);
@@ -217,6 +295,7 @@ void SynthesisController::CompleteSynthesis() const {
 }
 
 void SynthesisController::CancelSynthesis() const {
+  // TODO: dialog box to confirm the user wants to stop synthesizing
   if (onCancelSynthesis) {
     onCancelSynthesis(*this);
   }

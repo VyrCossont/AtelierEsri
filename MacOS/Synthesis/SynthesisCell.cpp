@@ -63,10 +63,6 @@ void SynthesisCell::Update() const {
   }
 }
 
-bool SynthesisCell::Selected() const { return selected; }
-
-void SynthesisCell::Selected(const bool value) { selected = value; }
-
 R2I SynthesisCell::CalculateBounds(const V2I& center) {
   return R2I::Around(center, HalfSpace);
 }

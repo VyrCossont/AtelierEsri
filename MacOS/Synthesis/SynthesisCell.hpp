@@ -30,8 +30,7 @@ class SynthesisCell {
 
   void Update() const;
 
-  [[nodiscard]] bool Selected() const;
-  void Selected(bool value);
+  bool selected = false;
 
  private:
   [[nodiscard]] static V2I CalculateCenter(const Breeze::RecipeNode& node);
@@ -50,7 +49,6 @@ class SynthesisCell {
 
   V2I center;
   R2I bounds;
-  bool selected = false;
 };
 
 }  // namespace AtelierEsri

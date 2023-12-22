@@ -74,6 +74,39 @@ resource 'CNTL' (synthesisVScrollBarCNTLResourceID, "synthesis window vertical s
     "" /* title */
 };
 
+resource 'CNTL' (synthesisCompleteButtonCNTLResourceID, "synthesis complete button", preload, purgeable) {
+    {13, 88, 33, 147},
+    0, /* initial setting */
+    visible,
+    1, /* max setting */
+    0, /* min setting */
+    pushButProc,
+    0x0, /* refCon */
+    "Complete" /* title */
+};
+
+resource 'CNTL' (synthesisCancelButtonCNTLResourceID, "synthesis cancel button", preload, purgeable) {
+    {46, 88, 66, 147},
+    0, /* initial setting */
+    visible,
+    1, /* max setting */
+    0, /* min setting */
+    pushButProc,
+    0x0, /* refCon */
+    "Cancel" /* title */
+};
+
+resource 'CNTL' (synthesisUndoButtonCNTLResourceID, "synthesis undo button", preload, purgeable) {
+    {46, 88, 66, 147},
+    0, /* initial setting */
+    invisible,
+    1, /* max setting */
+    0, /* min setting */
+    pushButProc,
+    0x0, /* refCon */
+    "Undo" /* title */
+};
+
 resource 'WIND' (inventoryWINDResourceID, "inventory window", preload, purgeable) {
     {43, 206, 203, 366},
     zoomDocProc,
