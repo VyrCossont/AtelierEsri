@@ -174,16 +174,39 @@ V2I SynthesisController::RecipeSpaceTranslation() const {
 // ReSharper disable once CppMemberFunctionMayBeConst
 void SynthesisController::Click(const V2I point) {
   const V2I recipePoint = point + RecipeSpaceTranslation();
+  bool cellSelectionChanged = false;
+  const SynthesisCell* newSelectedCell = nullptr;
+
+  // If a cell was clicked, toggle its selection.
   for (auto& cell : cells) {
     if (cell.Bounds().Contains(recipePoint)) {
-      cell.Selected(!cell.Selected());
-      // TODO: deselect other cells
-      // TODO: InvalidateEverything() doesn't actually trigger a redraw,
-      //  but calling Update() directly wipes out the scroll bars.
-      //  We're doing something wrong with invalid regions and update events.
-      Update();
+      cellSelectionChanged = true;
+      const bool selected = !cell.Selected();
+      cell.Selected(selected);
+      if (selected) {
+        newSelectedCell = &cell;
+      }
       break;
     }
+  }
+
+  // If a cell was selected, deselect the other cells.
+  if (newSelectedCell) {
+    for (auto& cell : cells) {
+      if (&cell != newSelectedCell) {
+        cell.Selected(false);
+      }
+    }
+  }
+  // TODO: display the effect level list
+  // TODO: open an inventory picker
+
+  // If the cell selection changed, trigger a redraw.
+  if (cellSelectionChanged) {
+    // TODO: InvalidateEverything() doesn't actually trigger a redraw,
+    //  but calling Update() directly wipes out the scroll bars.
+    //  We're doing something wrong with invalid regions and update events
+    Update();
   }
 }
 
