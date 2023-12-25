@@ -202,9 +202,15 @@ ChangeClip::ChangeClip(const ManagedRegion& region) : prevClipRegion(NewRgn()) {
   SetClip(region.get());
 }
 
+ChangeClip::ChangeClip(const Rect& rect) : prevClipRegion(NewRgn()) {
+  GetClip(prevClipRegion.get());
+  ClipRect(&rect);
+}
+
 // `SetClip()` is also an A-line trap.
 // NOLINTBEGIN(*-use-equals-default)
 ChangeClip::~ChangeClip() { SetClip(prevClipRegion.get()); }
+
 // NOLINTEND(*-use-equals-default)
 
 }  // namespace AtelierEsri

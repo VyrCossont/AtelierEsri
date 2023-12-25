@@ -36,7 +36,7 @@ class SynthesisController {
   void Draw() const;
 
   /// Invalidate the controller's window contents.
-  void InvalidateEverything() const;
+  void InvalidateRecipeArea() const;
 
   /// Move scroll bars and adjust max values given window size and recipe size.
   void LayoutAndConfigureScrollBars() const;
@@ -55,10 +55,10 @@ class SynthesisController {
 
   // TODO: trigger on Undo menu item and ⌘Z as well
   /// Called when the undo button is clicked.
-  void Undo();
+  void Undo() const;
 
   /// Called when an ingredient is added or removed.
-  void SynthesisStateChanged();
+  void SynthesisStateChanged() const;
 
   /// Called to complete the synthesis.
   void CompleteSynthesis() const;
@@ -87,6 +87,9 @@ class SynthesisController {
   const R2I recipeBounds;
 
   static R2I CalculateRecipeBounds(const std::vector<SynthesisCell>& cells);
+
+  /// Area in window space into which we draw the recipe grid.
+  R2I RecipeArea() const;
 
   Window window;
   ScrollBar hScrollBar;

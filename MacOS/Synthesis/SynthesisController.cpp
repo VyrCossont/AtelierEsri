@@ -44,7 +44,7 @@ void SynthesisController::SetupWindow() {
     LayoutButtons();
 
     // TODO: can be more conservative, see Apple example using regions
-    InvalidateEverything();
+    InvalidateRecipeArea();
   };
 
   window.onActivate = [&]([[maybe_unused]] const Window& window) {
@@ -71,48 +71,48 @@ void SynthesisController::SetupHScrollBar() {
 
   hScrollBar.onScrollPageUp = [&](const ScrollBar& scrollBar) {
     scrollBar.ScrollBy(static_cast<int16_t>(-SynthesisCell::XHalfSpace));
-    InvalidateEverything();
+    InvalidateRecipeArea();
   };
   hScrollBar.onScrollPageDown = [&](const ScrollBar& scrollBar) {
     scrollBar.ScrollBy(static_cast<int16_t>(SynthesisCell::XHalfSpace));
-    InvalidateEverything();
+    InvalidateRecipeArea();
   };
   hScrollBar.onScrollLineUp = [&](const ScrollBar& scrollBar) {
     scrollBar.ScrollBy(static_cast<int16_t>(-3 * SynthesisCell::XHalfSpace));
-    InvalidateEverything();
+    InvalidateRecipeArea();
   };
   hScrollBar.onScrollLineDown = [&](const ScrollBar& scrollBar) {
     scrollBar.ScrollBy(static_cast<int16_t>(3 * SynthesisCell::XHalfSpace));
-    InvalidateEverything();
+    InvalidateRecipeArea();
   };
   hScrollBar.onScrollBoxDragged =
       [&]([[maybe_unused]] const ScrollBar& scrollBar,
           [[maybe_unused]] const int16_t startValue) {
-        InvalidateEverything();
+        InvalidateRecipeArea();
       };
 }
 
 void SynthesisController::SetupVScrollBar() {
   vScrollBar.onScrollPageUp = [&](const ScrollBar& scrollBar) {
     scrollBar.ScrollBy(-SynthesisCell::YHalfSpace);
-    InvalidateEverything();
+    InvalidateRecipeArea();
   };
   vScrollBar.onScrollPageDown = [&](const ScrollBar& scrollBar) {
     scrollBar.ScrollBy(SynthesisCell::YHalfSpace);
-    InvalidateEverything();
+    InvalidateRecipeArea();
   };
   vScrollBar.onScrollLineUp = [&](const ScrollBar& scrollBar) {
     scrollBar.ScrollBy(-3 * SynthesisCell::YHalfSpace);
-    InvalidateEverything();
+    InvalidateRecipeArea();
   };
   vScrollBar.onScrollLineDown = [&](const ScrollBar& scrollBar) {
     scrollBar.ScrollBy(3 * SynthesisCell::YHalfSpace);
-    InvalidateEverything();
+    InvalidateRecipeArea();
   };
   vScrollBar.onScrollBoxDragged =
       [&]([[maybe_unused]] const ScrollBar& scrollBar,
           [[maybe_unused]] const int16_t startValue) {
-        InvalidateEverything();
+        InvalidateRecipeArea();
       };
 }
 
@@ -142,6 +142,7 @@ void SynthesisController::Draw() const {
 
   // Draw the cells.
   {
+    const ChangeClip changeClip(RecipeArea());
     const ChangeOrigin changeOrigin(RecipeSpaceTranslation());
     for (const SynthesisCell& cell : cells) {
       cell.Update();
@@ -149,14 +150,15 @@ void SynthesisController::Draw() const {
   }
 }
 
-// TODO: if this ends up being useful, move it up to `Window`.
-void SynthesisController::InvalidateEverything() const {
+// NOLINTBEGIN(*-convert-member-functions-to-static)
+void SynthesisController::InvalidateRecipeArea() const {
+  // NOLINTEND(*-convert-member-functions-to-static)
   GWorldActiveGuard activeGuard = window.MakeActivePort();
-  const Rect windowBounds = window.PortBounds();
+  const Rect recipeAreaRect = RecipeArea();
 #if TARGET_API_MAC_CARBON
-  InvalWindowRect(window.Unmanaged(), &windowBounds);
+  InvalWindowRect(window.Unmanaged(), &recipeAreaRect);
 #else
-  InvalRect(&windowBounds);
+  InvalRect(&recipeAreaRect);
 #endif
 }
 
@@ -166,32 +168,29 @@ void SynthesisController::LayoutAndConfigureScrollBars() const {
   vScrollBar.PositionVScrollBar(windowSize, DashboardHeight);
 
   // Reduce window size to account for scroll bars and dashboard.
-  const V2I recipeAvailableSize =
-      windowSize - V2I{0, DashboardHeight} -
-      V2I{ScrollBar::MinorDimension, ScrollBar::MinorDimension} +
-      V2I{ScrollBar::WindowOverlap, ScrollBar::WindowOverlap};
+  const R2I recipeArea = RecipeArea();
   const V2I recipeSize = recipeBounds.size;
 
-  if (recipeSize.x <= recipeAvailableSize.x) {
+  if (recipeSize.x <= recipeArea.Width()) {
     // Disable this scroll bar.
     hScrollBar.SetValue(0);
     hScrollBar.SetMax(0);
   } else {
     // Adjust the scroll bar, preserving the scroll position if possible.
-    const int max = recipeSize.x - recipeAvailableSize.x;
+    const int max = recipeSize.x - recipeArea.Width();
     const int prevValue = hScrollBar.Value();
     const int value = std::min(prevValue, max);
     hScrollBar.SetValue(static_cast<int16_t>(value));
     hScrollBar.SetMax(static_cast<int16_t>(max));
   }
 
-  if (recipeSize.y <= recipeAvailableSize.y) {
+  if (recipeSize.y <= recipeArea.Height()) {
     // Disable this scroll bar.
     vScrollBar.SetValue(0);
     vScrollBar.SetMax(0);
   } else {
     // Adjust the scroll bar, preserving the scroll position if possible.
-    const int max = recipeSize.y - recipeAvailableSize.y;
+    const int max = recipeSize.y - recipeArea.Height();
     const int prevValue = vScrollBar.Value();
     const int value = std::min(prevValue, max);
     vScrollBar.SetValue(static_cast<int16_t>(value));
@@ -276,19 +275,19 @@ void SynthesisController::Click(const V2I point) {
 
   // If the cell selection changed, trigger a redraw.
   if (cellSelectionChanged) {
-    InvalidateEverything();
+    InvalidateRecipeArea();
   }
 }
 
-void SynthesisController::Undo() {
+void SynthesisController::Undo() const {
   // TODO: select previous cell to which something was added, if there is one
   state.Undo();
   SynthesisStateChanged();
 }
 
-void SynthesisController::SynthesisStateChanged() {
+void SynthesisController::SynthesisStateChanged() const {
   ConfigureButtons();
-  InvalidateEverything();
+  InvalidateRecipeArea();
 }
 
 void SynthesisController::CompleteSynthesis() const {
@@ -325,6 +324,15 @@ R2I SynthesisController::CalculateRecipeBounds(
     bounds |= cell.Bounds();
   }
   return bounds;
+}
+
+R2I SynthesisController::RecipeArea() const {
+  return {
+      {0, DashboardHeight},
+      R2I{window.PortBounds()}.size - V2I{0, DashboardHeight} -
+          V2I{ScrollBar::MinorDimension, ScrollBar::MinorDimension} +
+          V2I{ScrollBar::WindowOverlap, ScrollBar::WindowOverlap},
+  };
 }
 
 }  // namespace AtelierEsri

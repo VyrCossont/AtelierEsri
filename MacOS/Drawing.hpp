@@ -117,11 +117,14 @@ class ChangeOrigin {
 class ChangeClip {
  public:
   explicit ChangeClip(const ManagedRegion& region);
+  explicit ChangeClip(const Rect& rect);
   ChangeClip(const ChangeClip& other) = delete;
   ChangeClip& operator=(const ChangeClip& other) = delete;
   ~ChangeClip();
 
  private:
+  static ManagedRegion RectRegion(const Rect& rect);
+
   ManagedRegion prevClipRegion;
 };
 
