@@ -164,28 +164,33 @@ void SynthesisController::LayoutAndConfigureScrollBars() const {
   hScrollBar.PositionHScrollBar(windowSize);
   vScrollBar.PositionVScrollBar(windowSize, DashboardHeight);
 
+  // Reduce window size to account for scroll bars and dashboard.
+  const V2I recipeAvailableSize =
+      windowSize - V2I{0, DashboardHeight} -
+      V2I{ScrollBar::MinorDimension, ScrollBar::MinorDimension} +
+      V2I{ScrollBar::WindowOverlap, ScrollBar::WindowOverlap};
   const V2I recipeSize = recipeBounds.size;
 
-  if (recipeSize.x <= windowSize.x) {
+  if (recipeSize.x <= recipeAvailableSize.x) {
     // Disable this scroll bar.
     hScrollBar.SetValue(0);
     hScrollBar.SetMax(0);
   } else {
     // Adjust the scroll bar, preserving the scroll position if possible.
-    const int max = recipeSize.x - windowSize.x;
+    const int max = recipeSize.x - recipeAvailableSize.x;
     const int prevValue = hScrollBar.Value();
     const int value = std::min(prevValue, max);
     hScrollBar.SetValue(static_cast<int16_t>(value));
     hScrollBar.SetMax(static_cast<int16_t>(max));
   }
 
-  if (recipeSize.y <= windowSize.y) {
+  if (recipeSize.y <= recipeAvailableSize.y) {
     // Disable this scroll bar.
     vScrollBar.SetValue(0);
     vScrollBar.SetMax(0);
   } else {
     // Adjust the scroll bar, preserving the scroll position if possible.
-    const int max = recipeSize.y - windowSize.y;
+    const int max = recipeSize.y - recipeAvailableSize.y;
     const int prevValue = vScrollBar.Value();
     const int value = std::min(prevValue, max);
     vScrollBar.SetValue(static_cast<int16_t>(value));

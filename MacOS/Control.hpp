@@ -120,14 +120,14 @@ class ScrollBar final : public Control {
   /// https://preterhuman.net/macstuff/insidemac/Toolbox/Toolbox-313.html
   void PositionVScrollBar(V2I windowSize, int preScrollAreaHeight = 0) const;
 
+  /// Height for horizontal scroll bar or width for vertical scroll bar.
+  static constexpr int16_t MinorDimension = 16;
+  static constexpr int16_t WindowOverlap = 1;
+
  private:
   static pascal void ActionProc(ControlRef ref, ControlPartCode part);
   // We don't bother freeing this because there's only ever one.
   static ControlActionUPP ActionProcUPP;
-
-  /// Height for horizontal scroll bar or width for vertical scroll bar.
-  static constexpr int16_t MinorDimension = 16;
-  static constexpr int16_t WindowOverlap = 1;
 };
 
 }  // namespace AtelierEsri
