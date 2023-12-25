@@ -265,6 +265,9 @@ void Window::HandleUpdate() const {
     // Also draws disabled scroll bar tracks in document windows:
     // https://preterhuman.net/macstuff/insidemac/Toolbox/Toolbox-233.html
     // We don't need this, so we clip to just the size box as described there.
+    // TODO: we might need it for the exact look of a backgrounded window.
+    //  Check the HIG.
+    // TODO: we might also need to hide the grow box in a backgrounded window
     ChangeClip clipGuard{growIconClipRegion};
     DrawGrowIcon(ref);
   }
