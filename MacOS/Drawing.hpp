@@ -113,4 +113,16 @@ class ChangeOrigin {
   ~ChangeOrigin();
 };
 
+/// RAII wrapper for changing the clipping region of the current port.
+class ChangeClip {
+ public:
+  explicit ChangeClip(const ManagedRegion& region);
+  ChangeClip(const ChangeClip& other) = delete;
+  ChangeClip& operator=(const ChangeClip& other) = delete;
+  ~ChangeClip();
+
+ private:
+  ManagedRegion prevClipRegion;
+};
+
 }  // namespace AtelierEsri

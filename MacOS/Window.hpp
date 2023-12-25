@@ -88,6 +88,8 @@ class Window {
 
   WindowRef ref;
   bool growIcon = false;
+  /// Has a value iff `growIcon` is true.
+  ManagedRegion growIconClipRegion = nullptr;
 };
 
 }  // namespace AtelierEsri

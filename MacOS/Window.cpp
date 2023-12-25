@@ -32,7 +32,20 @@ Window::~Window() {
 
 bool Window::GrowIcon() const { return growIcon; }
 
-void Window::GrowIcon(const bool value) { growIcon = value; }
+void Window::GrowIcon(const bool value) {
+  if (!growIcon && value) {
+    // Create clip region.
+    growIconClipRegion.reset(NewRgn());
+    Rect clip = PortBounds();
+    clip.left = static_cast<int16_t>(clip.right - 15);
+    clip.top = static_cast<int16_t>(clip.bottom - 15);
+    RectRgn(growIconClipRegion.get(), &clip);
+  } else if (growIcon && !value) {
+    // Destroy clip region.
+    growIconClipRegion = nullptr;
+  }
+  growIcon = value;
+}
 
 std::string Window::Title() const {
   Str255 title;
@@ -251,6 +264,8 @@ void Window::HandleUpdate() const {
   if (growIcon) {
     // Also draws disabled scroll bar tracks in document windows:
     // https://preterhuman.net/macstuff/insidemac/Toolbox/Toolbox-233.html
+    // We don't need this, so we clip to just the size box as described there.
+    ChangeClip clipGuard{growIconClipRegion};
     DrawGrowIcon(ref);
   }
 

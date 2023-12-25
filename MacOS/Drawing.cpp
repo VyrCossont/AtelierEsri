@@ -194,4 +194,17 @@ ChangeOrigin::ChangeOrigin(const V2I& translation) {
 
 ChangeOrigin::~ChangeOrigin() { SetOrigin(0, 0); }
 
+// `NewRgn()` is an A-line trap.
+// NOLINTBEGIN:(*-pro-type-member-init)
+ChangeClip::ChangeClip(const ManagedRegion& region) : prevClipRegion(NewRgn()) {
+  // NOLINTEND:(*-pro-type-member-init)
+  GetClip(prevClipRegion.get());
+  SetClip(region.get());
+}
+
+// `SetClip()` is also an A-line trap.
+// NOLINTBEGIN(*-use-equals-default)
+ChangeClip::~ChangeClip() { SetClip(prevClipRegion.get()); }
+// NOLINTEND(*-use-equals-default)
+
 }  // namespace AtelierEsri
