@@ -151,6 +151,7 @@ void SynthesisController::Update() const {
 
 // TODO: if this ends up being useful, move it up to `Window`.
 void SynthesisController::InvalidateEverything() const {
+  GWorldActiveGuard activeGuard = window.MakeActivePort();
   const Rect windowBounds = window.PortBounds();
 #if TARGET_API_MAC_CARBON
   InvalWindowRect(window.Unmanaged(), &windowBounds);
@@ -239,7 +240,7 @@ void SynthesisController::ConfigureButtons() const {
 
 V2I SynthesisController::RecipeSpaceTranslation() const {
   const V2I scrollOffset{hScrollBar.Value(), vScrollBar.Value()};
-  return recipeBounds.origin - scrollOffset - V2I{0, DashboardHeight};
+  return recipeBounds.origin + scrollOffset - V2I{0, DashboardHeight};
 }
 
 // This member function cannot in fact be const.
@@ -275,10 +276,7 @@ void SynthesisController::Click(const V2I point) {
 
   // If the cell selection changed, trigger a redraw.
   if (cellSelectionChanged) {
-    // TODO: InvalidateEverything() doesn't actually trigger a redraw,
-    //  but calling Update() directly wipes out the scroll bars.
-    //  We're doing something wrong with invalid regions and update events
-    Update();
+    InvalidateEverything();
   }
 }
 
