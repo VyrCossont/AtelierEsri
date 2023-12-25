@@ -19,7 +19,7 @@ class SynthesisDashboard {
   /// Update internal state from synthesis state.
   void Refresh();
 
-  void Update() const;
+  void Draw() const;
 
   void Layout();
   // TODO: uniform component interface with bounds, invalidation, layout, etc.

@@ -36,7 +36,7 @@ SynthesisController::SynthesisController(
 void SynthesisController::SetupWindow() {
   window.GrowIcon(true);
 
-  window.onUpdate = [&]([[maybe_unused]] const Window& window) { Update(); };
+  window.onUpdate = [&]([[maybe_unused]] const Window& window) { Draw(); };
 
   window.onResize = [&]([[maybe_unused]] const Window& window,
                         [[maybe_unused]] const V2I prevSize) {
@@ -132,13 +132,13 @@ void SynthesisController::SetupUndoButton() {
   undoButton.onClick = [&]([[maybe_unused]] const Button& button) { Undo(); };
 }
 
-void SynthesisController::Update() const {
+void SynthesisController::Draw() const {
   const GWorldActiveGuard activeGuard = window.MakeActivePort();
   QD::Reset();
 
   QD::Erase(window.PortBounds());
 
-  dashboard.Update();
+  dashboard.Draw();
 
   // Draw the cells.
   {

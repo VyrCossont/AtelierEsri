@@ -26,7 +26,7 @@ R2I ElementValueDisplay::Bounds() const {
   };
 }
 
-void ElementValueDisplay::Update() const {
+void ElementValueDisplay::Draw() const {
   QD::Reset();
 
   const R2I bounds = Bounds();

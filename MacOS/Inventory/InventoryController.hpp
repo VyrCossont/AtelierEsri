@@ -24,7 +24,7 @@ class InventoryController {
 
  private:
   /// Draw the controller's window contents.
-  void Update() const;
+  void Draw() const;
 
   /// Set layout counts and dimensions given window size.
   void CalculateLayout();

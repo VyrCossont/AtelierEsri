@@ -20,7 +20,7 @@ InventoryController::InventoryController(
       scrollBar(inventoryVScrollBarCNTLResourceID, window) {
   window.GrowIcon(true);
 
-  window.onUpdate = [&]([[maybe_unused]] const Window& window) { Update(); };
+  window.onUpdate = [&]([[maybe_unused]] const Window& window) { Draw(); };
 
   window.onResize = [&](const Window& window,
                         [[maybe_unused]] const V2I prevSize) {
@@ -60,7 +60,7 @@ InventoryController::InventoryController(
   ConfigureScrollBar();
 }
 
-void InventoryController::Update() const {
+void InventoryController::Draw() const {
   const GWorldActiveGuard activeGuard = window.MakeActivePort();
   QD::Reset();
 

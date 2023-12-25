@@ -24,14 +24,14 @@ void SynthesisDashboard::Refresh() {
   elementValueDisplay.elementValue = result.item.elementValue;
 }
 
-void SynthesisDashboard::Update() const {
+void SynthesisDashboard::Draw() const {
   // ReSharper disable once CppUseStructuredBinding
   const Material& material = catalog[state.Output().id];
 
   const R2I iconRect = IconRect();
   spriteSheet.Draw(material.spriteIndex, iconRect);
 
-  elementValueDisplay.Update();
+  elementValueDisplay.Draw();
 
   const V2I labelOrigin = iconRect.origin + V2I{Design::MajorSpacing, 0};
   QD::MoveTo(labelOrigin);

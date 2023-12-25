@@ -17,7 +17,7 @@ class ElementValueDisplay {
 
   [[nodiscard]] R2I Bounds() const;
 
-  void Update() const;
+  void Draw() const;
 
  private:
   const SpriteSheet& spriteSheet;

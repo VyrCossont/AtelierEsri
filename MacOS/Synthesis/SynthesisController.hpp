@@ -33,7 +33,7 @@ class SynthesisController {
   void SetupUndoButton();
 
   /// Draw the controller's window contents.
-  void Update() const;
+  void Draw() const;
 
   /// Invalidate the controller's window contents.
   void InvalidateEverything() const;
