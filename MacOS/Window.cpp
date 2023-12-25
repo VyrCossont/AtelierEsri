@@ -7,6 +7,7 @@
 #include "Drawing.hpp"
 #include "Exception.hpp"
 #include "GWorld.hpp"
+#include "Strings.hpp"
 
 namespace AtelierEsri {
 
@@ -32,6 +33,18 @@ Window::~Window() {
 bool Window::GrowIcon() const { return growIcon; }
 
 void Window::GrowIcon(const bool value) { growIcon = value; }
+
+std::string Window::Title() const {
+  Str255 title;
+  GetWTitle(ref, title);
+  return Strings::FromPascal(title);
+}
+
+void Window::Title(const std::string &value) const {
+  Str255 title;
+  Strings::ToPascal(value, title);
+  SetWTitle(ref, title);
+}
 
 WindowRef Window::GetNewWindow(
     const ResourceID resourceID, const WindowRef behind

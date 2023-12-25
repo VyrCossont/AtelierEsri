@@ -79,6 +79,9 @@ class Window {
   [[nodiscard]] bool GrowIcon() const;
   void GrowIcon(bool value);
 
+  [[nodiscard]] std::string Title() const;
+  void Title(const std::string &value) const;
+
  private:
   static WindowRef GetNewWindow(ResourceID resourceID, WindowRef behind);
   void SetRefConToThis();
