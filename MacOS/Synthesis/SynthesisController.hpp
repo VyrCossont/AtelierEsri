@@ -89,7 +89,7 @@ class SynthesisController {
   static R2I CalculateRecipeBounds(const std::vector<SynthesisCell>& cells);
 
   /// Area in window space into which we draw the recipe grid.
-  R2I RecipeArea() const;
+  [[nodiscard]] R2I RecipeArea() const;
 
   Window window;
   ScrollBar hScrollBar;

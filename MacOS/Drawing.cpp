@@ -202,7 +202,9 @@ ChangeClip::ChangeClip(const ManagedRegion& region) : prevClipRegion(NewRgn()) {
   SetClip(region.get());
 }
 
+// NOLINTBEGIN:(*-pro-type-member-init)
 ChangeClip::ChangeClip(const Rect& rect) : prevClipRegion(NewRgn()) {
+  // NOLINTEND:(*-pro-type-member-init)
   GetClip(prevClipRegion.get());
   ClipRect(&rect);
 }

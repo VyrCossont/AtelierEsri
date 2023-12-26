@@ -20,66 +20,66 @@ struct V2 {
 
   Base operator+(const Base& rhs) const { return {x + rhs.x, y + rhs.y}; }
 
-  Base operator+=(const Base& rhs) {
+  Base& operator+=(const Base& rhs) {
     x += rhs.x;
     y += rhs.y;
-    return *this;
+    return *static_cast<Base*>(this);
   }
 
   Base operator-(const Base& rhs) const { return {x - rhs.x, y - rhs.y}; }
 
-  Base operator-=(const Base& rhs) {
+  Base& operator-=(const Base& rhs) {
     x -= rhs.x;
     y -= rhs.y;
-    return *this;
+    return *static_cast<Base*>(this);
   }
 
   Base operator*(const Base& rhs) const { return {x * rhs.x, y * rhs.y}; }
 
   Base operator*(const Element rhs) const { return {x * rhs, y * rhs}; }
 
-  Base operator*=(const Base& rhs) {
+  Base& operator*=(const Base& rhs) {
     x *= rhs.x;
     y *= rhs.y;
-    return *this;
+    return *static_cast<Base*>(this);
   }
 
-  Base operator*=(const Element rhs) {
+  Base& operator*=(const Element rhs) {
     x *= rhs;
     y *= rhs;
-    return *this;
+    return *static_cast<Base*>(this);
   }
 
   Base operator/(const Base& rhs) const { return {x / rhs.x, y / rhs.y}; }
 
   Base operator/(const Element rhs) const { return {x / rhs, y / rhs}; }
 
-  Base operator/=(const Base& rhs) {
+  Base& operator/=(const Base& rhs) {
     x /= rhs.x;
     y /= rhs.y;
-    return *this;
+    return *static_cast<Base*>(this);
   }
 
-  Base operator/=(const Element rhs) {
+  Base& operator/=(const Element rhs) {
     x /= rhs;
     y /= rhs;
-    return *this;
+    return *static_cast<Base*>(this);
   }
 
   Base operator%(const Base& rhs) const { return {x % rhs.x, y % rhs.y}; }
 
   Base operator%(const Element rhs) const { return {x % rhs, y % rhs}; }
 
-  Base operator%=(const Base& rhs) {
+  Base& operator%=(const Base& rhs) {
     x %= rhs.x;
     y %= rhs.y;
-    return *this;
+    return *static_cast<Base*>(this);
   }
 
-  Base operator%=(const Element rhs) {
+  Base& operator%=(const Element rhs) {
     x %= rhs;
     y %= rhs;
-    return *this;
+    return *static_cast<Base*>(this);
   }
 
   friend Base operator*(const Element lhs, const Base& rhs) {

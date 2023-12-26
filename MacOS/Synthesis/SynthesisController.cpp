@@ -142,7 +142,12 @@ void SynthesisController::Draw() const {
 
   // Draw the cells.
   {
-    const ChangeClip changeClip(RecipeArea());
+    // Origin transform is applied to clipping region, so we apply the inverse,
+    // to get a clipping region that is in the right part of window space:
+    // https://preterhuman.net/macstuff/insidemac/QuickDraw/QuickDraw-40.html
+    R2I clipRect = RecipeArea();
+    clipRect.origin += RecipeSpaceTranslation();
+    const ChangeClip changeClip(clipRect);
     const ChangeOrigin changeOrigin(RecipeSpaceTranslation());
     for (const SynthesisCell& cell : cells) {
       cell.Update();
