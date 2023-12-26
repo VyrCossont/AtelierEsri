@@ -38,4 +38,4 @@ uint64_t Env::Microseconds() {
   return u64.as_int;
 }
 
-} // namespace AtelierEsri
+}  // namespace AtelierEsri

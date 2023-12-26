@@ -5,11 +5,13 @@
 namespace AtelierEsri {
 
 SynthesisCell::SynthesisCell(
+    const Breeze::SynthesisState& state,
     const Breeze::RecipeNode& node,
     const std::vector<Material>& catalog,
     const SpriteSheet& spriteSheet
 )
     : node(node),
+      state(state),
       catalog(catalog),
       spriteSheet(spriteSheet),
       center(CalculateCenter(node)),
@@ -17,7 +19,7 @@ SynthesisCell::SynthesisCell(
 
 const R2I& SynthesisCell::Bounds() const { return bounds; }
 
-void SynthesisCell::Update() const {
+void SynthesisCell::Draw() const {
   QD::Reset();
   QD::Erase(bounds);
 
@@ -60,6 +62,22 @@ void SynthesisCell::Update() const {
         spriteSheet.Draw(assetSpriteSheet00ElementFireSpriteIndex, pipRect);
       }
     }
+  }
+
+  const std::vector<std::reference_wrapper<const Breeze::Item>> items =
+      state.ItemsPlacedIn(node);
+  if (!items.empty()) {
+    // TODO: draw more than one item
+    const Breeze::Item& item = items[0];
+    // ReSharper disable once CppUseStructuredBinding
+    const Material& material = catalog[item.material.id];
+    constexpr int MaterialIconHalfWidth = 8;
+    // TODO: we're drawing sprite 0 (Allie) and crashing when an item is added
+    //  Obviously this is wrong, if funny.
+    //  Something's probably null and should't be.
+    spriteSheet.Draw(
+        material.spriteIndex, R2I::Around(center, MaterialIconHalfWidth)
+    );
   }
 }
 

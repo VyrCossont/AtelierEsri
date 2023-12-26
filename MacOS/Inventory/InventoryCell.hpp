@@ -13,7 +13,8 @@ class InventoryCell {
       const Breeze::Item& item,
       const Material& material,
       const SpriteSheet& spriteSheet,
-      V2I origin
+      V2I origin,
+      bool selected
   );
 
   static constexpr V2I Size = {32, 32};
@@ -28,7 +29,7 @@ class InventoryCell {
   const Material& material;
   const SpriteSheet& spriteSheet;
   V2I origin;
-  bool hilite = false;
+  bool selected;
 };
 
 }  // namespace AtelierEsri

@@ -12,9 +12,7 @@ SynthesisController::SynthesisController(
     : state(state),
       catalog(catalog),
       spriteSheet(spriteSheet),
-      cells(std::move(
-          CreateCells(state.Output().recipe->nodes, catalog, spriteSheet)
-      )),
+      cells(std::move(CreateCells(state, catalog, spriteSheet))),
       recipeBounds(CalculateRecipeBounds(cells)),
       window(synthesisWINDResourceID, behind),
       hScrollBar(synthesisHScrollBarCNTLResourceID, window),
@@ -150,7 +148,7 @@ void SynthesisController::Draw() const {
     const ChangeClip changeClip(clipRect);
     const ChangeOrigin changeOrigin(RecipeSpaceTranslation());
     for (const SynthesisCell& cell : cells) {
-      cell.Update();
+      cell.Draw();
     }
   }
 }
@@ -276,11 +274,29 @@ void SynthesisController::Click(const V2I point) {
     }
   }
   // TODO: display the effect level list
-  // TODO: open an inventory picker
 
-  // If the cell selection changed, trigger a redraw.
   if (cellSelectionChanged) {
+    // Trigger a redraw.
     InvalidateRecipeArea();
+
+    // Close the existing ingredient picker, if there is one.
+    if (ingredientPicker) {
+      ingredientPicker.reset();
+    }
+
+    if (newSelectedCell) {
+      const Breeze::RecipeNode node = newSelectedCell->node;
+      ingredientPicker.emplace(
+          state.AllowedItemsFor(node), catalog, spriteSheet
+      );
+      ingredientPicker->onItemAction =
+          [&]([[maybe_unused]] const InventoryController& inventoryController,
+              const Breeze::Item& item) {
+            state.Place(node, item);
+            // TODO: update ingredient picker item list without losing state
+            InvalidateRecipeArea();
+          };
+    }
   }
 }
 
@@ -309,14 +325,15 @@ void SynthesisController::CancelSynthesis() const {
 }
 
 std::vector<SynthesisCell> SynthesisController::CreateCells(
-    const std::vector<Breeze::RecipeNode>& nodes,
+    const Breeze::SynthesisState& state,
     const std::vector<Material>& catalog,
     const SpriteSheet& spriteSheet
 ) {
+  const std::vector<Breeze::RecipeNode>& nodes = state.Output().recipe->nodes;
   std::vector<SynthesisCell> cells;
   cells.reserve(nodes.size());
   for (const Breeze::RecipeNode& node : nodes) {
-    cells.emplace_back(node, catalog, spriteSheet);
+    cells.emplace_back(state, node, catalog, spriteSheet);
   }
   return cells;
 }

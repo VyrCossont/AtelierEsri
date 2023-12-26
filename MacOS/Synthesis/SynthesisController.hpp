@@ -3,6 +3,7 @@
 #include "Breeze/Alchemy.hpp"
 #include "Design.hpp"
 #include "Game.hpp"
+#include "Inventory/InventoryController.hpp"
 #include "SynthesisCell.hpp"
 #include "SynthesisDashboard.hpp"
 
@@ -77,7 +78,7 @@ class SynthesisController {
   std::vector<SynthesisCell> cells;
 
   static std::vector<SynthesisCell> CreateCells(
-      const std::vector<Breeze::RecipeNode>& nodes,
+      const Breeze::SynthesisState& state,
       const std::vector<Material>& catalog,
       const SpriteSheet& spriteSheet
   );
@@ -100,6 +101,8 @@ class SynthesisController {
   Button completeButton;
   Button cancelButton;
   Button undoButton;
+
+  std::optional<InventoryController> ingredientPicker;
 
   /// Height of dashboard and button area above recipe grid.
   static constexpr int DashboardHeight = 100;

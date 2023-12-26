@@ -58,7 +58,6 @@ if (RETRO68)
             GWorld.cpp
             Inventory/InventoryCell.cpp
             Inventory/InventoryController.cpp
-            Inventory/InventoryPickerGameMode.cpp
             MaskedImage.cpp
             Material.cpp
             SpriteSheet.cpp

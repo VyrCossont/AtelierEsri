@@ -32,6 +32,7 @@ void SynthesisGameMode::CompleteSynthesis() const {
   EndSynthesis();
 
   const Breeze::SynthesisResult result = state.Result();
+  // TODO: display UI to pick traits up to trait cap
   result.ApplyToInventory(game.Inventory());
 
   atelierInteriorGameMode.CompleteSynthesis(result);

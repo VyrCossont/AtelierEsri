@@ -5,10 +5,10 @@
 namespace AtelierEsri {
 
 class Env {
-public:
+ public:
   /// Set up Toolbox stuff.
   static void Initialize();
   static uint64_t Microseconds();
 };
 
-} // namespace AtelierEsri
+}  // namespace AtelierEsri

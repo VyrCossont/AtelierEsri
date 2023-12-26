@@ -325,7 +325,7 @@ class SynthesisState {
   void Place(const RecipeNode &node, const Item &item);
 
   /// Is there anything to undo?
-  bool CanUndo() const;
+  [[nodiscard]] bool CanUndo() const;
 
   /// Undo the last item placement.
   /// Returns true if there was something to undo,
