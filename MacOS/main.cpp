@@ -13,11 +13,17 @@ namespace AtelierEsri {
 
 /// Error code for an app-specific abnormal exit.
 /// Should be one not used in `MacErrors.h`.
-static OSErr appError = static_cast<OSErr>(666);
+static OSErr appError = 666;
 
 /// Display a fatal error.
-void FatalError(const std::string &explanation, const std::string &location) {
-  Debug::Printfln("Fatal error: %s\n%s", explanation.c_str(), location.c_str());
+void FatalError(
+    const char *fileName,
+    const uint32_t line,
+    const char *func,
+    const std::string &explanation,
+    const std::string &location
+) {
+  Debug::Printfln(fileName, line, func, "%s", explanation.c_str());
 
   Str255 pascalExplanation, pascalLocation;
   Strings::ToPascal(explanation, pascalExplanation);
@@ -46,18 +52,20 @@ int main() {
   try {
     Run();
   } catch (const Exception &e) {
-    FatalError(e.Explanation(), e.Location());
+    FatalError(e.fileName, e.line, e.func, e.Explanation(), e.Location());
     osErr = e.osErr;
+    // This code should be reachable. `e.osErr` can be initialized to any OSErr.
+    // ReSharper disable once CppDFAUnreachableCode
     osErr = osErr ? osErr : appError;
   } catch (const std::exception &e) {
     const std::string explanation(e.what());
     const std::string location("<unknown location>");
-    FatalError(explanation, location);
+    FatalError("???", 0, "???", explanation, location);
     osErr = appError;
   } catch (...) {
     const std::string explanation("<unknown exception>");
     const std::string location("<unknown location>");
-    FatalError(explanation, location);
+    FatalError("???", 0, "???", explanation, location);
     osErr = appError;
   }
 

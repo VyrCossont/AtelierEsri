@@ -7,15 +7,15 @@ namespace AtelierEsri {
 Exception::Exception(
     const char *message,
     const OSErr osErr,
-    const char *file,
+    const char *fileName,
     const uint32_t line,
-    const char *function
+    const char *func
 )
-    : osErr(osErr),
-      message(message),
-      file(file),
+    : message(message),
+      osErr(osErr),
+      fileName(fileName),
       line(line),
-      function(function) {}
+      func(func) {}
 
 std::string Exception::Explanation() const {
   if (osErr) {
@@ -24,27 +24,8 @@ std::string Exception::Explanation() const {
   return {message};
 }
 
-#ifdef _WIN32
-static constexpr char separator = '\\';
-#else
-static constexpr char separator = '/';
-#endif
-
 std::string Exception::Location() const {
-  char const *filename = file;
-  if (file) {
-    char const *c = file;
-    while (*c) {
-      // Take the last part of the path, assuming host system separators.
-      // TODO: (Vyr) Can we extract the filename at compile time?
-      if (*c == separator && *(c + 1)) {
-        filename = c + 1;
-      }
-      c++;
-    }
-  }
-
-  return Strings::FormatShort("%s:%lu (%s)", filename, line, function);
+  return Strings::FormatShort("%s:%lu (%s)", fileName, line, func);
 }
 
 }  // namespace AtelierEsri

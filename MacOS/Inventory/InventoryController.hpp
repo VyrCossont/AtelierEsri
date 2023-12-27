@@ -16,7 +16,7 @@ namespace AtelierEsri {
 class InventoryController {
  public:
   InventoryController(
-      const std::vector<std::reference_wrapper<const Breeze::Item>>& inventory,
+      std::vector<std::reference_wrapper<const Breeze::Item>> inventory,
       const std::vector<Material>& catalog,
       const SpriteSheet& spriteSheet,
       WindowRef behind = Window::InFrontOfAllOtherWindows
@@ -26,6 +26,8 @@ class InventoryController {
 
   std::function<void(const InventoryController&, const Breeze::Item&)>
       onItemAction;
+
+  std::function<void(const InventoryController&)> onClose;
 
  private:
   /// Draw the controller's window contents.
@@ -50,7 +52,7 @@ class InventoryController {
   /// Index of first currently displayed item.
   [[nodiscard]] size_t FirstItemIndex() const;
 
-  const std::vector<std::reference_wrapper<const Breeze::Item>>& inventory;
+  std::vector<std::reference_wrapper<const Breeze::Item>> inventory;
   const std::vector<Material>& catalog;
   const SpriteSheet& spriteSheet;
 
@@ -67,9 +69,6 @@ class InventoryController {
 
   // Layout counts and dimensions.
 
-  /// The scroll bar is actually 16 pixels wide, but 1 pixel is outside the
-  /// window port proper, overlapping with the window decorations.
-  static constexpr int scrollBarInset = 15;
   /// Area within window occupied by inventory cells and background.
   R2I inventoryRect = {{0, 0}, {0, 0}};
   /// Items per row given window width.

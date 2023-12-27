@@ -2,7 +2,10 @@
 
 #include <Events.h>
 
+#include <sstream>
+
 #include "AppResources.h"
+#include "Debug.hpp"
 #include "Drawing.hpp"
 #include "Exception.hpp"
 #include "InventoryCell.hpp"
@@ -11,12 +14,12 @@
 namespace AtelierEsri {
 
 InventoryController::InventoryController(
-    const std::vector<std::reference_wrapper<const Breeze::Item>>& inventory,
+    std::vector<std::reference_wrapper<const Breeze::Item>> inventory,
     const std::vector<Material>& catalog,
     const SpriteSheet& spriteSheet,
     const WindowRef behind
 )
-    : inventory(inventory),
+    : inventory(std::move(inventory)),
       catalog(catalog),
       spriteSheet(spriteSheet),
       window(inventoryWINDResourceID, behind),
@@ -39,6 +42,12 @@ InventoryController::InventoryController(
   };
   window.onDeactivate = [&]([[maybe_unused]] const Window& window) {
     scrollBar.Visible(false);
+  };
+
+  window.onClose = [&]([[maybe_unused]] const Window& window) {
+    if (onClose) {
+      onClose(*this);
+    }
   };
 
   window.onContentMouseDown = [&]([[maybe_unused]] const Window& window,
@@ -66,6 +75,8 @@ void InventoryController::Draw() const {
   QD::Reset();
 
   QD::Erase(inventoryRect);
+
+  DEBUG_INSPECT(inventory.size());
 
   // Draw inventory cells into the content GWorld.
   const size_t firstItemIndex = FirstItemIndex();

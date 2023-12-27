@@ -337,7 +337,24 @@ class SynthesisState {
   /// or false if the undo stack is empty.
   bool Undo();
 
+  // TODO: invent `Breeze::Logger` or find a third-party one
+  /// Route to an external log.
+  std::function<void(
+      const char *fileName,
+      uint32_t line,
+      const char *func,
+      const std::string &message
+  )>
+      onLog;
+
  private:
+  void Log(
+      const char *fileName,
+      uint32_t line,
+      const char *func,
+      const std::string &message
+  ) const;
+
   /// Material being synthesized. Must have a recipe.
   const Material &material;
 

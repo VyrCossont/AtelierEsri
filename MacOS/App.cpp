@@ -149,9 +149,7 @@ enum class FileMenuItems : int16_t {
 bool App::HandleMenuSelection(const int32_t menuSelection) {
   const int16_t menuID = HiWord(menuSelection);
   const int16_t menuItem = LoWord(menuSelection);
-  Debug::Printfln(
-      "Menu selection: menuID = %d, menuItem = %d", menuID, menuItem
-  );
+  DEBUG_LOG("Menu selection: menuID = %d, menuItem = %d", menuID, menuItem);
   switch (menuID) {
     case appleMenuMENUResourceID:
       switch (static_cast<AppleMenuItems>(menuItem)) {

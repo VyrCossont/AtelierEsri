@@ -3,6 +3,10 @@
 #include <sstream>
 #include <stdexcept>
 
+// Required by `SS_LOG` macro
+// ReSharper disable once CppUnusedIncludeDirective
+#include "Strings.hpp"
+
 namespace Breeze {
 
 void SynthesisResult::ApplyToInventory(PlayerInventory &inventory) const {
@@ -47,6 +51,16 @@ PlayerInventory DemoInventory(const std::vector<Material> &catalog) {
 
   return inventory;
 }
+
+#define SS_LOG(message) \
+  Log(Strings::FileName(__FILE__), __LINE__, __func__, (message))
+
+#define SS_INSPECT(expr)                        \
+  do {                                          \
+    ::std::stringstream ss;                     \
+    ss << ::std::string(#expr " = ") << (expr); \
+    DEBUG_LOG("%s", ss.str().c_str());          \
+  } while (false)
 
 SynthesisState::SynthesisState(
     const Material &material,
@@ -134,6 +148,17 @@ bool SynthesisState::Undo() {
   }
   placements.pop_back();
   return true;
+}
+
+void SynthesisState::Log(
+    const char *fileName,
+    const uint32_t line,
+    const char *func,
+    const std::string &message
+) const {
+  if (onLog) {
+    onLog(fileName, line, func, message);
+  }
 }
 
 bool SynthesisState::CanFinish() const {
@@ -285,6 +310,9 @@ std::vector<std::reference_wrapper<const Item>> SynthesisState::ItemsPlacedIn(
   }
   return items;
 }
+
+#undef SS_LOG
+#undef SS_INSPECT
 
 std::vector<Material> Material::Catalog() {
   std::vector<Material> catalog{};

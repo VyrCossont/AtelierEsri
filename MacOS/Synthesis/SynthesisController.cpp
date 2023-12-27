@@ -63,7 +63,7 @@ void SynthesisController::SetupWindow() {
 }
 
 void SynthesisController::SetupHScrollBar() {
-  // TODO: `InvalidateEverything` is *probably* overkill
+  // TODO: `InvalidateRecipeArea` is *probably* overkill
   // TODO: should be using `ScrollRect` for scroll-triggered updates: see
   //  https://preterhuman.net/macstuff/insidemac/QuickDraw/QuickDraw-20.html#MARKER-9-78
 
@@ -285,7 +285,7 @@ void SynthesisController::Click(const V2I point) {
     }
 
     if (newSelectedCell) {
-      const Breeze::RecipeNode node = newSelectedCell->node;
+      const Breeze::RecipeNode& node = newSelectedCell->node;
       ingredientPicker.emplace(
           state.AllowedItemsFor(node), catalog, spriteSheet
       );
@@ -295,6 +295,11 @@ void SynthesisController::Click(const V2I point) {
             state.Place(node, item);
             // TODO: update ingredient picker item list without losing state
             InvalidateRecipeArea();
+            ConfigureButtons();
+          };
+      ingredientPicker->onClose =
+          [&]([[maybe_unused]] const InventoryController& inventoryController) {
+            ingredientPicker.reset();
           };
     }
   }

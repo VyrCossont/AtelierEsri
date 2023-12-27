@@ -1,22 +1,36 @@
 #include "Debug.hpp"
 
-#include <cstdarg>
-#include <cstdio>
-#include <cstring>
-
 #include <Devices.h>
 #include <Files.h>
 #include <Serial.h>
+
+#include <cstdarg>
+#include <cstdio>
+#include <cstring>
 
 namespace AtelierEsri {
 
 // We don't use result types in this file because debug logging is best effort
 // and we'll almost always discard the result.
 
-OSErr Debug::Printfln(const char *fmt, ...) {
-  /// Original format string with a Mac newline on the end.
+OSErr Debug::Printfln(
+    const char *fileName,
+    const uint32_t line,
+    const char *func,
+    const char *fmt,
+    ...
+) {
+  /// Original format string with location prefix and a Mac newline on the end.
   char fmtBuffer[256];
-  snprintf(fmtBuffer, sizeof fmtBuffer, "%s\r", fmt);
+  snprintf(
+      fmtBuffer,
+      sizeof fmtBuffer,
+      "%s:%lu (%s): %s\r",
+      fileName,
+      line,
+      func,
+      fmt
+  );
 
   char buffer[256];
   va_list args;
@@ -42,7 +56,7 @@ OSErr Debug::Printfln(const char *fmt, ...) {
   return noErr;
 }
 
-OSErr Debug::FilePrint(size_t num_bytes, const char *buffer) {
+OSErr Debug::FilePrint(const size_t num_bytes, const char *buffer) {
   // ReSharper disable once CppJoinDeclarationAndAssignment
   OSErr osErr;
   long count;
@@ -147,4 +161,4 @@ close:
   return osErr;
 }
 
-} // namespace AtelierEsri
+}  // namespace AtelierEsri

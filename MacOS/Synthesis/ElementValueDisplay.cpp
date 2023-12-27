@@ -2,7 +2,6 @@
 
 #include <Quickdraw.h>
 
-#include <iostream>
 #include <sstream>
 
 #include "Assets.h"

@@ -1,13 +1,13 @@
 #pragma once
 
-#include <string>
-
 #include <MacTypes.h>
+
+#include <string>
 
 namespace AtelierEsri {
 
 class Strings {
-public:
+ public:
   /// Use `printf` formatting to build a Pascal-length string.
   /// If there's a format error, return an error string.
   static std::string FormatShort(const char *fmt, ...);
@@ -24,4 +24,4 @@ public:
   static size_t ReadPascal(const uint8_t *data, std::string &out);
 };
 
-} // namespace AtelierEsri
+}  // namespace AtelierEsri

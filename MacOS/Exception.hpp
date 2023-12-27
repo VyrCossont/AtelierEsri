@@ -5,6 +5,10 @@
 #include <cstdint>
 #include <string>
 
+// Used by `EXCEPTION` and `OS_EXCEPTION`.
+// ReSharper disable once CppUnusedIncludeDirective
+#include "Breeze/Strings.hpp"
+
 namespace AtelierEsri {
 
 class Exception : std::exception {
@@ -14,21 +18,19 @@ class Exception : std::exception {
   Exception(
       const char *message,
       OSErr osErr,
-      const char *file,
+      const char *fileName,
       uint32_t line,
-      const char *function
+      const char *func
   );
 
   [[nodiscard]] std::string Explanation() const;
   [[nodiscard]] std::string Location() const;
 
-  const OSErr osErr;
-
- private:
   const char *message;
-  const char *file;
-  uint32_t line;
-  const char *function;
+  const OSErr osErr;
+  const char *fileName;
+  const uint32_t line;
+  const char *func;
 };
 
 }  // namespace AtelierEsri
@@ -36,12 +38,24 @@ class Exception : std::exception {
 #pragma region Constructor macros
 
 /// Construct an exception with a message and source location.
-#define EXCEPTION(message) \
-  ::AtelierEsri::Exception((message), noErr, __FILE__, __LINE__, __func__)
+#define EXCEPTION(message)                   \
+  ::AtelierEsri::Exception(                  \
+      (message),                             \
+      noErr,                                 \
+      ::Breeze::Strings::FileName(__FILE__), \
+      __LINE__,                              \
+      __func__                               \
+  )
 
 /// Construct an exception with a message, OS error code, and source location.
-#define OS_EXCEPTION(message, osErr) \
-  ::AtelierEsri::Exception((message), (osErr), __FILE__, __LINE__, __func__)
+#define OS_EXCEPTION(message, osErr)         \
+  ::AtelierEsri::Exception(                  \
+      (message),                             \
+      (osErr),                               \
+      ::Breeze::Strings::FileName(__FILE__), \
+      __LINE__,                              \
+      __func__                               \
+  )
 
 #pragma endregion
 

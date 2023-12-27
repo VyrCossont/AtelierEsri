@@ -2,6 +2,8 @@
 
 #include <algorithm>
 
+#include "Debug.hpp"
+
 namespace AtelierEsri {
 
 SynthesisGameMode::SynthesisGameMode(
@@ -16,6 +18,13 @@ SynthesisGameMode::SynthesisGameMode(
           game.Inventory()
       ),
       synthesisController(state, game.Catalog(), game.MainSpriteSheet()) {
+  state.onLog = [&](const char* fileName,
+                    const uint32_t line,
+                    const char* func,
+                    const std::string& message) {
+    Debug::Printfln(fileName, line, func, "%s", message.c_str());
+  };
+
   synthesisController.onCompleteSynthesis =
       [&]([[maybe_unused]] const SynthesisController& synthesisController) {
         CompleteSynthesis();
