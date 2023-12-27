@@ -1,5 +1,7 @@
 #pragma once
 
+#include <iostream>
+
 namespace Breeze {
 
 /// 2D vector mixin.

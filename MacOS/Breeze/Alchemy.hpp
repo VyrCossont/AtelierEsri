@@ -171,6 +171,11 @@ struct RecipeNode {
   std::optional<std::reference_wrapper<const RecipeNode>> parent;
   std::optional<RecipeNodeElementalRequirement> elementalUnlockRequirement;
   std::optional<Quality> qualityUnlockRequirement;
+
+  friend std::ostream &operator<<(std::ostream &os, const RecipeNode &rhs) {
+    os << std::string("node @ ") << rhs.gridPos << std::string("");
+    return os;
+  }
 };
 
 /// Recipe for a material.

@@ -1,41 +1,46 @@
 #pragma once
 
+#include <MacTypes.h>
+
 #include <cstdint>
 #include <string>
-
-#include <MacTypes.h>
 
 namespace AtelierEsri {
 
 class Exception : std::exception {
-public:
+ public:
   /// `osErr` may be 0/`noErr` for non-OS errors.
   /// FUTURE: If we need other error domains, we can make this a variant.
-  Exception(const char *message, OSErr osErr, const char *file, uint32_t line,
-            const char *function);
+  Exception(
+      const char *message,
+      OSErr osErr,
+      const char *file,
+      uint32_t line,
+      const char *function
+  );
 
   [[nodiscard]] std::string Explanation() const;
   [[nodiscard]] std::string Location() const;
 
   const OSErr osErr;
 
-private:
+ private:
   const char *message;
   const char *file;
-  const char *function;
   uint32_t line;
+  const char *function;
 };
 
-} // namespace AtelierEsri
+}  // namespace AtelierEsri
 
 #pragma region Constructor macros
 
 /// Construct an exception with a message and source location.
-#define EXCEPTION(message)                                                     \
+#define EXCEPTION(message) \
   ::AtelierEsri::Exception((message), noErr, __FILE__, __LINE__, __func__)
 
 /// Construct an exception with a message, OS error code, and source location.
-#define OS_EXCEPTION(message, osErr)                                           \
+#define OS_EXCEPTION(message, osErr) \
   ::AtelierEsri::Exception((message), (osErr), __FILE__, __LINE__, __func__)
 
 #pragma endregion
@@ -49,11 +54,11 @@ private:
 /// Flow control statement:
 /// If a pointer type is null,
 /// return an error result with a message and source location.
-#define REQUIRE_NOT_NULL(valueName)                                            \
-  do {                                                                         \
-    if (valueName == nullptr) {                                                \
-      BAIL("Requirement failed: " #valueName " is null");                      \
-    }                                                                          \
+#define REQUIRE_NOT_NULL(valueName)                       \
+  do {                                                    \
+    if (valueName == nullptr) {                           \
+      BAIL("Requirement failed: " #valueName " is null"); \
+    }                                                     \
   } while (false)
 
 /// Flow control statement:
@@ -65,12 +70,12 @@ private:
 /// If there is no error, pass the result through.
 /// Otherwise, return an error result with a message, OS error code, and source
 /// location.
-#define OS_CHECKED(expr, message)                                              \
-  do {                                                                         \
-    OSErr osErr = (expr);                                                      \
-    if (osErr) {                                                               \
-      OS_BAIL((message), osErr);                                               \
-    }                                                                          \
+#define OS_CHECKED(expr, message) \
+  do {                            \
+    OSErr osErr = (expr);         \
+    if (osErr) {                  \
+      OS_BAIL((message), osErr);  \
+    }                             \
   } while (false)
 
 /// Flow control statement:
@@ -78,13 +83,13 @@ private:
 /// If there is no error, pass the result through.
 /// Otherwise, return an error result with a message, OS error code, and source
 /// location.
-#define OOB_CHECKED(expr, message, errorExpr)                                  \
-  (expr);                                                                      \
-  do {                                                                         \
-    OSErr osErr = (errorExpr);                                                 \
-    if (osErr) {                                                               \
-      OS_BAIL((message), osErr);                                               \
-    }                                                                          \
+#define OOB_CHECKED(expr, message, errorExpr) \
+  (expr);                                     \
+  do {                                        \
+    OSErr osErr = (errorExpr);                \
+    if (osErr) {                              \
+      OS_BAIL((message), osErr);              \
+    }                                         \
   } while (false)
 
 // TODO: (Vyr) OOB_CHECKED operations should know the error return value of the

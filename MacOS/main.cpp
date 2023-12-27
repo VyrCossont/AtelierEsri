@@ -50,12 +50,14 @@ int main() {
     osErr = e.osErr;
     osErr = osErr ? osErr : appError;
   } catch (const std::exception &e) {
-    std::string explanation(e.what());
-    std::string location("<unknown location>");
+    const std::string explanation(e.what());
+    const std::string location("<unknown location>");
+    FatalError(explanation, location);
     osErr = appError;
   } catch (...) {
-    std::string explanation("<unknown exception>");
-    std::string location("<unknown location>");
+    const std::string explanation("<unknown exception>");
+    const std::string location("<unknown location>");
+    FatalError(explanation, location);
     osErr = appError;
   }
 

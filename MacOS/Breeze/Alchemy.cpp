@@ -1,6 +1,5 @@
 #include "Alchemy.hpp"
 
-#include <iostream>
 #include <sstream>
 #include <stdexcept>
 
@@ -118,23 +117,9 @@ void SynthesisState::Place(const RecipeNode &node, const Item &item) {
   }
   if (!itemAcceptable) {
     std::stringstream message;
-    message << "Node @ " << node.gridPos
-            << " can't accept item with material ID " << item.material.id
-            << " and categories {";
-    bool first = true;
-    for (auto category : Category::_values()) {
-      if (!item.categories.test(category)) {
-        continue;
-      }
-
-      if (first) {
-        first = false;
-      } else {
-        message << ", ";
-      }
-      message << category._to_string();
-    }
-    message << "}";
+    message << node << " can't accept item with material ID "
+            << item.material.id << " and categories "
+            << BitsetFormatter<Category>{item.categories};
     throw std::invalid_argument(message.str());
   }
 
@@ -179,7 +164,7 @@ bool SynthesisState::Unlocked(const RecipeNode &node) const {
   if (node.elementalUnlockRequirement) {
     if (!node.parent) {
       std::stringstream message;
-      message << "Malformed recipe: node @ " << node.gridPos
+      message << "Malformed recipe: " << node
               << " has elemental unlock requirement but no parent";
       throw std::invalid_argument(message.str());
     }

@@ -4,23 +4,30 @@
 
 namespace AtelierEsri {
 
-Exception::Exception(const char *message, const OSErr osErr, const char *file,
-                     const uint32_t line, const char *function)
-    : message(message), osErr(osErr), file(file), line(line),
+Exception::Exception(
+    const char *message,
+    const OSErr osErr,
+    const char *file,
+    const uint32_t line,
+    const char *function
+)
+    : osErr(osErr),
+      message(message),
+      file(file),
+      line(line),
       function(function) {}
 
 std::string Exception::Explanation() const {
   if (osErr) {
     return Strings::FormatShort("%s (OSErr %d)", message, osErr);
-  } else {
-    return {message};
   }
+  return {message};
 }
 
 #ifdef _WIN32
-static const char separator = '\\';
+static constexpr char separator = '\\';
 #else
-static const char separator = '/';
+static constexpr char separator = '/';
 #endif
 
 std::string Exception::Location() const {
@@ -40,4 +47,4 @@ std::string Exception::Location() const {
   return Strings::FormatShort("%s:%lu (%s)", filename, line, function);
 }
 
-} // namespace AtelierEsri
+}  // namespace AtelierEsri
