@@ -29,6 +29,7 @@ SynthesisController::SynthesisController(
   SetupUndoButton();
 
   LayoutAndConfigureScrollBars();
+  ConfigureButtons();
 }
 
 void SynthesisController::SetupWindow() {

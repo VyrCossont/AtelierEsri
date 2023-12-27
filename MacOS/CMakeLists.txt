@@ -49,6 +49,7 @@ if (RETRO68)
             Assets.rsrc
             App.cpp
             Alert.cpp
+            AtelierInterior/AtelierInteriorGameMode.cpp
             Control.cpp
             Debug.cpp
             Drawing.cpp

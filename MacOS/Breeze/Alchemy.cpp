@@ -59,7 +59,7 @@ PlayerInventory DemoInventory(const std::vector<Material> &catalog) {
   do {                                          \
     ::std::stringstream ss;                     \
     ss << ::std::string(#expr " = ") << (expr); \
-    DEBUG_LOG("%s", ss.str().c_str());          \
+    SS_LOG(ss.str());                           \
   } while (false)
 
 SynthesisState::SynthesisState(
@@ -248,6 +248,7 @@ SynthesisResult SynthesisState::Result() const {
     result.item.quality += placementItem.quality;
   }
   result.item.quality /= static_cast<int>(placements.size());
+  SS_INSPECT(result.item.quality);
 
   // For each node, apply any unlocked effects.
   for (auto &node : material.recipe->nodes) {
@@ -267,19 +268,31 @@ SynthesisResult SynthesisState::Result() const {
       // Some effects are consumed during synthesis.
       // ReSharper disable CppDeclarationHidesLocal
       if (const auto e = std::get_if<EffectQuality>(&effect)) {
+        SS_LOG("EffectQuality");
+        SS_INSPECT(e->bonus);
         result.item.quality += e->bonus;
       } else if (const auto e = std::get_if<EffectSynthQuantity>(&effect)) {
+        SS_LOG("EffectSynthQuantity");
+        SS_INSPECT(e->bonus);
         result.quantity += e->bonus;
       } else if (const auto e = std::get_if<EffectAddElement>(&effect)) {
+        SS_LOG("EffectAddElement");
+        SS_INSPECT(e->element);
         result.item.elements[e->element] = true;
       } else if (const auto e = std::get_if<EffectAddCategory>(&effect)) {
+        SS_LOG("EffectAddCategory");
+        SS_INSPECT(e->category);
         result.item.categories[e->category] = true;
       } else {
         // Effects that aren't consumed.
         if (slot) {
+          SS_LOG("slot effect");
+          SS_INSPECT(*slot);
           result.item.slotEffects[*slot] = effect;
         } else {
           // TODO: implement stacking/merging
+          SS_LOG("general effect");
+          SS_INSPECT(result.item.effects.size());
           result.item.effects.push_back(effect);
         }
       }
@@ -289,11 +302,13 @@ SynthesisResult SynthesisState::Result() const {
 
   // Apply quality cap.
   result.item.quality = std::min(maxQuality, result.item.quality);
+  SS_INSPECT(result.item.quality);
 
   // Collect items that would be consumed by this synthesis.
   for (const auto [node, placementItem] : placements) {
     result.usedItems.insert(placementItem);
   }
+  SS_INSPECT(result.usedItems.size());
 
   return result;
 }

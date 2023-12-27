@@ -1,9 +1,12 @@
 #pragma once
 
+#include "AtelierInterior/AtelierInteriorGameMode.hpp"
 #include "Game.hpp"
 #include "SynthesisController.hpp"
 
 namespace AtelierEsri {
+
+class AtelierInteriorGameMode;
 
 class SynthesisGameMode final : public GameMode {
  public:
@@ -20,9 +23,6 @@ class SynthesisGameMode final : public GameMode {
 
   /// Cancel synthesis without doing anything.
   void CancelSynthesis() const;
-
-  /// Pop this mode off the game stack.
-  void EndSynthesis() const;
 
   AtelierInteriorGameMode& atelierInteriorGameMode;
   Breeze::SynthesisState state;

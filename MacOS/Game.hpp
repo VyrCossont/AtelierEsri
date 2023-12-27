@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Breeze/Alchemy.hpp"
-#include "Control.hpp"
 #include "MaskedImage.hpp"
 #include "Material.hpp"
 #include "SpriteSheet.hpp"
@@ -39,31 +38,6 @@ class TitleScreenGameMode final : public GameMode {
   static constexpr uint64_t displayDurationUsec = 5'000'000;  // 5s
 };
 
-class AtelierInteriorGameMode final : public GameMode {
- public:
-  explicit AtelierInteriorGameMode(Game& game);
-
-  /// Called when a synthesis is completed successfully.
-  /// At this point, the items should have already been added to the inventory.
-  void CompleteSynthesis(Breeze::SynthesisResult result);
-
-  /// Called when a synthesis is cancelled.
-  void CancelSynthesis();
-
- private:
-  /// Disable controls that shouldn't be used during synthesis.
-  /// Start synthesis gqme mode.
-  void Synthesize();
-
-  /// Re-enable controls after synthesis.
-  void EndSynthesis();
-
-  Window window;
-  Button synthesizeButton;
-  bool synthesisInProgress = false;
-  MaskedImage atelierInterior;
-};
-
 /// Holds a stack of game modes and distributes animation ticks to them.
 /// Also holds data likely to be used by multiple game modes.
 class Game {
@@ -79,7 +53,7 @@ class Game {
   /// Push a new game mode on top of the stack.
   void Push(GameMode* mode);
 
-  /// Pop the mode stack until we've popped off the requested mode.
+  /// Pop and delete the mode stack until we've popped off the requested mode.
   void PopTo(const GameMode* mode);
 
   /// Alchemy icons and avatars.

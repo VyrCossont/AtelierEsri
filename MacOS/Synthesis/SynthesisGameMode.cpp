@@ -38,11 +38,15 @@ SynthesisGameMode::SynthesisGameMode(
 // Used by lambda above.
 // ReSharper disable once CppDFAUnreachableFunctionCall
 void SynthesisGameMode::CompleteSynthesis() const {
-  EndSynthesis();
-
   const Breeze::SynthesisResult result = state.Result();
+  DEBUG_LOG(
+      "Synthesis result: %d x %s",
+      result.quantity,
+      game.Catalog()[result.item.material.id].name.c_str()
+  );
   // TODO: display UI to pick traits up to trait cap
   result.ApplyToInventory(game.Inventory());
+  DEBUG_LOG("%s", "Applied result to inventory.");
 
   atelierInteriorGameMode.CompleteSynthesis(result);
 }
@@ -50,12 +54,7 @@ void SynthesisGameMode::CompleteSynthesis() const {
 // Used by lambda above.
 // ReSharper disable once CppDFAUnreachableFunctionCall
 void SynthesisGameMode::CancelSynthesis() const {
-  EndSynthesis();
   atelierInteriorGameMode.CancelSynthesis();
 }
-
-// Used by two methods above.
-// ReSharper disable once CppDFAUnreachableFunctionCall
-void SynthesisGameMode::EndSynthesis() const { game.PopTo(this); }
 
 }  // namespace AtelierEsri

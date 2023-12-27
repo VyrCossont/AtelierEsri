@@ -2,11 +2,11 @@
 
 #include "AppResources.h"
 #include "Assets.h"
+#include "AtelierInterior/AtelierInteriorGameMode.hpp"
 #include "Breeze/Alchemy.hpp"
-#include "Drawing.hpp"
+#include "Debug.hpp"
 #include "Env.hpp"
 #include "MaskedImage.hpp"
-#include "Synthesis/SynthesisGameMode.hpp"
 
 namespace AtelierEsri {
 
@@ -44,62 +44,6 @@ void TitleScreenGameMode::Tick(const uint64_t currentTimestampUsec) {
 void TitleScreenGameMode::EnterAtelier() const {
   game.PopTo(this);
   game.Push(new AtelierInteriorGameMode(game));
-}
-
-AtelierInteriorGameMode::AtelierInteriorGameMode(Game& game)
-    : GameMode(game),
-      window(atelierInteriorWINDResourceID),
-      synthesizeButton(atelierInteriorSynthesizeButtonCNTLResourceID, window),
-      atelierInterior(MaskedImage::Get(
-          assetSceneAtelierInteriorImagePictResourceId,
-          assetSceneAtelierInteriorMaskPictResourceId
-      )) {
-  window.onUpdate = [&](const Window& window) {
-    GWorldActiveGuard activeGuard = window.MakeActivePort();
-    atelierInterior.Draw(atelierInterior.Bounds(), window.PortBounds());
-  };
-
-  window.onActivate = [&]([[maybe_unused]] const Window& window) {
-    synthesizeButton.Enabled(!synthesisInProgress);
-  };
-  window.onDeactivate = [&]([[maybe_unused]] const Window& window) {
-    synthesizeButton.Enabled(false);
-  };
-
-  synthesizeButton.onClick = [&]([[maybe_unused]] const Button& button) {
-    Synthesize();
-  };
-}
-
-void AtelierInteriorGameMode::CompleteSynthesis(Breeze::SynthesisResult result
-) {
-  EndSynthesis();
-
-  // TODO: display a summary modal
-}
-
-void AtelierInteriorGameMode::CancelSynthesis() { EndSynthesis(); }
-
-void AtelierInteriorGameMode::EndSynthesis() {
-  if (!synthesisInProgress) {
-    BAIL("Can't end a synthesis without starting one");
-  }
-
-  synthesisInProgress = false;
-  synthesizeButton.Enabled(true);
-}
-
-// Reachable from lambda above.
-// ReSharper disable once CppDFAUnreachableFunctionCall
-void AtelierInteriorGameMode::Synthesize() {
-  if (synthesisInProgress) {
-    BAIL("Can't start two syntheses at once");
-  }
-
-  synthesisInProgress = true;
-  synthesizeButton.Enabled(false);
-
-  game.Push(new SynthesisGameMode(game, *this));
 }
 
 Game::Game()
