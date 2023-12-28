@@ -57,16 +57,13 @@ early 20s
 - alchemist
 - impulsive party girl: breaking into the abandoned atelier at the edge of town seemed like a good idea last night
 - petty criminal, kleptomaniac, aspiring drug dealer, likely future arsonist (or i could just say "Atelier protagonist")
-- red and purple color scheme, lots of hair
 - not stupid but pretty lazy
-- weapon: staff
 
 ### Alinalyn "Allie" Braunbeck
 
 - all muscles
 - weapon: sword as big as she is
 - blonde in body and soul
-- yellow and blue color scheme
 - entirely too cheerful
 - would never do a crime on purpose, constantly doing crimes by accident (or because Esri told her to)
 - reminds Esri of her golden retriever
@@ -79,7 +76,6 @@ early 20s
 - failed alchemist: no natural talent, studied hard, didn't get very far, but has all the book learning
 - natural top: makes Esri and Allie work
 - party conscience (but exploiting Esri and Allie is fine)
-- weapon: crossbow
 
 ## townies
 
@@ -163,3 +159,75 @@ early 20s
 ## general store
 
 - reconciling the Hammersmith sisters merges the blacksmith and cafe into **Hammersmith & Hammersmith General Goods**, which carries everything
+
+# progression
+
+## environments
+
+1. town + hillside forest
+	- puni
+	- giant spiders
+2. cavern
+	- bats
+	- snakes
+	- boss: giant eurypterid
+3. jungle
+	- the party is now reasonably sure that this is not anywhere on Aufgang Point
+	- pterodactyls
+	- jungle cats
+	- carnivorous plants
+	- boss: ???
+4. rust desert
+	- slags
+	- antlions
+	- miniboss: big slag
+	- enviroment switch: abandoned high-tech factory
+	- feral automatons
+	- boss: Izzy
+		- "Plum says this isn't safe. You guys need to leave."
+		- "I don't care what Plum says. She sounds sketchy as hell."
+		- "She's my ticket out of this no-horse town. And seriously, just turn around. Go home. You're not supposed to be here."
+		- "Be smart about this, Izzy. There's three of us and one of you."
+		- "Yeah, I see Allie… and two bystanders. And by the way, it's not just me. Lightning Sigil: Summon Neo-Scarabs!"
+5. astral plane
+	- phantasms
+	- crystal… things
+	- boss: Plum
+	- enviroment switch: the astral rift closes when Plum is defeated, dumping you into a second phase *in the middle of town*
+
+## weapon tiers
+
+1. junk every character starts with
+	- Esri: Sae's staff
+		- "It's just a loaner, okay? I want it back eventually."
+	- Allie: sword
+		- "Had it since high school. Not my first, won't be my last. Gets the job done."
+	- Sae: slingshot
+		- "It's for self-defense. And keeping raccoons off my roof."
+2. the party makes enough money to buy better gear from Lillian Hammersmith
+	- Esri: The Esri Special (staff)
+		- "Lil, you think you could put a core of this metal in one of your big oak staves?"
+		- "Yeah, sure, Esri. You want a hiking stick you can hit people with?"
+		- "Sort of. This is a transmutation catalyst alloy like the one alchemical cauldrons are made out of. I want a hiking stick I can hit *anything* with."
+	- Allie: warhammer
+		- "Hey, Aunt Lil!"
+		- "What do you need, kiddo?"
+		- "I wanna branch out a bit. Sword's good. Sword's fine. Whole family loves swords. Swords every day. What do you have that's absolutely *not* a sword?"
+		- "I thought this day might come. It's only natural to want to experiment, Allie. How do you feel about really big hammers?"
+	- Sae: crossbow
+		- "I've seen you around. Peeping through the window a few times."
+		- "Look, umm, I'm not really… the kind of person who… goes into places like this."
+		- "You're not really the kind of person who buys the stuff in the window. That's flash. That's for looking like trouble and hoping there won't be trouble.  That's not you."
+		- "It is definitely not me."
+		- "So you need, let me think… you need something that assumes there's already trouble, and ends it as quickly as possible."
+		- "I'm listening."
+		- "You need range. You need power. And you don't have Allie's muscles or Esri's uncontrollable enthusiasm, so you need some sort of mechanical advantage. I have just the implement. It's called the Problem Solver."
+3. Esri figures out how to synthesize equipment
+	- Esri: Storm Spire (staff)
+		- "Heyyyyy, Esri. What are you making?"
+		- "New staff."
+		- "What for?"
+		- "Not sure. Feel like some of the materials we brought back from the jungle are talking to me. Like they want to be used."
+		- "When was the last time you slept?"
+		- "Can't sleep until I find out what this does…"
+	- Allie: 
