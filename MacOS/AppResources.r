@@ -3,6 +3,7 @@
 
 #include "Controls.r"
 #include "Dialogs.r"
+#include "Icons.r"
 #include "MacWindows.r"
 #include "Menus.r"
 #include "Processes.r"
@@ -223,4 +224,88 @@ resource 'SIZE' (-1) {
 	reserved,
 	10485760, /* 10 MB */
 	10485760  /* 10 MB */
+};
+
+resource 'ICON' (666) {
+	$"0000 0000 0000 0000 0000 0000 0000 0000"
+	$"0000 0000 0000 0000 0000 0000 0003 F000"
+	$"0004 0800 0FFB F7FE 100A 1403 200E 1C05"
+	$"4000 0009 7FFF FFF1 8000 0011 8000 0011"
+	$"8000 0011 8000 0011 8403 0711 9F06 8C91"
+	$"B486 0C11 B406 0C11 9F0F 1E11 8586 0C11"
+	$"A586 0C11 9F16 0C51 840C 1F91 8000 0011"
+	$"8000 0012 8000 0014 8000 0018 7FFF FFF0"
+};
+
+resource 'DITL' (666, purgeable) {
+	{	/* array DITLarray: 5 elements */
+		/* [1] */
+		{83, 228, 103, 287},
+		Button {
+			enabled,
+			"Buy"
+		},
+		/* [2] */
+		{83, 156, 103, 215},
+		Button {
+			enabled,
+			"Cancel"
+		},
+		/* [3] */
+		{35, 78, 70, 287},
+		StaticText {
+			disabled,
+			"Do you want to buy 500 Gems for $4.99?"
+		},
+		/* [4] */
+		{13, 23, 45, 55},
+		Icon {
+			disabled,
+			666
+		},
+		/* [5] */
+		{13, 78, 28, 287},
+		StaticText {
+			disabled,
+			"Confirm Your In-App Purchase"
+		}
+	}
+};
+
+resource 'ALRT' (666, purgeable) {
+	{40, 40, 156, 340},
+	666,
+	{	/* array: 4 elements */
+		/* [1] */
+		OK, visible, sound1,
+		/* [2] */
+		OK, visible, sound1,
+		/* [3] */
+		OK, visible, sound1,
+		/* [4] */
+		OK, visible, sound1
+	},
+	alertPositionMainScreen
+};
+
+resource 'CNTL' (666, preload, purgeable) {
+    {234, 23, 254, 143},
+    0, /* initial setting */
+    visible,
+    1, /* max setting */
+    0, /* min setting */
+    pushButProc,
+    0x0, /* refCon */
+    "Purchase Gems" /* title */
+};
+
+resource 'CNTL' (667, preload, purgeable) {
+    {267, 23, 287, 143},
+    0, /* initial setting */
+    visible,
+    1, /* max setting */
+    0, /* min setting */
+    pushButProc,
+    0x0, /* refCon */
+    "Restore Purchases" /* title */
 };

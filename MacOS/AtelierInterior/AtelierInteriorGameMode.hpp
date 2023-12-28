@@ -43,6 +43,9 @@ class AtelierInteriorGameMode final : public GameMode {
   // TODO: these should come from asset pipeline as an `RGN#` resource
   /// Display slots on the cabinet.
   static const std::vector<R2I> CabinetSlots;
+  Button purchaseButton;
+  Button restoreButton;
+  int gems = 0;
 };
 
 }  // namespace AtelierEsri

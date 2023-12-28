@@ -1,5 +1,6 @@
 #include "AtelierInteriorGameMode.hpp"
 
+#include "Alert.hpp"
 #include "AppResources.h"
 #include "Assets.h"
 #include "Debug.hpp"
@@ -13,11 +14,28 @@ AtelierInteriorGameMode::AtelierInteriorGameMode(Game& game)
       atelierInterior(MaskedImage::Get(
           assetSceneAtelierInteriorImagePictResourceId,
           assetSceneAtelierInteriorMaskPictResourceId
-      )) {
+      )),
+      purchaseButton(666, window),
+      restoreButton(667, window) {
   window.onUpdate = [&](const Window& window) {
     GWorldActiveGuard activeGuard = window.MakeActivePort();
     atelierInterior.Draw(atelierInterior.Bounds(), window.PortBounds());
     DrawCabinet();
+
+    if (gems > 0) {
+      const R2I& cabinetSlot = CabinetSlots[0];
+      game.MainSpriteSheet().Draw(
+          assetSpriteSheet00ItemCrystalSpriteIndex, cabinetSlot
+      );
+      QD::Reset();
+      HidePen();
+      QD::MoveTo(cabinetSlot.origin + V2I{15, 0});
+      QD::LineTo(cabinetSlot.origin + V2I{15, 13});
+      ShowPen();
+      TextFont(0);
+      TextSize(0);
+      QD::DrawText("500");
+    }
   };
 
   window.onActivate = [&]([[maybe_unused]] const Window& window) {
@@ -29,6 +47,14 @@ AtelierInteriorGameMode::AtelierInteriorGameMode(Game& game)
 
   synthesizeButton.onClick = [&]([[maybe_unused]] const Button& button) {
     Synthesize();
+  };
+
+  purchaseButton.onClick = [&]([[maybe_unused]] const Button& button) {
+    const Alert alert(666, custom);
+    // ReSharper disable once CppExpressionWithoutSideEffects
+    auto item = alert.Show();
+    gems = 500;
+    InvalidateCabinet();
   };
 }
 
