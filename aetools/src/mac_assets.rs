@@ -2,12 +2,13 @@ use anyhow;
 use convert_case::{Case, Casing};
 use glob::glob;
 use image::{self, imageops, RgbaImage};
-use itertools::Itertools;
 use png;
 use rectangle_pack::{
     contains_smallest_box, pack_rects, volume_heuristic, GroupedRectsToPlace, PackedLocation,
     RectToInsert, RectanglePackError, RectanglePackOk, TargetBin,
 };
+use serde::Deserialize;
+use serde_json;
 use std::collections::{BTreeMap, HashMap};
 use std::fs;
 use std::fs::File;
@@ -27,11 +28,12 @@ pub fn generate(asset_base_dir: &Path, build_dir: &Path) -> anyhow::Result<()> {
 
     let mut masked_pict_assets =
         generate_masked_pict_assets(asset_base_dir, build_dir, &mut pict_resource_id)?;
-    let (more_masked_pict_assets, rgn_assets) =
+    let (more_masked_pict_assets, rgn_assets, ninepatch_assets) =
         generate_sprite_sheet(asset_base_dir, build_dir, &mut pict_resource_id)?;
     masked_pict_assets.extend(more_masked_pict_assets);
 
-    let (rez, _) = generate_rez_and_header_files(build_dir, masked_pict_assets, rgn_assets)?;
+    let (rez, _) =
+        generate_rez_and_header_files(build_dir, masked_pict_assets, rgn_assets, ninepatch_assets)?;
 
     let _ = compile_resources(build_dir, &rez)?;
 
@@ -119,7 +121,72 @@ impl RGNAsset {
     }
 }
 
+/// List of named 9-patch locations within a sprite sheet, stored as a `9PC#` resource.
+struct NinePatchAsset {
+    resource_id: ResourceID,
+    name: String,
+    patches: BTreeMap<String, NinePatch>,
+}
+
+/// A 9-patch location.
+struct NinePatch {
+    /// Relative to sprite sheet origin.
+    frame: QDRect,
+    /// Relative to frame origin.
+    center: QDRect,
+}
+
+impl NinePatchAsset {
+    fn id_constant(&self) -> String {
+        format!("asset_{base_name}_9pc_resource_id", base_name = self.name).to_case(Case::Camel)
+    }
+
+    fn rez(&self) -> String {
+        let mut acc = Vec::<String>::new();
+        acc.push(format!(
+            "resource '9PC#' ({id_constant}, \"{name}\") {{",
+            name = self.name,
+            id_constant = self.id_constant(),
+        ));
+        acc.push("    {".to_string());
+        for (sprite_name, NinePatch { frame, center }) in &self.patches {
+            acc.push(format!("        \"{sprite_name}\","));
+            acc.push(format!("        {frame},", frame = frame.rez()));
+            acc.push(format!("        {center},", center = center.rez()));
+        }
+        acc.push("    }".to_string());
+        acc.push("};\n".to_string());
+        acc.join("\n")
+    }
+
+    fn header(&self) -> String {
+        // Resource ID for the patch list.
+        let mut acc = Vec::<String>::new();
+        acc.push(format!(
+            "#define {id_constant} {id}",
+            id_constant = self.id_constant(),
+            id = self.resource_id,
+        ));
+        acc.push("".to_string());
+
+        // Indexes into the patch list for each sprite.
+        for (sprite_index, sprite_name) in self.patches.keys().enumerate() {
+            acc.push(format!(
+                "#define {id_constant} {sprite_index}",
+                id_constant = format!(
+                    "asset_{base_name}_{sprite_name}_9patch_index",
+                    base_name = self.name
+                )
+                .to_case(Case::Camel),
+            ));
+        }
+        acc.push("\n".to_string());
+        acc.join("\n")
+    }
+}
+
 /// QuickDraw `RECT`.
+#[derive(Debug, Clone)]
 struct QDRect {
     top: i16,
     left: i16,
@@ -139,20 +206,79 @@ impl QDRect {
     }
 }
 
+impl TryFrom<&AsepriteRect> for QDRect {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &AsepriteRect) -> Result<Self, Self::Error> {
+        let x = i16::try_from(value.x)?;
+        let y = i16::try_from(value.y)?;
+        let w = i16::try_from(value.w)?;
+        let h = i16::try_from(value.h)?;
+        Ok(Self {
+            top: y,
+            left: x,
+            bottom: y + h,
+            right: x + w,
+        })
+    }
+}
+
+/// Top-level sprite info JSON for an Aseprite project.
+///
+/// https://www.aseprite.org/docs/cli#data
+#[derive(Debug, Deserialize)]
+struct AsepriteProject {
+    meta: AsepriteMeta,
+}
+
+#[derive(Debug, Deserialize)]
+struct AsepriteMeta {
+    slices: Vec<AsepriteSlice>,
+}
+
+#[derive(Debug, Deserialize)]
+struct AsepriteSlice {
+    name: String,
+    keys: Vec<AsepriteSliceKey>,
+}
+
+#[derive(Debug, Deserialize)]
+struct AsepriteSliceKey {
+    bounds: AsepriteRect,
+    /// 9-patch data. Origin relative to bounds.
+    center: Option<AsepriteRect>,
+}
+
+#[derive(Debug, Deserialize)]
+struct AsepriteRect {
+    x: i32,
+    y: i32,
+    w: i32,
+    h: i32,
+}
+
 /// Combine all Aseprite sprite slices into a single color and mask PICT pair.
 fn generate_sprite_sheet(
     asset_base_dir: &Path,
     build_dir: &Path,
     pict_resource_id: &mut ResourceID,
-) -> anyhow::Result<(Vec<(String, Vec<MaskedPictAsset>)>, Vec<RGNAsset>)> {
+) -> anyhow::Result<(
+    Vec<(String, Vec<MaskedPictAsset>)>,
+    Vec<RGNAsset>,
+    Vec<NinePatchAsset>,
+)> {
     let mut masked_pict_assets = Vec::<(String, Vec<MaskedPictAsset>)>::new();
-    // There's only one group.
+    // There's only one output group.
     let mut group_assets = Vec::<MaskedPictAsset>::new();
     let mut rgn_assets = Vec::<RGNAsset>::new();
+    let mut ninepatch_assets = Vec::<NinePatchAsset>::new();
 
-    // Map of sprite name to sprite path.
+    // Map of input-group-qualified sprite name to sprite path.
     let mut sprite_paths = HashMap::<String, PathBuf>::new();
     let mut rects_to_place = GroupedRectsToPlace::<String, ()>::new();
+
+    // Map of input-group-qualified sprite name to 9-patch center rect, if it has one.
+    let mut ninepatch_centers = HashMap::<String, QDRect>::new();
 
     for group in ASEPRITE_SPRITE_ASSETS {
         let group_name = group.name;
@@ -164,6 +290,27 @@ fn generate_sprite_sheet(
             for glob_result in glob(&asset_base_dir.join(aseprite_src_glob).to_string_lossy())? {
                 let aseprite_src = glob_result?;
                 aseprite_export_slices(&aseprite_src, &group_dir)?;
+
+                // Get sprite metadata to identify sprites that are 9-patches.
+                let aseprite_project = {
+                    let base_name = aseprite_src
+                        .file_stem()
+                        .ok_or(anyhow::anyhow!("Couldn't get file stem for Aseprite file"))?;
+                    let mut metadata_json = group_dir.join(base_name);
+                    metadata_json.set_extension("json");
+                    aseprite_export_metadata(&aseprite_src, &metadata_json)?;
+                    aseprite_read_metadata(&metadata_json)?
+                };
+                for slice in &aseprite_project.meta.slices {
+                    if slice.keys.len() != 1 {
+                        anyhow::bail!("Expected exactly one keyframe per slice");
+                    }
+                    if let Some(center) = &slice.keys[0].center {
+                        let sprite_name =
+                            format!("{group_name}_{base_name}", base_name = slice.name);
+                        ninepatch_centers.insert(sprite_name, center.try_into()?);
+                    }
+                }
             }
         }
 
@@ -195,12 +342,12 @@ fn generate_sprite_sheet(
 
     // Place rectangles in as many sprite sheets as necessary.
     // Does not currently take asset groups into account.
-    // `RGN#` resources will be assigned the same IDs as the image `PICT` resource.
+    // `RGN#` and `9PC#` resources will be assigned the same IDs as the image `PICT` resource.
     let mut target_bins = BTreeMap::new();
     // Arbitrary size.
     let sheet_w = 256u32;
     let sheet_h = 256u32;
-    let max_sheet_count = 8;
+    let max_sheet_count = 1;
     let rectangle_placements: RectanglePackOk<String, ResourceID>;
     loop {
         target_bins.insert(*pict_resource_id, TargetBin::new(sheet_w, sheet_h, 1));
@@ -264,29 +411,49 @@ fn generate_sprite_sheet(
             &sprite_sheet_png,
         )?);
 
+        let mut rgn_sprites = BTreeMap::<String, QDRect>::new();
+        let mut ninepatch_sprites = BTreeMap::<String, NinePatch>::new();
+
+        for (sprite_name, location) in sprites {
+            let x = i16::try_from(location.x())?;
+            let y = i16::try_from(location.y())?;
+            let w = i16::try_from(location.width())?;
+            let h = i16::try_from(location.height())?;
+            let frame = QDRect {
+                top: y,
+                left: x,
+                bottom: y + h,
+                right: x + w,
+            };
+            if let Some(center) = ninepatch_centers.get(sprite_name) {
+                ninepatch_sprites.insert(
+                    sprite_name.clone(),
+                    NinePatch {
+                        frame,
+                        center: center.clone(),
+                    },
+                );
+            } else {
+                rgn_sprites.insert(sprite_name.clone(), frame);
+            }
+        }
+
         rgn_assets.push(RGNAsset {
             resource_id: *base_resource_id,
             name: format!("sprite_sheet {sheet_number:02}"),
-            regions: sprites
-                .iter()
-                .map(|(sprite_name, location)| {
-                    (
-                        sprite_name.clone(),
-                        QDRect {
-                            top: location.y() as i16,
-                            left: location.x() as i16,
-                            bottom: (location.y() + location.height()) as i16,
-                            right: (location.x() + location.width()) as i16,
-                        },
-                    )
-                })
-                .collect(),
+            regions: rgn_sprites,
+        });
+
+        ninepatch_assets.push(NinePatchAsset {
+            resource_id: *base_resource_id,
+            name: format!("sprite_sheet {sheet_number:02}"),
+            patches: ninepatch_sprites,
         });
     }
 
     masked_pict_assets.push(("sprite_sheet".to_string(), group_assets));
 
-    Ok((masked_pict_assets, rgn_assets))
+    Ok((masked_pict_assets, rgn_assets, ninepatch_assets))
 }
 
 /// Convert a PNG to image and mask PICTs.
@@ -451,6 +618,27 @@ fn aseprite_export_slices(input: &Path, output_dir: &Path) -> anyhow::Result<()>
     Ok(())
 }
 
+/// Export sprite metadata from an Aseprite file.
+fn aseprite_export_metadata(input: &Path, output: &Path) -> anyhow::Result<()> {
+    let program = "aseprite";
+    let status = Command::new(program)
+        .arg("--batch")
+        .arg("--list-slices")
+        .arg(input)
+        .arg("--data")
+        .arg(output)
+        .status()?;
+    if !status.success() {
+        anyhow::bail!("{program} exited with code {status}");
+    }
+    Ok(())
+}
+
+fn aseprite_read_metadata(input: &Path) -> anyhow::Result<AsepriteProject> {
+    let aseprite_project = serde_json::from_reader(File::open(input)?)?;
+    Ok(aseprite_project)
+}
+
 /// Convert an image to another format (controlled by file extensions).
 fn imagemagick_convert(input: &Path, output: &Path) -> anyhow::Result<()> {
     let program = "magick";
@@ -520,6 +708,7 @@ fn generate_rez_and_header_files(
     build_dir: &Path,
     masked_pict_assets: Vec<(String, Vec<MaskedPictAsset>)>,
     rgn_assets: Vec<RGNAsset>,
+    ninepatch_assets: Vec<NinePatchAsset>,
 ) -> anyhow::Result<(PathBuf, PathBuf)> {
     // Copy custom resource types file as is.
     {
@@ -553,7 +742,12 @@ fn generate_rez_and_header_files(
     );
 
     write!(rez, "#include \"AETypes.r\"\n")?;
-    write!(rez, "#include \"Assets.h\"\n\n")?;
+    write!(rez, "#include \"Assets.h\"\n")?;
+    write!(rez, "\n")?;
+
+    write!(header, "#ifndef ASSETS_H\n")?;
+    write!(header, "#define ASSETS_H\n")?;
+    write!(header, "\n")?;
 
     for (group_name, group_assets) in masked_pict_assets {
         write!(rez, "/* {group_name} */\n\n")?;
@@ -606,6 +800,19 @@ fn generate_rez_and_header_files(
         write!(rez, "\n")?;
         write!(header, "\n")?;
     }
+
+    for ninepatch_asset in ninepatch_assets {
+        write!(rez, "/* sprite sheet 9-patch lists */\n\n")?;
+        write!(header, "/* sprite sheet 9-patch lists */\n\n")?;
+
+        write!(rez, "{src}", src = ninepatch_asset.rez())?;
+        write!(header, "{src}", src = ninepatch_asset.header())?;
+
+        write!(rez, "\n")?;
+        write!(header, "\n")?;
+    }
+
+    write!(header, "#endif /* ASSETS_H */\n")?;
 
     Ok((rez_path, header_path))
 }
