@@ -34,6 +34,9 @@ struct NinePatch {
 
 class SpriteSheet {
  public:
+  using SpriteIndex = size_t;
+  using PatchIndex = size_t;
+
   explicit SpriteSheet(
       MaskedImage &&maskedImage,
       ResourceID rgnResourceID,
@@ -41,10 +44,10 @@ class SpriteSheet {
   );
 
   /// Copy a sprite into the current graphics port.
-  void Draw(size_t spriteIndex, const Rect &dstRect) const;
+  void Draw(SpriteIndex spriteIndex, const Rect &dstRect) const;
 
   /// Draw a 9-patch into the current graphics port.
-  void Draw9Patch(size_t patchIndex, const Rect &dstRect) const;
+  void Draw9Patch(PatchIndex patchIndex, const Rect &dstRect) const;
 
   SpriteSheet(SpriteSheet &&src) noexcept;
   SpriteSheet &operator=(SpriteSheet &&src) noexcept;
@@ -52,13 +55,11 @@ class SpriteSheet {
   SpriteSheet &operator=(const SpriteSheet &src) = delete;
 
  private:
-  static std::vector<Rect> ReadRGN(ResourceID rgnResourceID);
-  static std::vector<Rect> ReadRGN(size_t rgnLen, uint8_t *rgnPtr);
+  static std::vector<Rect> ReadRGN(ResourceID resourceID);
+  static std::vector<Rect> ReadRGN(size_t len, uint8_t *ptr);
 
-  static std::vector<NinePatch> Read9PC(ResourceID ninepatchResourceID);
-  static std::vector<NinePatch> Read9PC(
-      size_t ninepatchLen, uint8_t *ninepatchPtr
-  );
+  static std::vector<NinePatch> Read9PC(ResourceID resourceID);
+  static std::vector<NinePatch> Read9PC(size_t len, uint8_t *ptr);
 
   MaskedImage maskedImage;
   std::vector<Rect> regions;

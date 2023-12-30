@@ -59,47 +59,47 @@ SpriteSheet &SpriteSheet::operator=(SpriteSheet &&src) noexcept {
   return *this;
 }
 
-std::vector<Rect> SpriteSheet::ReadRGN(const ResourceID rgnResourceID) {
-  RGNResource rgnResource = RGNResource::Get(rgnResourceID);
-  const size_t rgnLen = RES_CHECKED(
-      GetMaxResourceSize(rgnResource.Unmanaged()),
+std::vector<Rect> SpriteSheet::ReadRGN(const ResourceID resourceID) {
+  RGNResource resource = RGNResource::Get(resourceID);
+  const size_t len = RES_CHECKED(
+      GetMaxResourceSize(resource.Unmanaged()),
       "Couldn't get RGN# resource size"
   );
-  return ReadRGN(rgnLen, reinterpret_cast<uint8_t *>(*rgnResource.Unmanaged()));
+  return ReadRGN(len, reinterpret_cast<uint8_t *>(*resource.Unmanaged()));
 }
 
-std::vector<Rect> SpriteSheet::ReadRGN(const size_t rgnLen, uint8_t *rgnPtr) {
-  if (rgnLen < sizeof(uint16_t)) {
+std::vector<Rect> SpriteSheet::ReadRGN(const size_t len, uint8_t *ptr) {
+  if (len < sizeof(uint16_t)) {
     BAIL("RGN# resource too small");
   }
 
-  uint16_t count = *reinterpret_cast<uint16_t *>(rgnPtr);
-  rgnPtr += sizeof(uint16_t);
+  uint16_t count = *reinterpret_cast<uint16_t *>(ptr);
+  ptr += sizeof(uint16_t);
 
   std::vector<Rect> regions{};
   regions.reserve(count);
 
-  const uint8_t *rgnBytesEnd = rgnPtr + rgnLen;
+  const uint8_t *end = ptr + len;
   while (count > 0) {
-    if (rgnPtr >= rgnBytesEnd) {
+    if (ptr >= end) {
       BAIL("Read past end of RGN#");
     }
 
     // Skip region name.
-    const uint8_t pstrLen = *rgnPtr;
-    rgnPtr += 1 + pstrLen;
+    const uint8_t pstrLen = *ptr;
+    ptr += 1 + pstrLen;
 
     // Align to word boundary.
-    if (reinterpret_cast<int32_t>(rgnPtr) & 1) {
-      rgnPtr++;
+    if (reinterpret_cast<int32_t>(ptr) & 1) {
+      ptr++;
     }
 
     // Read rect.
-    if (rgnPtr + sizeof(Rect) > rgnBytesEnd) {
+    if (ptr + sizeof(Rect) > end) {
       BAIL("Read past end of RGN#");
     }
-    regions.push_back(*reinterpret_cast<Rect *>(rgnPtr));
-    rgnPtr += sizeof(Rect);
+    regions.push_back(*reinterpret_cast<Rect *>(ptr));
+    ptr += sizeof(Rect);
 
     count--;
   }
@@ -107,60 +107,54 @@ std::vector<Rect> SpriteSheet::ReadRGN(const size_t rgnLen, uint8_t *rgnPtr) {
   return regions;
 }
 
-std::vector<NinePatch> SpriteSheet::Read9PC(const ResourceID ninepatchResourceID
-) {
-  NinePatchResource ninepatchResource =
-      NinePatchResource::Get(ninepatchResourceID);
-  const size_t ninepatchLen = RES_CHECKED(
-      GetMaxResourceSize(ninepatchResource.Unmanaged()),
+std::vector<NinePatch> SpriteSheet::Read9PC(const ResourceID resourceID) {
+  NinePatchResource resource = NinePatchResource::Get(resourceID);
+  const size_t len = RES_CHECKED(
+      GetMaxResourceSize(resource.Unmanaged()),
       "Couldn't get 9PC# resource size"
   );
-  return Read9PC(
-      ninepatchLen, reinterpret_cast<uint8_t *>(*ninepatchResource.Unmanaged())
-  );
+  return Read9PC(len, reinterpret_cast<uint8_t *>(*resource.Unmanaged()));
 }
 
-std::vector<NinePatch> SpriteSheet::Read9PC(
-    const size_t ninepatchLen, uint8_t *ninepatchPtr
-) {
-  if (ninepatchLen < sizeof(uint16_t)) {
+std::vector<NinePatch> SpriteSheet::Read9PC(const size_t len, uint8_t *ptr) {
+  if (len < sizeof(uint16_t)) {
     BAIL("9PC# resource too small");
   }
 
-  uint16_t count = *reinterpret_cast<uint16_t *>(ninepatchPtr);
-  ninepatchPtr += sizeof(uint16_t);
+  uint16_t count = *reinterpret_cast<uint16_t *>(ptr);
+  ptr += sizeof(uint16_t);
 
   std::vector<NinePatch> patches{};
   patches.reserve(count);
 
-  const uint8_t *ninepatchBytesEnd = ninepatchPtr + ninepatchLen;
+  const uint8_t *end = ptr + len;
   while (count > 0) {
-    if (ninepatchPtr >= ninepatchBytesEnd) {
+    if (ptr >= end) {
       BAIL("Read past end of 9PC#");
     }
 
     // Skip patch name.
-    const uint8_t pstrLen = *ninepatchPtr;
-    ninepatchPtr += 1 + pstrLen;
+    const uint8_t pstrLen = *ptr;
+    ptr += 1 + pstrLen;
 
     // Align to word boundary.
-    if (reinterpret_cast<int32_t>(ninepatchPtr) & 1) {
-      ninepatchPtr++;
+    if (reinterpret_cast<int32_t>(ptr) & 1) {
+      ptr++;
     }
 
     // Read frame rect.
-    if (ninepatchPtr + sizeof(Rect) > ninepatchBytesEnd) {
+    if (ptr + sizeof(Rect) > end) {
       BAIL("Read past end of 9PC#");
     }
-    const Rect frame = *reinterpret_cast<Rect *>(ninepatchPtr);
-    ninepatchPtr += sizeof(Rect);
+    const Rect frame = *reinterpret_cast<Rect *>(ptr);
+    ptr += sizeof(Rect);
 
     // Read center rect.
-    if (ninepatchPtr + sizeof(Rect) > ninepatchBytesEnd) {
+    if (ptr + sizeof(Rect) > end) {
       BAIL("Read past end of 9PC#");
     }
-    const Rect center = *reinterpret_cast<Rect *>(ninepatchPtr);
-    ninepatchPtr += sizeof(Rect);
+    const Rect center = *reinterpret_cast<Rect *>(ptr);
+    ptr += sizeof(Rect);
 
     patches.emplace_back(frame, center);
 
@@ -170,7 +164,8 @@ std::vector<NinePatch> SpriteSheet::Read9PC(
   return patches;
 }
 
-void SpriteSheet::Draw(const size_t spriteIndex, const Rect &dstRect) const {
+void SpriteSheet::Draw(const SpriteIndex spriteIndex, const Rect &dstRect)
+    const {
   if (spriteIndex >= regions.size()) {
     BAIL("Invalid sprite index");
   }
@@ -178,7 +173,7 @@ void SpriteSheet::Draw(const size_t spriteIndex, const Rect &dstRect) const {
   maskedImage.Draw(srcRect, dstRect);
 }
 
-void SpriteSheet::Draw9Patch(const size_t patchIndex, const Rect &dstRect)
+void SpriteSheet::Draw9Patch(const PatchIndex patchIndex, const Rect &dstRect)
     const {
   if (patchIndex >= patches.size()) {
     BAIL("Invalid patch index");
@@ -217,7 +212,6 @@ void SpriteSheet::Draw9Patch(const size_t patchIndex, const Rect &dstRect)
        dstInset] = NinePatch(dstRect, dstRectCenter);
 
   // Draw pieces of patch.
-
   maskedImage.Draw(patchNW, dstNW);
   maskedImage.Draw(patchNE, dstNE);
   maskedImage.Draw(patchSE, dstSE);
