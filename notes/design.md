@@ -165,69 +165,104 @@ early 20s
 ## environments
 
 1. town + hillside forest
-	- puni
-	- giant spiders
+    - puni
+    - giant spiders
 2. cavern
-	- bats
-	- snakes
-	- boss: giant eurypterid
+    - bats
+    - snakes
+    - boss: giant eurypterid
 3. jungle
-	- the party is now reasonably sure that this is not anywhere on Aufgang Point
-	- pterodactyls
-	- jungle cats
-	- carnivorous plants
-	- boss: ???
+    - the party is now reasonably sure that this is not anywhere on Aufgang Point
+    - pterodactyls
+    - jungle cats
+    - carnivorous plants
+    - boss: ???
 4. rust desert
-	- slags
-	- antlions
-	- miniboss: big slag
-	- enviroment switch: abandoned high-tech factory
-	- feral automatons
-	- boss: Izzy
-		- "Plum says this isn't safe. You guys need to leave."
-		- "I don't care what Plum says. She sounds sketchy as hell."
-		- "She's my ticket out of this no-horse town. And seriously, just turn around. Go home. You're not supposed to be here."
-		- "Be smart about this, Izzy. There's three of us and one of you."
-		- "Yeah, I see Allie… and two bystanders. And by the way, it's not just me. Lightning Sigil: Summon Neo-Scarabs!"
+    - slags
+    - antlions
+    - miniboss: big slag
+    - enviroment switch: abandoned high-tech factory
+    - feral automatons
+    - boss: Izzy
+        - "Plum says this isn't safe. You guys need to leave."
+        - "I don't care what Plum says. She sounds sketchy as hell."
+        - "She's my ticket out of this no-horse town. And seriously, just turn around. Go home. You're not supposed to be here."
+        - "Be smart about this, Izzy. There's three of us and one of you."
+        - "Yeah, I see Allie… and two bystanders. And by the way, it's not just me. Lightning Sigil: Summon Neo-Scarabs!"
 5. astral plane
-	- phantasms
-	- crystal… things
-	- boss: Plum
-	- enviroment switch: the astral rift closes when Plum is defeated, dumping you into a second phase *in the middle of town*
+    - phantasms
+    - crystal… things
+    - boss: Plum
+    - enviroment switch: the astral rift closes when Plum is defeated, dumping you into a second phase *in the middle of town*
 
 ## weapon tiers
 
 1. junk every character starts with
-	- Esri: Sae's staff
-		- "It's just a loaner, okay? I want it back eventually."
-	- Allie: sword
-		- "Had it since high school. Not my first, won't be my last. Gets the job done."
-	- Sae: slingshot
-		- "It's for self-defense. And keeping raccoons off my roof."
+    - Esri: Sae's staff
+        - "It's just a loaner, okay? I want it back eventually."
+    - Allie: sword
+        - "Had it since high school. Not my first, won't be my last. Gets the job done."
+    - Sae: slingshot
+        - "It's for self-defense. And keeping raccoons off my roof."
 2. the party makes enough money to buy better gear from Lillian Hammersmith
-	- Esri: The Esri Special (staff)
-		- "Lil, you think you could put a core of this metal in one of your big oak staves?"
-		- "Yeah, sure, Esri. You want a hiking stick you can hit people with?"
-		- "Sort of. This is a transmutation catalyst alloy like the one alchemical cauldrons are made out of. I want a hiking stick I can hit *anything* with."
-	- Allie: warhammer
-		- "Hey, Aunt Lil!"
-		- "What do you need, kiddo?"
-		- "I wanna branch out a bit. Sword's good. Sword's fine. Whole family loves swords. Swords every day. What do you have that's absolutely *not* a sword?"
-		- "I thought this day might come. It's only natural to want to experiment, Allie. How do you feel about really big hammers?"
-	- Sae: crossbow
-		- "I've seen you around. Peeping through the window a few times."
-		- "Look, umm, I'm not really… the kind of person who… goes into places like this."
-		- "You're not really the kind of person who buys the stuff in the window. That's flash. That's for looking like trouble and hoping there won't be trouble.  That's not you."
-		- "It is definitely not me."
-		- "So you need, let me think… you need something that assumes there's already trouble, and ends it as quickly as possible."
-		- "I'm listening."
-		- "You need range. You need power. And you don't have Allie's muscles or Esri's uncontrollable enthusiasm, so you need some sort of mechanical advantage. I have just the implement. It's called the Problem Solver."
+    - Esri: The Esri Special (staff)
+        - "Lil, you think you could put a core of this metal in one of your big oak staves?"
+        - "Yeah, sure, Esri. You want a hiking stick you can hit people with?"
+        - "Sort of. This is a transmutation catalyst alloy like the one alchemical cauldrons are made out of. I want a hiking stick I can hit *anything* with."
+    - Allie: warhammer
+        - "Hey, Aunt Lil!"
+        - "What do you need, kiddo?"
+        - "I wanna branch out a bit. Sword's good. Sword's fine. Whole family loves swords. Swords every day. What do you have that's absolutely *not* a sword?"
+        - "I thought this day might come. It's only natural to want to experiment, Allie. How do you feel about really big hammers?"
+    - Sae: crossbow
+        - "I've seen you around. Peeping through the window a few times."
+        - "Look, umm, I'm not really… the kind of person who… goes into places like this."
+        - "You're not really the kind of person who buys the stuff in the window. That's flash. That's for looking like trouble and hoping there won't be trouble.  That's not you."
+        - "It is definitely not me."
+        - "So you need, let me think… you need something that assumes there's already trouble, and ends it as quickly as possible."
+        - "I'm listening."
+        - "You need range. You need power. And you don't have Allie's muscles or Esri's uncontrollable enthusiasm, so you need some sort of mechanical advantage. I have just the implement. It's called the Problem Solver."
 3. Esri figures out how to synthesize equipment
-	- Esri: Storm Spire (staff)
-		- "Heyyyyy, Esri. What are you making?"
-		- "New staff."
-		- "What for?"
-		- "Not sure. Feel like some of the materials we brought back from the jungle are talking to me. Like they want to be used."
-		- "When was the last time you slept?"
-		- "Can't sleep until I find out what this does…"
-	- Allie: 
+    - Esri: Storm Spire (staff)
+        - "Heyyyyy, Esri. What are you making?"
+        - "New staff."
+        - "What for?"
+        - "Not sure. Feel like some of the materials we brought back from the jungle are talking to me. Like they want to be used."
+        - "When was the last time you slept?"
+        - "Can't sleep until I find out what this does…"
+    - Allie: buzzglaive/diskos
+        - "Allie! Look, I made you a glaive!"
+        - "Aw, thanks, Esri! But you know, the use of the word 'glaive' to mean a three-bladed throwing weapon is from an old cult classic manga. Historically speaking, a 'glaive' is actually a kind of polearm."
+        - "Oh, okay, yeah! I couldn't figure out which was the real thing, so I made it both."
+        - "Both?"
+        - "You hold the pole end, and the end with the three spinning blades goes in the enemy. Do you want me to, like, label those parts, or are you good?"
+    - Sae: ultrabow
+        - *(balance note: the T2 bow will be upgradable to wind splash damage for crowd control if you can max out its hardest numbered effect slot while synthesizing it yourself. likewise, the T3 bow can be synthesized to deal DEF bypass damage.)*
+        - "Esri, have you been fucking with my crossbow? You know that's not a toy."
+        - "Pffft, might as well be. Don't tell Lil I said that, but there's only so much you can do with steel, really."
+        - "So what's this made of?"
+        - "A little of this, a little of that… I mean, I have a list, I've been writing stuff down, I swear, but go on, pick it up."
+        - "Oh, that's a lot lighter."
+        - "Harmonium and spider silk, baby!"
+        - "Wait, did you get over your thing about spiders?"
+        - "Absolutely not. I'm just drunk enough to synthesize something beautiful from them and put the screaming off for a few hours."
+
+
+# cutscenes
+
+## page operations
+
+- set background
+- play background effect
+- set character and emotion in character slot (left, right)
+- unset character
+- display text with speaker name from character slot
+- play character effect on character slot
+- set item
+- unset item
+- play item effect
+
+## meta operations
+
+- execute page (generates log entry)
+- conditional on plot counter value or range
