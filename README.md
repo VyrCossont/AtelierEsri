@@ -63,3 +63,7 @@ In both cases, the Pixaki and Aseprite files will contain the AI-generated refer
 ## UI
 
 - [`cursor.aseprite`](asset_originals/cursor.aseprite): [Cursor Pack](https://opengameart.org/content/cursor-pack) by [Ivan Voirol](https://playdonttell.itch.io/) (CC0)
+
+## Backgrounds
+
+- [`background-cave0.aseprite`](asset_originals/background-cave0.png): [Basalt cave entry](https://commons.wikimedia.org/wiki/File:Basalt_cave_entry.jpg) by [Steve Hillebrand, US Fish & Wildlife Service](https://medium.com/usfws/fws-behind-the-lens-steve-hillebrand-d0f2b2ff6467) (public domain), cropped and dithered by me

@@ -38,7 +38,7 @@ class AtelierInteriorGameMode final : public GameMode {
   Window window;
   Button synthesizeButton;
   SynthesisGameMode* synthesisInProgress = nullptr;
-  MaskedImage atelierInterior;
+  Picture atelierInterior;
 
   // TODO: these should come from asset pipeline as an `RGN#` resource
   /// Display slots on the cabinet.

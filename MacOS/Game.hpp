@@ -31,7 +31,7 @@ class TitleScreenGameMode final : public GameMode {
   void EnterAtelier() const;
 
   Window window;
-  MaskedImage titleScreen;
+  Picture titleScreen;
   /// Timestamp after which to close this window.
   uint64_t dismissTimestampUsec;
   /// Dismiss this window after this long.

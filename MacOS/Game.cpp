@@ -19,14 +19,11 @@ GameMode::GameMode(Game& game) : game(game) {}
 TitleScreenGameMode::TitleScreenGameMode(Game& game)
     : GameMode(game),
       window(titleScreenWINDResourceID),
-      titleScreen(MaskedImage::Get(
-          assetSceneNewTitleScreenImagePictResourceId,
-          assetSceneNewTitleScreenMaskPictResourceId
-      )),
+      titleScreen(assetSceneNewTitleScreenImagePictResourceId),
       dismissTimestampUsec(Env::Microseconds() + displayDurationUsec) {
   window.onUpdate = [&](const Window& window) {
     GWorldActiveGuard activeGuard = window.MakeActivePort();
-    titleScreen.Draw(titleScreen.Bounds(), window.PortBounds());
+    titleScreen.Draw(window.PortBounds());
   };
 
   window.onContentMouseDown = [&]([[maybe_unused]] const Window& window,

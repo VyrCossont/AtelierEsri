@@ -10,13 +10,10 @@ AtelierInteriorGameMode::AtelierInteriorGameMode(Game& game)
     : GameMode(game),
       window(atelierInteriorWINDResourceID),
       synthesizeButton(atelierInteriorSynthesizeButtonCNTLResourceID, window),
-      atelierInterior(MaskedImage::Get(
-          assetSceneAtelierInteriorImagePictResourceId,
-          assetSceneAtelierInteriorMaskPictResourceId
-      )) {
+      atelierInterior(assetSceneAtelierInteriorImagePictResourceId) {
   window.onUpdate = [&](const Window& window) {
     GWorldActiveGuard activeGuard = window.MakeActivePort();
-    atelierInterior.Draw(atelierInterior.Bounds(), window.PortBounds());
+    atelierInterior.Draw(window.PortBounds());
     DrawCabinet();
   };
 

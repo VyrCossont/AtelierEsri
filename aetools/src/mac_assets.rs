@@ -476,18 +476,24 @@ fn png_to_pict(
         .to_string_lossy()
         .to_string();
 
-    let mut mask_pict = png.to_path_buf();
-    mask_pict.set_extension("mask.pict");
-    imagemagick_mask(&png, &mask_pict)?;
+    let mask_pict_data_rel = if imagemagick_opaque(png)? {
+        None
+    } else {
+        let mut mask_pict = png.to_path_buf();
+        mask_pict.set_extension("mask.pict");
+        imagemagick_mask(&png, &mask_pict)?;
 
-    let mut mask_pict_data = png.to_path_buf();
-    mask_pict_data.set_extension("mask.pictdata");
-    remove_pict_header(&mask_pict, &mask_pict_data)?;
+        let mut mask_pict_data = png.to_path_buf();
+        mask_pict_data.set_extension("mask.pictdata");
+        remove_pict_header(&mask_pict, &mask_pict_data)?;
 
-    let mask_pict_data_rel = mask_pict_data
-        .strip_prefix(&build_dir)?
-        .to_string_lossy()
-        .to_string();
+        Some(
+            mask_pict_data
+                .strip_prefix(&build_dir)?
+                .to_string_lossy()
+                .to_string(),
+        )
+    };
 
     Ok(MaskedPictAsset {
         base_name,
@@ -505,21 +511,33 @@ fn generate_masked_pict_assets(
 ) -> anyhow::Result<Vec<(String, Vec<MaskedPictAsset>)>> {
     let mut assets = Vec::<(String, Vec<MaskedPictAsset>)>::new();
 
-    for group in ASEPRITE_IMAGE_ASSETS {
+    for group in IMAGE_ASSETS {
         let group_name = group.name;
         let group_dir = build_dir.join(group_name);
         ensure_dir(&group_dir)?;
 
-        // Export image from each Aseprite project.
-        for aseprite_src_glob in group.srcs {
-            for glob_result in glob(&asset_base_dir.join(aseprite_src_glob).to_string_lossy())? {
-                let aseprite_src = glob_result?;
-                let base_name = aseprite_src.file_stem().ok_or(anyhow::anyhow!(
+        // Export or copy images into the group directory.
+        for src_glob in group.srcs {
+            for glob_result in glob(&asset_base_dir.join(src_glob).to_string_lossy())? {
+                let src = glob_result?;
+
+                let base_name = src.file_stem().ok_or(anyhow::anyhow!(
                     "Couldn't get file stem for Aseprite project"
                 ))?;
                 let mut image_png = group_dir.join(base_name);
                 image_png.set_extension("png");
-                aseprite_export(&aseprite_src, &image_png)?;
+
+                let ext = src
+                    .extension()
+                    .map(|ext| ext.to_string_lossy().to_string())
+                    .unwrap_or("".to_string());
+                match ext.as_str() {
+                    "aseprite" => aseprite_export(&src, &image_png)?,
+                    "png" => {
+                        fs::copy(src, image_png)?;
+                    }
+                    _ => anyhow::bail!("Unsupported file extension: {ext}"),
+                }
             }
         }
 
@@ -536,14 +554,16 @@ fn generate_masked_pict_assets(
                 .to_string();
 
             let base_resource_id = *pict_resource_id;
-            *pict_resource_id += 2;
 
-            group_assets.push(png_to_pict(
-                build_dir,
-                base_name,
-                base_resource_id,
-                &image_png,
-            )?);
+            let asset = png_to_pict(build_dir, base_name, base_resource_id, &image_png)?;
+
+            if asset.has_mask() {
+                *pict_resource_id += 2;
+            } else {
+                *pict_resource_id += 1;
+            }
+
+            group_assets.push(asset);
         }
 
         assets.push((group_name.to_string(), group_assets));
@@ -559,9 +579,14 @@ struct AssetGroup<'a> {
 }
 
 /// These images should be used as is.
-const ASEPRITE_IMAGE_ASSETS: &[AssetGroup] = &[AssetGroup {
+/// Can accept Aseprite projects or PNGs.
+const IMAGE_ASSETS: &[AssetGroup] = &[AssetGroup {
     name: "scene",
-    srcs: &["atelier_interior.aseprite", "new_title_screen.aseprite"],
+    srcs: &[
+        "atelier_interior.aseprite",
+        "new_title_screen.aseprite",
+        "background-cave0.png",
+    ],
 }];
 
 /// These images should be sliced and then packed into sprite sheets.
@@ -649,6 +674,21 @@ fn imagemagick_convert(input: &Path, output: &Path) -> anyhow::Result<()> {
     Ok(())
 }
 
+fn imagemagick_opaque(input: &Path) -> anyhow::Result<bool> {
+    let program = "magick";
+    let output = Command::new(program)
+        .args(["identify", "-format", "%[opaque]"])
+        .arg(input)
+        .output()?;
+    if !output.status.success() {
+        anyhow::bail!(
+            "{program} exited with code {status}",
+            status = output.status
+        );
+    }
+    Ok(output.stdout.as_slice() == b"True")
+}
+
 /// Extract an image's alpha channel as a mask image.
 /// Note that masks for QuickDraw `CopyMask` are inverted: black pixels are copied, white pixels are ignored.
 fn imagemagick_mask(input: &Path, output: &Path) -> anyhow::Result<()> {
@@ -674,14 +714,22 @@ fn remove_pict_header(input: &Path, output: &Path) -> anyhow::Result<()> {
     Ok(())
 }
 
+// TODO: give image/mask pairs and sprite sheets their own resource types so that the game only needs to know one ID
 /// Pair of image and mask PICTs.
+/// Mask is optional.
 struct MaskedPictAsset {
     base_name: String,
     base_resource_id: ResourceID,
     /// File path to headerless pict data, relative to build dir
     image_pict_data_rel: String,
     /// File path to headerless pict data, relative to build dir
-    mask_pict_data_rel: String,
+    mask_pict_data_rel: Option<String>,
+}
+
+impl MaskedPictAsset {
+    fn has_mask(&self) -> bool {
+        self.mask_pict_data_rel.is_some()
+    }
 }
 
 /// A 32×32 B&W icon. Does not support a mask.
@@ -769,21 +817,19 @@ fn generate_rez_and_header_files(
                 id = group_asset.base_resource_id,
             )?;
 
-            let mask_constant = format!("asset_{group_name}_{base_name}_mask_pict_resource_id")
-                .to_case(Case::Camel);
-            write!(
-                rez,
-                "read 'PICT' ({mask_constant}, \"{group_name} {base_name}\") \"{path}\";\n",
-                path = group_asset.mask_pict_data_rel,
-            )?;
-            write!(
-                header,
-                "#define {mask_constant} {id}\n",
-                id = group_asset.base_resource_id + 1,
-            )?;
-
-            write!(rez, "\n")?;
-            write!(header, "\n")?;
+            if let Some(path) = group_asset.mask_pict_data_rel {
+                let mask_constant = format!("asset_{group_name}_{base_name}_mask_pict_resource_id")
+                    .to_case(Case::Camel);
+                write!(
+                    rez,
+                    "read 'PICT' ({mask_constant}, \"{group_name} {base_name}\") \"{path}\";\n",
+                )?;
+                write!(
+                    header,
+                    "#define {mask_constant} {id}\n",
+                    id = group_asset.base_resource_id + 1,
+                )?;
+            }
         }
 
         write!(rez, "\n")?;

@@ -9,7 +9,7 @@ namespace AtelierEsri {
 /// `PICT` resource with typed operations.
 class Picture {
  public:
-  static Picture Get(ResourceID resourceID);
+  explicit Picture(ResourceID resourceID);
   Rect Bounds();
   void Draw(const Rect &rect);
 
@@ -19,7 +19,6 @@ class Picture {
   Picture &operator=(const Picture &src) = delete;
 
  private:
-  explicit Picture(PICTResource &&resource);
   PICTResource resource;
 };
 

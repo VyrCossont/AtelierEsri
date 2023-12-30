@@ -4,12 +4,8 @@
 
 namespace AtelierEsri {
 
-Picture Picture::Get(const ResourceID resourceID) {
-  PICTResource resource = PICTResource::Get(resourceID);
-  return Picture(std::move(resource));
-}
-
-Picture::Picture(PICTResource &&resource) : resource(std::move(resource)) {}
+Picture::Picture(const ResourceID resourceID)
+    : resource(PICTResource::Get(resourceID)) {}
 
 Picture::Picture(Picture &&src) noexcept : resource(std::move(src.resource)) {}
 
@@ -36,13 +32,13 @@ MaskedImage MaskedImage::Get(
 ) {
   constexpr V2I origin = {0, 0};
 
-  Picture imagePicture = Picture::Get(imageResourceID);
+  Picture imagePicture{imageResourceID};
   const R2I imageRect = imagePicture.Bounds();
   if (imageRect.origin != origin) {
     BAIL("Image rect doesn't start at origin");
   }
 
-  Picture maskPicture = Picture::Get(maskResourceID);
+  Picture maskPicture{maskResourceID};
   const R2I maskRect = imagePicture.Bounds();
   if (imageRect.origin != origin) {
     BAIL("Mask rect doesn't start at origin");
