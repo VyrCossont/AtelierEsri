@@ -93,7 +93,9 @@ void MaskedImage::Draw(const Rect &srcRect, const Rect &dstRect) const {
 MaskedImage::MaskedImage(GWorld &&image, GWorld &&mask, const Rect rect)
     : image(std::move(image)), mask(std::move(mask)), rect(rect) {}
 
-void MaskedImage::DrawInto(Picture &picture, const Rect &rect, GWorld &gWorld) {
+void MaskedImage::DrawInto(
+    Picture &picture, const Rect &rect, const GWorld &gWorld
+) {
   GWorldLockPixelsGuard lockPixelsGuard = gWorld.LockPixels();
   GWorldActiveGuard activeGuard = gWorld.MakeActive();
 

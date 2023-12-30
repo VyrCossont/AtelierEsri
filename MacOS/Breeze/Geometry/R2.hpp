@@ -12,7 +12,7 @@ struct R2 {
   constexpr R2(const Vector origin, const Vector size)
       : origin(origin), size(size) {
     if (size.x < 0 || size.y < 0) {
-      throw std::invalid_argument("Size must be positive");
+      throw std::invalid_argument("Size must not be negative");
     }
   }
 
@@ -34,12 +34,26 @@ struct R2 {
     return {center - halfSize, 2 * halfSize};
   }
 
+  /// Generate rectangle from any two diagonally opposite corners.
+  [[nodiscard]] static Base FromCorners(const Vector a, const Vector b) {
+    const Element left = std::min(a.x, b.x);
+    const Element top = std::min(a.y, b.y);
+    const Element right = std::max(a.x, b.x);
+    const Element bottom = std::max(a.y, b.y);
+    return Base{left, top, right, bottom};
+  }
+
   [[nodiscard]] Element Left() const { return origin.x; }
   [[nodiscard]] Element Right() const { return origin.x + size.x; }
   [[nodiscard]] Element Top() const { return origin.y; }
   [[nodiscard]] Element Bottom() const { return origin.y + size.y; }
   [[nodiscard]] Element Width() const { return size.x; }
   [[nodiscard]] Element Height() const { return size.y; }
+
+  [[nodiscard]] Vector NW() const { return origin; }
+  [[nodiscard]] Vector NE() const { return origin + Vector{size.x, 0}; }
+  [[nodiscard]] Vector SE() const { return origin + size; }
+  [[nodiscard]] Vector SW() const { return origin + Vector{0, size.y}; }
 
   [[nodiscard]] bool Contains(const Vector point) const {
     return point.x >= Left() && point.y >= Top() && point.x <= Right() &&

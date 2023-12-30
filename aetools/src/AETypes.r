@@ -34,7 +34,7 @@ resource 'TMPL' (128, "RGN#") {
 
 /* Template for region lists. */
 resource 'TMPL' (129, "9PC#") {
-	{	/* array fields: 6 elements */
+	{	/* array fields: 7 elements */
 		/* [1] */
 		"NumRegions",
 		"OCNT",

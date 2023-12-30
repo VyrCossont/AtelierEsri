@@ -53,7 +53,8 @@ Game::Game()
               assetSpriteSheet00ImagePictResourceId,
               assetSpriteSheet00MaskPictResourceId
           ),
-          assetSpriteSheet00RgnResourceId
+          assetSpriteSheet00RgnResourceId,
+          assetSpriteSheet009PcResourceId
       ),
       breezeCatalog(Breeze::Material::Catalog()),
       catalog(Material::Catalog(breezeCatalog)),

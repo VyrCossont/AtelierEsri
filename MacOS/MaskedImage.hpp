@@ -38,7 +38,9 @@ class MaskedImage {
  private:
   explicit MaskedImage(GWorld &&image, GWorld &&mask, Rect rect);
   /// Used to copy an image or mask picture into a `GWorld` during setup.
-  static void DrawInto(Picture &picture, const Rect &rect, GWorld &gWorld);
+  static void DrawInto(
+      Picture &picture, const Rect &rect, const GWorld &gWorld
+  );
 
   GWorld image;
   GWorld mask;

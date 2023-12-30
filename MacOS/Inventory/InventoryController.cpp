@@ -5,7 +5,6 @@
 #include <sstream>
 
 #include "AppResources.h"
-#include "Debug.hpp"
 #include "Drawing.hpp"
 #include "Exception.hpp"
 #include "InventoryCell.hpp"
@@ -75,8 +74,6 @@ void InventoryController::Draw() const {
   QD::Reset();
 
   QD::Erase(inventoryRect);
-
-  DEBUG_INSPECT(inventory.size());
 
   // Draw inventory cells into the content GWorld.
   const size_t firstItemIndex = FirstItemIndex();
