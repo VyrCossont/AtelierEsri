@@ -18,6 +18,7 @@ endif ()
 # In particular, should not depend on Apple universal headers.
 add_library(Breeze STATIC
         Breeze/Alchemy.cpp
+        Breeze/Cinematics.cpp
 )
 
 find_path(BETTER_ENUMS_INCLUDE_DIR NAMES better-enums/enum.h)
@@ -50,6 +51,8 @@ if (RETRO68)
             App.cpp
             Alert.cpp
             AtelierInterior/AtelierInteriorGameMode.cpp
+            Cinematic/AlchemySlightlyExplained.cpp
+            Cinematic/CinematicGameMode.cpp
             Control.cpp
             Debug.cpp
             Drawing.cpp

@@ -23,7 +23,7 @@ Rect Picture::Bounds() {
   return pictInfo.sourceRect;
 }
 
-void Picture::Draw(const Rect &rect) {
+void Picture::Draw(const Rect &rect) const {
   QD_CHECKED(DrawPicture(resource.Unmanaged(), &rect), "Couldn't draw picture");
 }
 

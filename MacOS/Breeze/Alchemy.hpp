@@ -186,8 +186,10 @@ struct Recipe {
 
 /// An abstract material, such as red neutralizer.
 struct Material {
+  using ID = size_t;
+
   /// Material catalog ID, used to look up display info, etc.
-  size_t id;
+  ID id;
 
   /// Raw materials, key items, etc. don't have recipes.
   std::optional<Recipe> recipe;

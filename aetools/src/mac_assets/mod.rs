@@ -1,3 +1,6 @@
+mod cinematic;
+
+use crate::mac_assets::cinematic::compile_cinematics;
 use anyhow;
 use convert_case::{Case, Casing};
 use glob::glob;
@@ -10,10 +13,9 @@ use rectangle_pack::{
 use serde::Deserialize;
 use serde_json;
 use std::collections::{BTreeMap, HashMap};
-use std::fs;
-use std::fs::File;
-use std::io::Write;
-use std::io::{BufWriter, ErrorKind};
+use std::ffi::OsStr;
+use std::fs::{self, File};
+use std::io::{BufWriter, ErrorKind, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -32,10 +34,16 @@ pub fn generate(asset_base_dir: &Path, build_dir: &Path) -> anyhow::Result<()> {
         generate_sprite_sheet(asset_base_dir, build_dir, &mut pict_resource_id)?;
     masked_pict_assets.extend(more_masked_pict_assets);
 
-    let (rez, _) =
-        generate_rez_and_header_files(build_dir, masked_pict_assets, rgn_assets, ninepatch_assets)?;
+    let (rez, _) = generate_rez_and_header_files(
+        build_dir,
+        &masked_pict_assets,
+        &rgn_assets,
+        &ninepatch_assets,
+    )?;
 
     let _ = compile_resources(build_dir, &rez)?;
+
+    let _ = compile_cinematics(asset_base_dir, &masked_pict_assets, &rgn_assets, build_dir)?;
 
     Ok(())
 }
@@ -67,10 +75,10 @@ fn ensure_dir(path: &Path) -> anyhow::Result<()> {
 }
 
 /// List of named sprite locations within a sprite sheet, stored as an `RGN#` resource.
-struct RGNAsset {
-    resource_id: ResourceID,
-    name: String,
-    regions: BTreeMap<String, QDRect>,
+pub struct RGNAsset {
+    pub resource_id: ResourceID,
+    pub name: String,
+    pub regions: BTreeMap<String, QDRect>,
 }
 
 impl RGNAsset {
@@ -187,11 +195,11 @@ impl NinePatchAsset {
 
 /// QuickDraw `RECT`.
 #[derive(Debug, Clone)]
-struct QDRect {
-    top: i16,
-    left: i16,
-    bottom: i16,
-    right: i16,
+pub struct QDRect {
+    pub top: i16,
+    pub left: i16,
+    pub bottom: i16,
+    pub right: i16,
 }
 
 impl QDRect {
@@ -244,7 +252,6 @@ struct AsepriteSlice {
 
 #[derive(Debug, Deserialize)]
 struct AsepriteSliceKey {
-    bounds: AsepriteRect,
     /// 9-patch data. Origin relative to bounds.
     center: Option<AsepriteRect>,
 }
@@ -255,6 +262,43 @@ struct AsepriteRect {
     y: i32,
     w: i32,
     h: i32,
+}
+
+fn asset_group_foreach<F, G>(
+    asset_groups: &[AssetGroup],
+    asset_base_dir: &Path,
+    build_dir: &Path,
+    mut glob_match_fn: F,
+    mut group_fn: G,
+) -> anyhow::Result<()>
+where
+    F: FnMut(&str, &Path, &Path, &OsStr, &str) -> anyhow::Result<()>,
+    G: FnMut(&str, &Path) -> anyhow::Result<()>,
+{
+    for group in asset_groups {
+        let group_name = group.name;
+        let group_dir = build_dir.join(group_name);
+        ensure_dir(&group_dir)?;
+        for src_glob in group.srcs {
+            for glob_result in glob(&asset_base_dir.join(src_glob).to_string_lossy())? {
+                let src = glob_result?;
+                let base_name = src.file_stem().ok_or(anyhow::anyhow!(
+                    "Couldn't get file stem for asset file: {src}",
+                    src = src.to_string_lossy()
+                ))?;
+
+                let ext = src
+                    .extension()
+                    .map(|ext| ext.to_string_lossy().to_string())
+                    .unwrap_or("".to_string());
+
+                glob_match_fn(group_name, &group_dir, &src, base_name, &ext)?;
+            }
+        }
+
+        group_fn(group_name, &group_dir)?;
+    }
+    Ok(())
 }
 
 /// Combine all Aseprite sprite slices into a single color and mask PICT pair.
@@ -280,25 +324,22 @@ fn generate_sprite_sheet(
     // Map of input-group-qualified sprite name to 9-patch center rect, if it has one.
     let mut ninepatch_centers = HashMap::<String, QDRect>::new();
 
-    for group in ASEPRITE_SPRITE_ASSETS {
-        let group_name = group.name;
-        let group_dir = build_dir.join(group_name);
-        ensure_dir(&group_dir)?;
-
-        // Export sprite slices from each Aseprite project.
-        for aseprite_src_glob in group.srcs {
-            for glob_result in glob(&asset_base_dir.join(aseprite_src_glob).to_string_lossy())? {
-                let aseprite_src = glob_result?;
-                aseprite_export_slices(&aseprite_src, &group_dir)?;
+    let export_or_copy_sprites = |group_name: &str,
+                                  group_dir: &Path,
+                                  src: &Path,
+                                  base_name: &OsStr,
+                                  ext: &str|
+     -> anyhow::Result<()> {
+        match ext {
+            "aseprite" => {
+                // Export sprite slices from each Aseprite project into the group directory.
+                aseprite_export_slices(&src, &group_dir)?;
 
                 // Get sprite metadata to identify sprites that are 9-patches.
                 let aseprite_project = {
-                    let base_name = aseprite_src
-                        .file_stem()
-                        .ok_or(anyhow::anyhow!("Couldn't get file stem for Aseprite file"))?;
                     let mut metadata_json = group_dir.join(base_name);
                     metadata_json.set_extension("json");
-                    aseprite_export_metadata(&aseprite_src, &metadata_json)?;
+                    aseprite_export_metadata(&src, &metadata_json)?;
                     aseprite_read_metadata(&metadata_json)?
                 };
                 for slice in &aseprite_project.meta.slices {
@@ -312,9 +353,18 @@ fn generate_sprite_sheet(
                     }
                 }
             }
+            "png" => {
+                // Copy PNG sprites into the group directory.
+                let mut image_png = group_dir.join(base_name);
+                image_png.set_extension("png");
+                fs::copy(src, image_png)?;
+            }
+            _ => anyhow::bail!("Unsupported file extension: {ext}"),
         }
+        Ok(())
+    };
 
-        // Collect metadata for each sprite.
+    let collect_sprite_metadata = |group_name: &str, group_dir: &Path| -> anyhow::Result<()> {
         for glob_result in glob(&group_dir.join("*.png").to_string_lossy())? {
             let png_slice = glob_result?;
 
@@ -338,15 +388,24 @@ fn generate_sprite_sheet(
                 RectToInsert::new(info.width, info.height, 1),
             );
         }
-    }
+        Ok(())
+    };
+
+    asset_group_foreach(
+        SPRITE_ASSETS,
+        asset_base_dir,
+        build_dir,
+        export_or_copy_sprites,
+        collect_sprite_metadata,
+    )?;
 
     // Place rectangles in as many sprite sheets as necessary.
     // Does not currently take asset groups into account.
     // `RGN#` and `9PC#` resources will be assigned the same IDs as the image `PICT` resource.
     let mut target_bins = BTreeMap::new();
     // Arbitrary size.
-    let sheet_w = 256u32;
-    let sheet_h = 256u32;
+    let sheet_w = 512u32;
+    let sheet_h = 512u32;
     let max_sheet_count = 1;
     let rectangle_placements: RectanglePackOk<String, ResourceID>;
     loop {
@@ -511,36 +570,26 @@ fn generate_masked_pict_assets(
 ) -> anyhow::Result<Vec<(String, Vec<MaskedPictAsset>)>> {
     let mut assets = Vec::<(String, Vec<MaskedPictAsset>)>::new();
 
-    for group in IMAGE_ASSETS {
-        let group_name = group.name;
-        let group_dir = build_dir.join(group_name);
-        ensure_dir(&group_dir)?;
+    let export_or_copy_images = |_group_name: &str,
+                                 group_dir: &Path,
+                                 src: &Path,
+                                 base_name: &OsStr,
+                                 ext: &str|
+     -> anyhow::Result<()> {
+        let mut image_png = group_dir.join(base_name);
+        image_png.set_extension("png");
 
-        // Export or copy images into the group directory.
-        for src_glob in group.srcs {
-            for glob_result in glob(&asset_base_dir.join(src_glob).to_string_lossy())? {
-                let src = glob_result?;
-
-                let base_name = src.file_stem().ok_or(anyhow::anyhow!(
-                    "Couldn't get file stem for Aseprite project"
-                ))?;
-                let mut image_png = group_dir.join(base_name);
-                image_png.set_extension("png");
-
-                let ext = src
-                    .extension()
-                    .map(|ext| ext.to_string_lossy().to_string())
-                    .unwrap_or("".to_string());
-                match ext.as_str() {
-                    "aseprite" => aseprite_export(&src, &image_png)?,
-                    "png" => {
-                        fs::copy(src, image_png)?;
-                    }
-                    _ => anyhow::bail!("Unsupported file extension: {ext}"),
-                }
+        match ext {
+            "aseprite" => aseprite_export(&src, &image_png)?,
+            "png" => {
+                fs::copy(src, image_png)?;
             }
+            _ => anyhow::bail!("Unsupported file extension: {ext}"),
         }
+        Ok(())
+    };
 
+    let convert_pngs_to_picts = |group_name: &str, group_dir: &Path| -> anyhow::Result<()> {
         let mut group_assets = Vec::<MaskedPictAsset>::new();
 
         // Convert to image and mask PICTs.
@@ -567,7 +616,17 @@ fn generate_masked_pict_assets(
         }
 
         assets.push((group_name.to_string(), group_assets));
-    }
+
+        Ok(())
+    };
+
+    asset_group_foreach(
+        IMAGE_ASSETS,
+        asset_base_dir,
+        build_dir,
+        export_or_copy_images,
+        convert_pngs_to_picts,
+    )?;
 
     Ok(assets)
 }
@@ -590,10 +649,17 @@ const IMAGE_ASSETS: &[AssetGroup] = &[AssetGroup {
 }];
 
 /// These images should be sliced and then packed into sprite sheets.
-const ASEPRITE_SPRITE_ASSETS: &[AssetGroup] = &[
+const SPRITE_ASSETS: &[AssetGroup] = &[
     AssetGroup {
         name: "avatar",
-        srcs: &["Esri.aseprite", "Allie.aseprite", "Sae.aseprite"],
+        srcs: &[
+            "Esri.aseprite",
+            "Allie.aseprite",
+            "Sae.aseprite",
+            "avatars/Esri_*.png",
+            "avatars/Allie_*.aseprite",
+            "avatars/Sae_*.png",
+        ],
     },
     // AssetGroup {
     //     name: "cursor",
@@ -717,13 +783,13 @@ fn remove_pict_header(input: &Path, output: &Path) -> anyhow::Result<()> {
 // TODO: give image/mask pairs and sprite sheets their own resource types so that the game only needs to know one ID
 /// Pair of image and mask PICTs.
 /// Mask is optional.
-struct MaskedPictAsset {
-    base_name: String,
-    base_resource_id: ResourceID,
+pub struct MaskedPictAsset {
+    pub base_name: String,
+    pub base_resource_id: ResourceID,
     /// File path to headerless pict data, relative to build dir
-    image_pict_data_rel: String,
+    pub image_pict_data_rel: String,
     /// File path to headerless pict data, relative to build dir
-    mask_pict_data_rel: Option<String>,
+    pub mask_pict_data_rel: Option<String>,
 }
 
 impl MaskedPictAsset {
@@ -754,9 +820,9 @@ struct SICNAsset {
 /// Write Rez resource file and headers that can be used by Rez and C.
 fn generate_rez_and_header_files(
     build_dir: &Path,
-    masked_pict_assets: Vec<(String, Vec<MaskedPictAsset>)>,
-    rgn_assets: Vec<RGNAsset>,
-    ninepatch_assets: Vec<NinePatchAsset>,
+    masked_pict_assets: &Vec<(String, Vec<MaskedPictAsset>)>,
+    rgn_assets: &Vec<RGNAsset>,
+    ninepatch_assets: &Vec<NinePatchAsset>,
 ) -> anyhow::Result<(PathBuf, PathBuf)> {
     // Copy custom resource types file as is.
     {
@@ -802,7 +868,7 @@ fn generate_rez_and_header_files(
         write!(header, "/* {group_name} */\n\n")?;
 
         for group_asset in group_assets {
-            let base_name = group_asset.base_name;
+            let base_name = &group_asset.base_name;
 
             let image_constant = format!("asset_{group_name}_{base_name}_image_pict_resource_id")
                 .to_case(Case::Camel);
@@ -817,7 +883,7 @@ fn generate_rez_and_header_files(
                 id = group_asset.base_resource_id,
             )?;
 
-            if let Some(path) = group_asset.mask_pict_data_rel {
+            if let Some(path) = &group_asset.mask_pict_data_rel {
                 let mask_constant = format!("asset_{group_name}_{base_name}_mask_pict_resource_id")
                     .to_case(Case::Camel);
                 write!(

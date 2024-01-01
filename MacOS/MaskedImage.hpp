@@ -11,7 +11,7 @@ class Picture {
  public:
   explicit Picture(ResourceID resourceID);
   Rect Bounds();
-  void Draw(const Rect &rect);
+  void Draw(const Rect &rect) const;
 
   Picture(Picture &&src) noexcept;
   Picture &operator=(Picture &&src) noexcept;

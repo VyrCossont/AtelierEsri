@@ -21,6 +21,10 @@
 
 #define atelierInteriorWINDResourceID 131
 #define atelierInteriorSynthesizeButtonCNTLResourceID 131
+#define atelierInteriorTheaterButtonCNTLResourceID 135
+
+#define cinematicForwardButtonCNTLResourceID 136
+#define cinematicBackButtonCNTLResourceID 137
 
 #define menuBarMBARResourceID 128
 

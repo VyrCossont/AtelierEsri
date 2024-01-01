@@ -68,7 +68,7 @@ class Resource {
 
   /// Get an unmanaged handle to the resource.
   /// TODO: (Vyr) support purgeable resources by making this a guard object.
-  ResourceHandleType Unmanaged() { return handle.get(); }
+  ResourceHandleType Unmanaged() const { return handle.get(); }
 
  private:
   explicit Resource(ResourceHandleType handle) : handle(handle) {}

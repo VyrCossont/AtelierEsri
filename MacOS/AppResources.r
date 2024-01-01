@@ -3,6 +3,7 @@
 
 #include "Controls.r"
 #include "Dialogs.r"
+#include "MacTypes.r"
 #include "MacWindows.r"
 #include "Menus.r"
 #include "Processes.r"
@@ -157,6 +158,41 @@ resource 'CNTL' (atelierInteriorSynthesizeButtonCNTLResourceID, "atelier interio
     pushButProc,
     0x0, /* refCon */
     "Synthesize" /* title */
+};
+
+resource 'CNTL' (atelierInteriorTheaterButtonCNTLResourceID, "atelier interior theater button", preload, purgeable) {
+    {260, 23, 280, 82},
+    0, /* initial setting */
+    visible,
+    1, /* max setting */
+    0, /* min setting */
+    pushButProc,
+    0x0, /* refCon */
+    "Theater" /* title */
+};
+
+/* Cinematic playback currently uses the atelier interior WIND. */
+
+resource 'CNTL' (cinematicForwardButtonCNTLResourceID, "cinematic forward button", preload, purgeable) {
+    {10, 370, 30, 390},
+    0, /* initial setting */
+    visible,
+    1, /* max setting */
+    0, /* min setting */
+    pushButProc,
+    0x0, /* refCon */
+    ">" /* title */
+};
+
+resource 'CNTL' (cinematicBackButtonCNTLResourceID, "cinematic back button", preload, purgeable) {
+    {10, 340, 30, 360},
+    0, /* initial setting */
+    visible,
+    1, /* max setting */
+    0, /* min setting */
+    pushButProc,
+    0x0, /* refCon */
+    "<" /* title */
 };
 
 /*
