@@ -1,5 +1,3 @@
-// TODO: text format for cinematics + asset processor to translate them into Breeze cinematic commands
-
 use crate::mac_assets::{asset_group_foreach, AssetGroup, MaskedPictAsset, RGNAsset};
 use anyhow;
 use convert_case::{Case, Casing};
