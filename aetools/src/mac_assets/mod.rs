@@ -1,10 +1,14 @@
 mod cinematic;
+mod tiled;
 
+use crate::mac::resource::TypedResource;
+use crate::mac::OSType;
 use crate::mac_assets::cinematic::compile_cinematics;
+use crate::mac_assets::tiled::{compile_maps, TMXAsset, TSXAsset};
 use anyhow;
 use convert_case::{Case, Casing};
 use glob::glob;
-use image::{self, imageops, RgbaImage};
+use image::{self, image_dimensions, imageops, RgbaImage};
 use png;
 use rectangle_pack::{
     contains_smallest_box, pack_rects, volume_heuristic, GroupedRectsToPlace, PackedLocation,
@@ -21,29 +25,121 @@ use std::process::Command;
 
 type ResourceID = i16;
 
+/// See https://preterhuman.net/macstuff/insidemac/MoreToolbox/MoreToolbox-27.html#MARKER-9-196
+#[derive(Debug, Default)]
+pub struct ResourceIDGenerator {
+    /// Stores the next ID to be returned for that resource type.
+    map: BTreeMap<OSType, ResourceID>,
+}
+
+impl ResourceIDGenerator {
+    const FIRST_ID: ResourceID = 128;
+
+    /// Get an ID for that resource type.
+    fn get(&mut self, os_type: OSType) -> ResourceID {
+        if let Some(map_id) = self.map.get_mut(&os_type) {
+            let id = *map_id;
+            *map_id += 1;
+            return id;
+        }
+        self.map.insert(os_type, Self::FIRST_ID + 1);
+        return Self::FIRST_ID;
+    }
+}
+
+// TODO: consider extracting asset name and resource ID into a `RezMeta` type, which could also include resource flags.
+/// Can emit itself as Rez source and C headers.
+trait Resourceful: TypedResource {
+    fn name(&self) -> String;
+
+    /// May collide with other resource types, or be empty, in which case, override this.
+    fn id_safe_os_type() -> String {
+        Self::OS_TYPE
+            .iter()
+            .filter_map(|c| {
+                let c = *c as char;
+                match c {
+                    'a'..='z' | '0'..='9' => Some(c),
+                    'A'..='Z' => Some(c.to_ascii_lowercase()),
+                    _ => None,
+                }
+            })
+            .collect()
+    }
+
+    /// Hack: OSTypes are assumed to be *MacRoman* when treated as strings, not UTF-8,
+    /// but to keep things simple, we will only use ASCII in our own resource types.
+    /// TODO: refactor Rez methods to work in MacRoman
+    fn os_type_rez() -> String {
+        for c in Self::OS_TYPE {
+            if !c.is_ascii() {
+                panic!("OSType can't contain non-ASCII characters");
+            }
+            if c.is_ascii_control() {
+                panic!("OSType shouldn't include control characters");
+            }
+            if c == b'\'' {
+                // TODO: figure out how to escape things in Rez source
+                panic!("OSType shouldn't include apostrophes");
+            }
+        }
+        String::from_utf8(Self::OS_TYPE.to_vec()).unwrap_or("OSType is not valid UTF-8".to_string())
+    }
+
+    fn id_constant(&self) -> String {
+        format!(
+            "asset_{name}_{os_type}_resource_id",
+            os_type = Self::id_safe_os_type(),
+            name = self.name()
+        )
+        .to_case(Case::Camel)
+    }
+
+    fn rez(&self) -> String;
+
+    fn header(&self) -> String;
+}
+
 pub fn generate(asset_base_dir: &Path, build_dir: &Path) -> anyhow::Result<()> {
     delete_dir(build_dir)?;
     ensure_dir(build_dir)?;
 
     // Start at first application-usable ID that isn't in the range used for definition procedures.
-    let mut pict_resource_id: ResourceID = 4096;
+    // TODO: which things even care about definition procedures?
+    let mut resource_id_generator = ResourceIDGenerator::default();
 
-    let mut masked_pict_assets =
-        generate_masked_pict_assets(asset_base_dir, build_dir, &mut pict_resource_id)?;
-    let (more_masked_pict_assets, rgn_assets, ninepatch_assets) =
-        generate_sprite_sheet(asset_base_dir, build_dir, &mut pict_resource_id)?;
-    masked_pict_assets.extend(more_masked_pict_assets);
+    let mut masked_pict_asset_groups =
+        generate_masked_pict_assets(asset_base_dir, build_dir, &mut resource_id_generator)?;
+
+    let mut rgn_asset_groups = Vec::<(String, Vec<RGNAsset>)>::new();
+
+    let (sprite_sheet_masked_pict_asset_groups, sprite_sheet_rgn_assets, ninepatch_assets) =
+        generate_sprite_sheet(asset_base_dir, build_dir, &mut resource_id_generator)?;
+    masked_pict_asset_groups.extend(sprite_sheet_masked_pict_asset_groups);
+    rgn_asset_groups.push(("sprite_sheet".to_string(), sprite_sheet_rgn_assets.clone()));
+
+    let (map_masked_pict_assets, tsx_assets, map_rgn_assets, tmx_assets) =
+        compile_maps(asset_base_dir, build_dir, &mut resource_id_generator)?;
+    masked_pict_asset_groups.push(("tileset".to_string(), map_masked_pict_assets));
+    rgn_asset_groups.push(("map".to_string(), map_rgn_assets));
 
     let (rez, _) = generate_rez_and_header_files(
         build_dir,
-        &masked_pict_assets,
-        &rgn_assets,
+        &masked_pict_asset_groups,
+        &rgn_asset_groups,
         &ninepatch_assets,
+        &tsx_assets,
+        &tmx_assets,
     )?;
 
     let _ = compile_resources(build_dir, &rez)?;
 
-    let _ = compile_cinematics(asset_base_dir, &masked_pict_assets, &rgn_assets, build_dir)?;
+    let _ = compile_cinematics(
+        asset_base_dir,
+        &masked_pict_asset_groups,
+        &sprite_sheet_rgn_assets,
+        build_dir,
+    )?;
 
     Ok(())
 }
@@ -75,6 +171,7 @@ fn ensure_dir(path: &Path) -> anyhow::Result<()> {
 }
 
 /// List of named sprite locations within a sprite sheet, stored as an `RGN#` resource.
+#[derive(Debug, Clone)]
 pub struct RGNAsset {
     pub resource_id: ResourceID,
     pub name: String,
@@ -82,8 +179,27 @@ pub struct RGNAsset {
 }
 
 impl RGNAsset {
-    fn id_constant(&self) -> String {
-        format!("asset_{base_name}_rgn_resource_id", base_name = self.name).to_case(Case::Camel)
+    fn new(
+        resource_id_generator: &mut ResourceIDGenerator,
+        name: String,
+        regions: BTreeMap<String, QDRect>,
+    ) -> Self {
+        let resource_id = resource_id_generator.get(Self::OS_TYPE);
+        Self {
+            resource_id,
+            name,
+            regions,
+        }
+    }
+}
+
+impl TypedResource for RGNAsset {
+    const OS_TYPE: OSType = *b"RGN#";
+}
+
+impl Resourceful for RGNAsset {
+    fn name(&self) -> String {
+        return self.name.clone();
     }
 
     fn rez(&self) -> String {
@@ -129,13 +245,6 @@ impl RGNAsset {
     }
 }
 
-/// List of named 9-patch locations within a sprite sheet, stored as a `9PC#` resource.
-struct NinePatchAsset {
-    resource_id: ResourceID,
-    name: String,
-    patches: BTreeMap<String, NinePatch>,
-}
-
 /// A 9-patch location.
 struct NinePatch {
     /// Relative to sprite sheet origin.
@@ -144,9 +253,35 @@ struct NinePatch {
     center: QDRect,
 }
 
+/// List of named 9-patch locations within a sprite sheet, stored as a `9PC#` resource.
+struct NinePatchAsset {
+    resource_id: ResourceID,
+    name: String,
+    patches: BTreeMap<String, NinePatch>,
+}
+
 impl NinePatchAsset {
-    fn id_constant(&self) -> String {
-        format!("asset_{base_name}_9pc_resource_id", base_name = self.name).to_case(Case::Camel)
+    fn new(
+        resource_id_generator: &mut ResourceIDGenerator,
+        name: String,
+        patches: BTreeMap<String, NinePatch>,
+    ) -> Self {
+        let resource_id = resource_id_generator.get(Self::OS_TYPE);
+        Self {
+            resource_id,
+            name,
+            patches,
+        }
+    }
+}
+
+impl TypedResource for NinePatchAsset {
+    const OS_TYPE: OSType = *b"9PC#";
+}
+
+impl Resourceful for NinePatchAsset {
+    fn name(&self) -> String {
+        self.name.clone()
     }
 
     fn rez(&self) -> String {
@@ -305,7 +440,7 @@ where
 fn generate_sprite_sheet(
     asset_base_dir: &Path,
     build_dir: &Path,
-    pict_resource_id: &mut ResourceID,
+    resource_id_generator: &mut ResourceIDGenerator,
 ) -> anyhow::Result<(
     Vec<(String, Vec<MaskedPictAsset>)>,
     Vec<RGNAsset>,
@@ -401,47 +536,51 @@ fn generate_sprite_sheet(
 
     // Place rectangles in as many sprite sheets as necessary.
     // Does not currently take asset groups into account.
-    // `RGN#` and `9PC#` resources will be assigned the same IDs as the image `PICT` resource.
     let mut target_bins = BTreeMap::new();
     // Arbitrary size.
     let sheet_w = 512u32;
-    let sheet_h = 512u32;
+    let sheet_h = 256u32;
     let max_sheet_count = 1;
-    let rectangle_placements: RectanglePackOk<String, ResourceID>;
-    loop {
-        target_bins.insert(*pict_resource_id, TargetBin::new(sheet_w, sheet_h, 1));
-        match pack_rects(
-            &rects_to_place,
-            &mut target_bins,
-            &volume_heuristic,
-            &contains_smallest_box,
-        ) {
-            Err(e) => match e {
-                RectanglePackError::NotEnoughBinSpace => {
-                    if target_bins.len() < max_sheet_count {
-                        *pict_resource_id += 2;
-                        continue;
-                    } else {
-                        anyhow::bail!(
-                            "Hit max sheet count {max_sheet_count} while packing sprites!"
-                        );
+    let rectangle_placements: RectanglePackOk<String, usize>;
+    {
+        let mut sheet_number = 0usize;
+        loop {
+            target_bins.insert(sheet_number, TargetBin::new(sheet_w, sheet_h, 1));
+            match pack_rects(
+                &rects_to_place,
+                &mut target_bins,
+                &volume_heuristic,
+                &contains_smallest_box,
+            ) {
+                Err(e) => match e {
+                    RectanglePackError::NotEnoughBinSpace => {
+                        if target_bins.len() < max_sheet_count {
+                            sheet_number += 1;
+                            continue;
+                        } else {
+                            anyhow::bail!(
+                                "Hit max sheet count {max_sheet_count} while packing sprites!"
+                            );
+                        }
                     }
+                },
+                Ok(placements) => {
+                    rectangle_placements = placements;
+                    break;
                 }
-            },
-            Ok(placements) => {
-                rectangle_placements = placements;
-                break;
             }
         }
     }
-    let mut sprites_for_sheet = BTreeMap::<ResourceID, BTreeMap<String, PackedLocation>>::new();
-    for (sprite_name, (base_resource_id, location)) in rectangle_placements.packed_locations() {
-        if let Some(sprites) = sprites_for_sheet.get_mut(base_resource_id) {
+
+    // Build a map of the sheet and location assigned to each sprite.
+    let mut sprites_for_sheet = BTreeMap::<usize, BTreeMap<String, PackedLocation>>::new();
+    for (sprite_name, (sheet_number, location)) in rectangle_placements.packed_locations() {
+        if let Some(sprites) = sprites_for_sheet.get_mut(sheet_number) {
             sprites.insert(sprite_name.clone(), location.clone());
         } else {
             let mut sprites = BTreeMap::<String, PackedLocation>::new();
             sprites.insert(sprite_name.clone(), location.clone());
-            sprites_for_sheet.insert(*base_resource_id, sprites);
+            sprites_for_sheet.insert(*sheet_number, sprites);
         }
     }
 
@@ -466,7 +605,7 @@ fn generate_sprite_sheet(
         group_assets.push(png_to_pict(
             build_dir,
             format!("{sheet_number:02}"),
-            *base_resource_id,
+            resource_id_generator,
             &sprite_sheet_png,
         )?);
 
@@ -497,17 +636,17 @@ fn generate_sprite_sheet(
             }
         }
 
-        rgn_assets.push(RGNAsset {
-            resource_id: *base_resource_id,
-            name: format!("sprite_sheet {sheet_number:02}"),
-            regions: rgn_sprites,
-        });
+        rgn_assets.push(RGNAsset::new(
+            resource_id_generator,
+            format!("sprite_sheet {sheet_number:02}"),
+            rgn_sprites,
+        ));
 
-        ninepatch_assets.push(NinePatchAsset {
-            resource_id: *base_resource_id,
-            name: format!("sprite_sheet {sheet_number:02}"),
-            patches: ninepatch_sprites,
-        });
+        ninepatch_assets.push(NinePatchAsset::new(
+            resource_id_generator,
+            format!("sprite_sheet {sheet_number:02}"),
+            ninepatch_sprites,
+        ));
     }
 
     masked_pict_assets.push(("sprite_sheet".to_string(), group_assets));
@@ -516,12 +655,19 @@ fn generate_sprite_sheet(
 }
 
 /// Convert a PNG to image and mask PICTs.
-fn png_to_pict(
+pub fn png_to_pict(
     build_dir: &Path,
     base_name: String,
-    base_resource_id: ResourceID,
+    resource_id_generator: &mut ResourceIDGenerator,
     png: &Path,
 ) -> anyhow::Result<MaskedPictAsset> {
+    let pict_os_type: OSType = *b"PICT";
+    let image_pict_resource_id = resource_id_generator.get(pict_os_type);
+
+    let (image_width, image_height) = image_dimensions(png)?;
+    let image_width = i16::try_from(image_width)?;
+    let image_height = i16::try_from(image_height)?;
+
     let mut image_pict = png.to_path_buf();
     image_pict.set_extension("pict");
     imagemagick_convert(&png, &image_pict)?;
@@ -535,8 +681,8 @@ fn png_to_pict(
         .to_string_lossy()
         .to_string();
 
-    let mask_pict_data_rel = if imagemagick_opaque(png)? {
-        None
+    let (mask_pict_resource_id, mask_pict_data_rel) = if imagemagick_opaque(png)? {
+        (None, None)
     } else {
         let mut mask_pict = png.to_path_buf();
         mask_pict.set_extension("mask.pict");
@@ -546,18 +692,24 @@ fn png_to_pict(
         mask_pict_data.set_extension("mask.pictdata");
         remove_pict_header(&mask_pict, &mask_pict_data)?;
 
-        Some(
-            mask_pict_data
-                .strip_prefix(&build_dir)?
-                .to_string_lossy()
-                .to_string(),
+        (
+            Some(resource_id_generator.get(pict_os_type)),
+            Some(
+                mask_pict_data
+                    .strip_prefix(&build_dir)?
+                    .to_string_lossy()
+                    .to_string(),
+            ),
         )
     };
 
     Ok(MaskedPictAsset {
         base_name,
-        base_resource_id,
+        image_width,
+        image_height,
+        image_pict_resource_id,
         image_pict_data_rel,
+        mask_pict_resource_id,
         mask_pict_data_rel,
     })
 }
@@ -566,7 +718,7 @@ fn png_to_pict(
 fn generate_masked_pict_assets(
     asset_base_dir: &Path,
     build_dir: &Path,
-    pict_resource_id: &mut ResourceID,
+    resource_id_generator: &mut ResourceIDGenerator,
 ) -> anyhow::Result<Vec<(String, Vec<MaskedPictAsset>)>> {
     let mut assets = Vec::<(String, Vec<MaskedPictAsset>)>::new();
 
@@ -602,15 +754,7 @@ fn generate_masked_pict_assets(
                 .to_string_lossy()
                 .to_string();
 
-            let base_resource_id = *pict_resource_id;
-
-            let asset = png_to_pict(build_dir, base_name, base_resource_id, &image_png)?;
-
-            if asset.has_mask() {
-                *pict_resource_id += 2;
-            } else {
-                *pict_resource_id += 1;
-            }
+            let asset = png_to_pict(build_dir, base_name, resource_id_generator, &image_png)?;
 
             group_assets.push(asset);
         }
@@ -783,18 +927,22 @@ fn remove_pict_header(input: &Path, output: &Path) -> anyhow::Result<()> {
 // TODO: give image/mask pairs and sprite sheets their own resource types so that the game only needs to know one ID
 /// Pair of image and mask PICTs.
 /// Mask is optional.
+#[derive(Debug, Clone)]
 pub struct MaskedPictAsset {
     pub base_name: String,
-    pub base_resource_id: ResourceID,
+    pub image_width: i16,
+    pub image_height: i16,
+    pub image_pict_resource_id: ResourceID,
     /// File path to headerless pict data, relative to build dir
     pub image_pict_data_rel: String,
+    pub mask_pict_resource_id: Option<ResourceID>,
     /// File path to headerless pict data, relative to build dir
     pub mask_pict_data_rel: Option<String>,
 }
 
 impl MaskedPictAsset {
     fn has_mask(&self) -> bool {
-        self.mask_pict_data_rel.is_some()
+        self.mask_pict_resource_id.is_some() && self.mask_pict_data_rel.is_some()
     }
 }
 
@@ -820,9 +968,11 @@ struct SICNAsset {
 /// Write Rez resource file and headers that can be used by Rez and C.
 fn generate_rez_and_header_files(
     build_dir: &Path,
-    masked_pict_assets: &Vec<(String, Vec<MaskedPictAsset>)>,
-    rgn_assets: &Vec<RGNAsset>,
+    masked_pict_asset_groups: &Vec<(String, Vec<MaskedPictAsset>)>,
+    rgn_asset_groups: &Vec<(String, Vec<RGNAsset>)>,
     ninepatch_assets: &Vec<NinePatchAsset>,
+    tsx_assets: &Vec<TSXAsset>,
+    tmx_assets: &Vec<TMXAsset>,
 ) -> anyhow::Result<(PathBuf, PathBuf)> {
     // Copy custom resource types file as is.
     {
@@ -863,38 +1013,36 @@ fn generate_rez_and_header_files(
     write!(header, "#define ASSETS_H\n")?;
     write!(header, "\n")?;
 
-    for (group_name, group_assets) in masked_pict_assets {
+    for (group_name, group_assets) in masked_pict_asset_groups {
         write!(rez, "/* {group_name} */\n\n")?;
         write!(header, "/* {group_name} */\n\n")?;
 
-        for group_asset in group_assets {
-            let base_name = &group_asset.base_name;
+        for asset in group_assets {
+            let base_name = &asset.base_name;
 
             let image_constant = format!("asset_{group_name}_{base_name}_image_pict_resource_id")
                 .to_case(Case::Camel);
             write!(
                 rez,
                 "read 'PICT' ({image_constant}, \"{group_name} {base_name}\") \"{path}\";\n",
-                path = group_asset.image_pict_data_rel,
+                path = asset.image_pict_data_rel,
             )?;
             write!(
                 header,
                 "#define {image_constant} {id}\n",
-                id = group_asset.base_resource_id,
+                id = asset.image_pict_resource_id,
             )?;
 
-            if let Some(path) = &group_asset.mask_pict_data_rel {
+            if let (Some(id), Some(path)) =
+                (&asset.mask_pict_resource_id, &asset.mask_pict_data_rel)
+            {
                 let mask_constant = format!("asset_{group_name}_{base_name}_mask_pict_resource_id")
                     .to_case(Case::Camel);
                 write!(
                     rez,
                     "read 'PICT' ({mask_constant}, \"{group_name} {base_name}\") \"{path}\";\n",
                 )?;
-                write!(
-                    header,
-                    "#define {mask_constant} {id}\n",
-                    id = group_asset.base_resource_id + 1,
-                )?;
+                write!(header, "#define {mask_constant} {id}\n",)?;
             }
         }
 
@@ -902,15 +1050,19 @@ fn generate_rez_and_header_files(
         write!(header, "\n")?;
     }
 
-    for rgn_asset in rgn_assets {
-        write!(rez, "/* sprite sheet region lists */\n\n")?;
-        write!(header, "/* sprite sheet region lists */\n\n")?;
+    // TODO: all assets should support groups
 
-        write!(rez, "{src}", src = rgn_asset.rez())?;
-        write!(header, "{src}", src = rgn_asset.header())?;
+    for (group, rgn_assets) in rgn_asset_groups {
+        for rgn_asset in rgn_assets {
+            write!(rez, "/* {group} region lists */\n\n")?;
+            write!(header, "/* {group} region lists */\n\n")?;
 
-        write!(rez, "\n")?;
-        write!(header, "\n")?;
+            write!(rez, "{src}", src = rgn_asset.rez())?;
+            write!(header, "{src}", src = rgn_asset.header())?;
+
+            write!(rez, "\n")?;
+            write!(header, "\n")?;
+        }
     }
 
     for ninepatch_asset in ninepatch_assets {
@@ -923,6 +1075,30 @@ fn generate_rez_and_header_files(
         write!(rez, "\n")?;
         write!(header, "\n")?;
     }
+
+    for tsx_asset in tsx_assets {
+        write!(rez, "/* tilesets */\n\n")?;
+        write!(header, "/* tilesets */\n\n")?;
+
+        write!(rez, "{src}", src = tsx_asset.rez())?;
+        write!(header, "{src}", src = tsx_asset.header())?;
+
+        write!(rez, "\n")?;
+        write!(header, "\n")?;
+    }
+
+    for tmx_asset in tmx_assets {
+        write!(rez, "/* tilemaps */\n\n")?;
+        write!(header, "/* tilemaps */\n\n")?;
+
+        write!(rez, "{src}", src = tmx_asset.rez())?;
+        write!(header, "{src}", src = tmx_asset.header())?;
+
+        write!(rez, "\n")?;
+        write!(header, "\n")?;
+    }
+
+    // TODO: make use of `Resourceful` and generalize this
 
     write!(header, "#endif /* ASSETS_H */\n")?;
 

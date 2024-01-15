@@ -54,7 +54,7 @@ In both cases, the Pixaki and Aseprite files will contain the AI-generated refer
 
 ## Tiles
 
-- [`Kenney_MonochromeRPG_extended.png`](asset_originals/Kenney_monochromerpg_extended.png), [`Village.tmx`](asset_originals/Village.tmx): [Monochrome RPG](https://opengameart.org/content/monochrome-rpg) by [Kenney](https://kenney.nl/) and extended by me (CC0)
+- [`Kenney_MonochromeRPG_extended.png`](asset_originals/tilesets/Kenney_monochromerpg_extended.png), [`Village.tmx`](asset_originals/maps/Village.tmx): [Monochrome RPG](https://opengameart.org/content/monochrome-rpg) by [Kenney](https://kenney.nl/) and extended by me (CC0)
 
 ## Fonts
 

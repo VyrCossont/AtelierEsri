@@ -26,6 +26,7 @@ rectangle-pack = "0.4.2"
 regex = "1.10.2"
 serde = "1.0.145"
 serde_json = "1.0.85"
+tiled = "0.11.2"
 schemars = { version = "0.8.10", features = ["enumset", "preserve_order"] }
 enumset = { version = "1.0.11", features = ["serde"] }
 indexmap = { version = "1.9.1", features = ["serde"] }

@@ -92,8 +92,10 @@ fn build_maps(
         .expect("Couldn't find scene asset group")
         .1
         .iter()
-        .map(|asset| (asset.base_name.clone(), asset.base_resource_id))
+        .map(|asset| (asset.base_name.clone(), asset.image_pict_resource_id))
         .collect();
+    // TODO: we currently assume that the mask_pict_resource_id is unused,
+    //  but should enforce this at the type level by having regular PICTs
 
     Ok((character_mood_sprite_indexes, background_resource_ids))
 }
