@@ -239,7 +239,7 @@ resource 'MENU' (fileMenuMENUResourceID, "file menu", preload) {
 	}
 };
 
-/* Require 10 MB of heap for now. Main sprite sheet currently uses a silly amount of memory. */
+/* Require 4 MB of heap for now. Main sprite sheet currently uses a silly amount of memory. */
 resource 'SIZE' (-1) {
 	reserved,
 	ignoreSuspendResumeEvents,
@@ -257,6 +257,6 @@ resource 'SIZE' (-1) {
 	notDisplayManagerAware,
 	reserved,
 	reserved,
-	10485760, /* 10 MB */
-	10485760  /* 10 MB */
+	4194304, /* 4 MB */
+	4194304  /* 4 MB */
 };
