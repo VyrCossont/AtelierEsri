@@ -5,10 +5,12 @@ use crate::mac::resource::TypedResource;
 use crate::mac::OSType;
 use crate::mac_assets::cinematic::compile_cinematics;
 use crate::mac_assets::tiled::{compile_maps, TMXAsset, TSXAsset};
+use aetools_derive::cpp_codegen;
 use anyhow;
 use convert_case::{Case, Casing};
 use glob::glob;
 use image::{self, image_dimensions, imageops, RgbaImage};
+use itertools::Itertools;
 use png;
 use rectangle_pack::{
     contains_smallest_box, pack_rects, volume_heuristic, GroupedRectsToPlace, PackedLocation,
@@ -330,11 +332,17 @@ impl Resourceful for NinePatchAsset {
 
 /// QuickDraw `RECT`.
 #[derive(Debug, Clone)]
+#[cpp_codegen]
 pub struct QDRect {
     pub top: i16,
     pub left: i16,
     pub bottom: i16,
     pub right: i16,
+}
+
+pub fn hpp() -> anyhow::Result<()> {
+    println!("{hpp}", hpp = QDRect::hpp());
+    Ok(())
 }
 
 impl QDRect {

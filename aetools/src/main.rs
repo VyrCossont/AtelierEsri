@@ -116,6 +116,7 @@ enum Commands {
         #[clap(value_parser)]
         output: PathBuf,
     },
+    MacCodegen {},
 }
 
 fn main() -> anyhow::Result<()> {
@@ -146,6 +147,7 @@ fn main() -> anyhow::Result<()> {
             mac_assets::generate(input.as_path(), output.as_path())?
         }
         Commands::MacIconDemo { output } => mac_icon::demo(output.as_path())?,
+        Commands::MacCodegen {} => mac_assets::hpp()?,
     }
     Ok(())
 }

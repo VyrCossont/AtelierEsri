@@ -31,3 +31,4 @@ schemars = { version = "0.8.10", features = ["enumset", "preserve_order"] }
 enumset = { version = "1.0.11", features = ["serde"] }
 indexmap = { version = "1.9.1", features = ["serde"] }
 aesprite = { path = "../aesprite", features = ["std"] }
+aetools-derive = { path = "../aetools-derive" }

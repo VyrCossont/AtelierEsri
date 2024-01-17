@@ -32,6 +32,7 @@ name = "aetools"
 version = "0.1.0"
 dependencies = [
  "aesprite",
+ "aetools-derive",
  "anyhow",
  "binrw",
  "bitvec",
@@ -54,6 +55,14 @@ dependencies = [
  "serde",
  "serde_json",
  "tiled",
+]
+
+[[package]]
+name = "aetools-derive"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "syn 2.0.38",
 ]
 
 [[package]]
