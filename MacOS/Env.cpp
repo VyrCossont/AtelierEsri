@@ -29,13 +29,13 @@ void Env::Initialize() {
 /// ints. `bit_cast` doesn't exist in C++17.
 union U64 {
   UnsignedWide as_struct;
-  uint64_t as_int;
+  uint64_t as_uint;
 };
 
 uint64_t Env::Microseconds() {
-  U64 u64 = {0};
+  U64 u64 = {.as_uint = 0};
   ::Microseconds(&u64.as_struct);
-  return u64.as_int;
+  return u64.as_uint;
 }
 
 }  // namespace AtelierEsri
