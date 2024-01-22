@@ -29,6 +29,7 @@ if (NOT RETRO68)
     add_executable(BreezeTests
             Breeze
             Breeze/AlchemyTest.cpp
+            Breeze/BinIO/BinIOTest.cpp
     )
     target_link_libraries(BreezeTests PUBLIC Breeze)
     target_include_directories(BreezeTests PUBLIC "${PROJECT_SOURCE_DIR}")
