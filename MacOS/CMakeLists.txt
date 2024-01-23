@@ -17,8 +17,8 @@ endif ()
 # Portable library containing platform-independent code.
 # In particular, should not depend on Apple universal headers.
 add_library(Breeze STATIC
-        Breeze/Alchemy.cpp
-        Breeze/Cinematics.cpp
+        src/Breeze/Alchemy.cpp
+        src/Breeze/Cinematics.cpp
 )
 
 find_path(BETTER_ENUMS_INCLUDE_DIR NAMES better-enums/enum.h)
@@ -27,12 +27,12 @@ target_include_directories(Breeze PUBLIC ${BETTER_ENUMS_INCLUDE_DIR})
 # Target for running Breeze tests on the host platform.
 if (NOT RETRO68)
     add_executable(BreezeTests
-            Breeze
-            Breeze/AlchemyTest.cpp
-            Breeze/BinIO/BinIOTest.cpp
+            src/Breeze
+            src/Breeze/AlchemyTest.cpp
+            src/Breeze/BinIO/BinIOTest.cpp
     )
     target_link_libraries(BreezeTests PUBLIC Breeze)
-    target_include_directories(BreezeTests PUBLIC "${PROJECT_SOURCE_DIR}")
+    target_include_directories(BreezeTests PUBLIC "${PROJECT_SOURCE_DIR}/src")
 
     find_package(Catch2 3 REQUIRED)
     target_link_libraries(BreezeTests PRIVATE Catch2::Catch2WithMain)
@@ -46,40 +46,40 @@ endif ()
 if (RETRO68)
     add_application(AtelierEsri
             # CONSOLE
-            main.cpp
-            AppResources.r
-            Assets.rsrc
-            App.cpp
-            Alert.cpp
-            AtelierInterior/AtelierInteriorGameMode.cpp
-            Cinematic/AlchemySlightlyExplained.cpp
-            Cinematic/CinematicGameMode.cpp
-            Control.cpp
-            Debug.cpp
-            Drawing.cpp
-            Env.cpp
-            Exception.cpp
-            Game.cpp
-            GWorld.cpp
-            Inventory/InventoryCell.cpp
-            Inventory/InventoryController.cpp
-            MaskedImage.cpp
-            Material.cpp
-            SpriteSheet.cpp
-            Strings.cpp
-            Synthesis/ElementValueDisplay.cpp
-            Synthesis/SynthesisCell.cpp
-            Synthesis/SynthesisController.cpp
-            Synthesis/SynthesisDashboard.cpp
-            Synthesis/SynthesisGameMode.cpp
-            Walkaround/Tilemap.cpp
-            Walkaround/TMXData.cpp
-            Walkaround/TSXData.cpp
-            Walkaround/WalkaroundGameMode.cpp
-            Window.cpp
+            src/main.cpp
+            src/AppResources.r
+            src/Assets.rsrc
+            src/App.cpp
+            src/Alert.cpp
+            src/AtelierInterior/AtelierInteriorGameMode.cpp
+            src/Cinematic/AlchemySlightlyExplained.cpp
+            src/Cinematic/CinematicGameMode.cpp
+            src/Control.cpp
+            src/Debug.cpp
+            src/Drawing.cpp
+            src/Env.cpp
+            src/Exception.cpp
+            src/Game.cpp
+            src/GWorld.cpp
+            src/Inventory/InventoryCell.cpp
+            src/Inventory/InventoryController.cpp
+            src/MaskedImage.cpp
+            src/Material.cpp
+            src/SpriteSheet.cpp
+            src/Strings.cpp
+            src/Synthesis/ElementValueDisplay.cpp
+            src/Synthesis/SynthesisCell.cpp
+            src/Synthesis/SynthesisController.cpp
+            src/Synthesis/SynthesisDashboard.cpp
+            src/Synthesis/SynthesisGameMode.cpp
+            src/Walkaround/Tilemap.cpp
+            src/Walkaround/TMXData.cpp
+            src/Walkaround/TSXData.cpp
+            src/Walkaround/WalkaroundGameMode.cpp
+            src/Window.cpp
     )
     target_link_libraries(AtelierEsri PUBLIC Breeze)
-    target_include_directories(AtelierEsri PUBLIC "${PROJECT_SOURCE_DIR}")
+    target_include_directories(AtelierEsri PUBLIC "${PROJECT_SOURCE_DIR}/src")
 endif ()
 
 # Size reduction disabled because it breaks exceptions on 68k:
