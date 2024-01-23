@@ -4,48 +4,58 @@
 #include <stdexcept>
 #include <string>
 
+#include "BinIO.hpp"
+
 namespace Breeze {
 
+template <typename Endianness>
 class MemReader {
  public:
-  MemReader(const char* data, const std::size_t len) : data(data), len(len) {}
+  MemReader(const char* data, const size_t len) : data(data), len(len) {}
 
-  template <typename T>
-  void read_be(T& value) {
-#if __BYTE_ORDER__ != __ORDER_BIG_ENDIAN__
-    throw std::runtime_error("Endianness not supported");
-#endif
-
-    read_native(value);
+  template <typename Readable>
+  std::enable_if_t<std::is_aggregate_v<Readable>, void> read(Readable& value) {
+    value = Readable::read(*this);
   }
 
-  template <typename T>
-  void read_le(T& value) {
-#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+  template <typename Value, typename E = Endianness>
+  std::enable_if_t<std::is_same_v<E, BE>, void> read(Value& value) {
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+    read_native(value);
+#else
     throw std::runtime_error("Endianness not supported");
 #endif
-
-    read_native(value);
   }
 
-  template <typename T>
-  void read_native(T& value) {
-    if (reinterpret_cast<std::uintptr_t>(data) % alignof(T)) {
+  template <typename Value, typename E = Endianness>
+  std::enable_if_t<std::is_same_v<E, LE>, void> read(Value& value) {
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+    read_native(value);
+#else
+    throw std::runtime_error("Endianness not supported");
+#endif
+  }
+
+  /// Read a primitive type in the target's native byte order.
+  template <typename Value>
+  void read_native(Value& value) {
+    if (reinterpret_cast<uintptr_t>(data) % alignof(Value)) {
       throw std::runtime_error("Unaligned access");
     }
-    if (sizeof(T) > len) {
+    if (sizeof(Value) > len) {
       throw std::runtime_error("Not enough data");
     }
 
-    value = *reinterpret_cast<T*>(const_cast<char*>(data));
-    data += sizeof(T);
-    len -= sizeof(T);
+    value = *reinterpret_cast<Value*>(const_cast<char*>(data));
+    data += sizeof(Value);
+    len -= sizeof(Value);
   }
 
-  template <typename T>
+  /// Advance the cursor to the next position that's aligned for this type.
+  template <typename Value>
   void align() {
-    if (const size_t advance =
-            alignof(T) - reinterpret_cast<std::uintptr_t>(data) % alignof(T)) {
+    if (const size_t advance = alignof(Value) - reinterpret_cast<uintptr_t>(data
+                                                ) % alignof(Value)) {
       if (advance > len) {
         throw std::runtime_error("Not enough data");
       }
@@ -56,9 +66,7 @@ class MemReader {
 
   void read_pstr(std::string& value) {
     std::uint8_t count;
-    // This is safe only because we're reading a short Pascal string (\p).
-    // Long Pascal strings (\P) would need an endianness.
-    read_native(count);
+    read(count);
     if (count > len) {
       throw std::runtime_error("Not enough data");
     }
@@ -68,9 +76,27 @@ class MemReader {
     len -= count;
   }
 
+  // TODO: figure out a way to not duplicate this
+  template <typename Count, typename Element>
+  void read_vec(std::vector<Element>& values) {
+    Count count;
+    read(count);
+    if (count * sizeof(Element) > len) {
+      throw std::runtime_error("Not enough data");
+    }
+
+    values.clear();
+    values.reserve(count);
+    for (Count i = 0; i < count; ++i) {
+      Element element;
+      read(element);
+      values.push_back(element);
+    }
+  }
+
  private:
   const char* data;
-  std::size_t len;
+  size_t len;
 };
 
 }  // namespace Breeze

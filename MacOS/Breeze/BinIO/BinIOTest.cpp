@@ -8,23 +8,21 @@ namespace Breeze {
 
 struct NamedPoint {
   std::string name;
-  std::int16_t x{};
-  std::int16_t y{};
+  int16_t x{};
+  int16_t y{};
+  std::vector<uint8_t> colors;
 
   template <typename Reader>
-  static void read_be(Reader& reader, NamedPoint& value) {
-    reader.read_pstr(value.name);
-    reader.template align<std::int16_t>();
-    reader.read_be(value.x);
-    reader.read_be(value.y);
-  }
+  static NamedPoint read(Reader& reader) {
+    NamedPoint value;
 
-  template <typename Reader>
-  static void read_le(Reader& reader, NamedPoint& value) {
     reader.read_pstr(value.name);
-    reader.template align<std::int16_t>();
-    reader.read_le(value.x);
-    reader.read_le(value.y);
+    reader.template align<int16_t>();
+    reader.read(value.x);
+    reader.read(value.y);
+    reader.template read_vec<uint8_t>(value.colors);
+
+    return value;
   }
 };
 
@@ -40,6 +38,10 @@ constexpr char named_point_test_data[] = {
     0x10,
     0x00,
     0x18,
+    0x03,
+    0x0a,
+    0x0b,
+    0x0c,
 };
 #elif __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 constexpr char named_point_test_data[] = {
@@ -53,44 +55,52 @@ constexpr char named_point_test_data[] = {
     0x00,
     0x18,
     0x00,
+    0x03,
+    0x0a,
+    0x0b,
+    0x0c,
 };
 #endif
 
 TEST_CASE("memory reader, native order") {
-  MemReader reader(named_point_test_data, sizeof named_point_test_data);
-  NamedPoint named_point;
-
 #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-  NamedPoint::read_be(reader, value);
+  MemReader<BE> reader(named_point_test_data, sizeof named_point_test_data);
 #elif __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-  NamedPoint::read_le(reader, named_point);
+  MemReader<LE> reader(named_point_test_data, sizeof named_point_test_data);
 #else
   FAIL("Where did you find a PDP to run this on?");
 #endif
 
-  REQUIRE(named_point.x == 16);
-  REQUIRE(named_point.y == 24);
-  REQUIRE(named_point.name == "name");
+  auto [name, x, y, colors] = NamedPoint::read(reader);
+  REQUIRE(x == 16);
+  REQUIRE(y == 24);
+  REQUIRE(name == "name");
+  REQUIRE(colors.size() == 3);
+  REQUIRE(colors[0] == 10);
+  REQUIRE(colors[1] == 11);
+  REQUIRE(colors[2] == 12);
 }
 
 TEST_CASE("stream reader, native order") {
   std::stringstream stream(
       std::string(named_point_test_data, sizeof named_point_test_data)
   );
-  StreamReader reader(stream, sizeof named_point_test_data);
-  NamedPoint named_point;
-
 #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-  NamedPoint::read_be(reader, value);
+  StreamReader<BE> reader(stream, sizeof named_point_test_data);
 #elif __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-  NamedPoint::read_le(reader, named_point);
+  StreamReader<LE> reader(stream, sizeof named_point_test_data);
 #else
   FAIL("Where did you find a PDP to run this on?");
 #endif
 
-  REQUIRE(named_point.x == 16);
-  REQUIRE(named_point.y == 24);
-  REQUIRE(named_point.name == "name");
+  auto [name, x, y, colors] = NamedPoint::read(reader);
+  REQUIRE(x == 16);
+  REQUIRE(y == 24);
+  REQUIRE(name == "name");
+  REQUIRE(colors.size() == 3);
+  REQUIRE(colors[0] == 10);
+  REQUIRE(colors[1] == 11);
+  REQUIRE(colors[2] == 12);
 }
 
 }  // namespace Breeze
