@@ -72,6 +72,10 @@ if (RETRO68)
             Synthesis/SynthesisController.cpp
             Synthesis/SynthesisDashboard.cpp
             Synthesis/SynthesisGameMode.cpp
+            Walkaround/Tilemap.cpp
+            Walkaround/TMXData.cpp
+            Walkaround/TSXData.cpp
+            Walkaround/WalkaroundGameMode.cpp
             Window.cpp
     )
     target_link_libraries(AtelierEsri PUBLIC Breeze)

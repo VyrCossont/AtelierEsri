@@ -60,7 +60,7 @@ SpriteSheet &SpriteSheet::operator=(SpriteSheet &&src) noexcept {
 }
 
 std::vector<Rect> SpriteSheet::ReadRGN(const ResourceID resourceID) {
-  RGNResource resource = RGNResource::Get(resourceID);
+  const RGNResource resource = RGNResource::Get(resourceID);
   const size_t len = RES_CHECKED(
       GetMaxResourceSize(resource.Unmanaged()),
       "Couldn't get RGN# resource size"

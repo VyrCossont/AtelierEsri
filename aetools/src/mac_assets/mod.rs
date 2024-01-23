@@ -10,7 +10,6 @@ use anyhow;
 use convert_case::{Case, Casing};
 use glob::glob;
 use image::{self, image_dimensions, imageops, RgbaImage};
-use itertools::Itertools;
 use png;
 use rectangle_pack::{
     contains_smallest_box, pack_rects, volume_heuristic, GroupedRectsToPlace, PackedLocation,
@@ -594,7 +593,7 @@ fn generate_sprite_sheet(
 
     let sprite_sheets_dir = build_dir.join("sprite_sheet");
     ensure_dir(&sprite_sheets_dir)?;
-    for (sheet_number, (base_resource_id, sprites)) in sprites_for_sheet.iter().enumerate() {
+    for (sheet_number, sprites) in sprites_for_sheet.iter() {
         // Copy all the sprites into a sheet PNG.
         let sprite_sheet_png = sprite_sheets_dir.join(format!("{sheet_number:02}.png"));
         // Assume 8 bits per channel is enough.

@@ -38,6 +38,7 @@ class AtelierInteriorGameMode final : public GameMode {
   Window window;
   Button synthesizeButton;
   Button theaterButton;
+  Button walkaroundButton;
   SynthesisGameMode* synthesisInProgress = nullptr;
   Picture atelierInterior;
 

@@ -1,25 +1,5 @@
 //! Handle Tiled TMX/TSX files.
 
-// TODO:
-//  - collect all image assets from all tilesets from all maps
-//  - de-dupe them
-//  - add them to image asset pool
-//  - return image and optional mask resource IDs
-//  - for each tileset:
-//      - store image and mask IDs
-//      - store tile dimensions, num rows and columns (from image size), number of valid tile IDs
-//      - return a 'TSX ' resource ID
-//  - for each map:
-//      - store referenced 'TSX ' IDs
-//      - store map dimensions
-//      - store number of layers
-//      - generate 'RGN ' resource for all objects, and store its resource ID
-//      - generate header constants indexing 'RGN ' for objects on this map
-//      - for each layer:
-//          - generate header constant for layer?
-//          - store dimensions
-//          - store data
-
 use crate::mac::resource::TypedResource;
 use crate::mac::OSType;
 use crate::mac_assets::{
@@ -31,6 +11,8 @@ use std::collections::btree_map::Entry;
 use std::collections::BTreeMap;
 use std::ffi::{OsStr, OsString};
 use std::fs;
+use std::fs::File;
+use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tiled::{
@@ -69,8 +51,8 @@ pub fn compile_maps(
     // While we could have more than one group of maps,
     // tilesets and tileset images may be shared arbitrarily,
     // so they'll all go in one group directory.
-    let tilesets_group_dir = build_dir.join("tilesets");
-    ensure_dir(&tilesets_group_dir)?;
+    let tileset_group_dir = build_dir.join("tileset");
+    ensure_dir(&tileset_group_dir)?;
 
     let mut loader = Loader::new();
 
@@ -87,7 +69,7 @@ pub fn compile_maps(
             &mut tileset_image_assets_by_path,
             &mut tileset_assets_by_name,
             &mut tilemap_rgn_assets,
-            &tilesets_group_dir,
+            &tileset_group_dir,
             &mut loader,
             src,
             base_name,
@@ -107,12 +89,145 @@ pub fn compile_maps(
         group_fn,
     )?;
 
+    let tileset_image_assets = tileset_image_assets_by_path.into_values().collect();
+    let tileset_assets = tileset_assets_by_name.into_values().collect();
+
+    let tilemap_group_dir = build_dir.join("map");
+    ensure_dir(&tilemap_group_dir)?;
+    codegen(
+        &tileset_assets,
+        &tileset_group_dir,
+        &tilemap_assets,
+        &tilemap_group_dir,
+    )?;
+
     Ok((
-        tileset_image_assets_by_path.into_values().collect(),
-        tileset_assets_by_name.into_values().collect(),
+        tileset_image_assets,
+        tileset_assets,
         tilemap_rgn_assets,
         tilemap_assets,
     ))
+}
+
+fn codegen(
+    tileset_assets: &Vec<TSXAsset>,
+    tileset_group_dir: &Path,
+    tilemap_assets: &Vec<TMXAsset>,
+    tilemap_group_dir: &Path,
+) -> anyhow::Result<()> {
+    {
+        // Tilesets
+
+        {
+            let hpp_path = tileset_group_dir.join("TSXData.hpp");
+            let mut hpp = BufWriter::new(
+                File::options()
+                    .write(true)
+                    .create(true)
+                    .truncate(true)
+                    .open(&hpp_path)?,
+            );
+
+            write!(hpp, "#pragma once\n")?;
+            write!(hpp, "\n")?;
+            write!(hpp, "#include <cstdint>\n")?;
+            write!(hpp, "#include <optional>\n")?;
+            write!(hpp, "\n")?;
+            write!(hpp, "#include \"Resource.hpp\"\n")?;
+            write!(hpp, "\n")?;
+            write!(hpp, "namespace AtelierEsri {{\n")?;
+            write!(hpp, "\n")?;
+
+            write!(hpp, "{src}\n", src = TSXAsset::HPP)?;
+
+            for tileset_asset in tileset_assets {
+                write!(hpp, "{src}\n", src = tileset_asset.hpp())?;
+            }
+
+            write!(hpp, "\n")?;
+            write!(hpp, "}}  // namespace AtelierEsri\n")?;
+        }
+
+        {
+            let cpp_path = tileset_group_dir.join("TSXData.cpp");
+            let mut cpp = BufWriter::new(
+                File::options()
+                    .write(true)
+                    .create(true)
+                    .truncate(true)
+                    .open(&cpp_path)?,
+            );
+
+            write!(cpp, "#include \"TSXData.hpp\"\n")?;
+            write!(cpp, "\n")?;
+            write!(cpp, "namespace AtelierEsri {{\n")?;
+            write!(cpp, "\n")?;
+
+            for tileset_asset in tileset_assets {
+                write!(cpp, "{src}\n", src = tileset_asset.cpp())?;
+            }
+
+            write!(cpp, "\n")?;
+            write!(cpp, "}}  // namespace AtelierEsri\n")?;
+        }
+
+        // Tilemaps
+
+        {
+            let hpp_path = tilemap_group_dir.join("TMXData.hpp");
+            let mut hpp = BufWriter::new(
+                File::options()
+                    .write(true)
+                    .create(true)
+                    .truncate(true)
+                    .open(&hpp_path)?,
+            );
+
+            write!(hpp, "#pragma once\n")?;
+            write!(hpp, "\n")?;
+            write!(hpp, "#include <cstdint>\n")?;
+            write!(hpp, "#include <vector>\n")?;
+            write!(hpp, "\n")?;
+            write!(hpp, "#include \"Resource.hpp\"\n")?;
+            write!(hpp, "\n")?;
+            write!(hpp, "namespace AtelierEsri {{\n")?;
+            write!(hpp, "\n")?;
+
+            write!(hpp, "{src}\n", src = TMXAsset::HPP)?;
+
+            for tilemap_asset in tilemap_assets {
+                write!(hpp, "{src}\n", src = tilemap_asset.hpp())?;
+            }
+
+            write!(hpp, "\n")?;
+            write!(hpp, "}}  // namespace AtelierEsri\n")?;
+        }
+
+        {
+            let cpp_path = tilemap_group_dir.join("TMXData.cpp");
+            let mut cpp = BufWriter::new(
+                File::options()
+                    .write(true)
+                    .create(true)
+                    .truncate(true)
+                    .open(&cpp_path)?,
+            );
+
+            write!(cpp, "#include \"TMXData.hpp\"\n")?;
+            write!(cpp, "\n")?;
+            write!(cpp, "namespace AtelierEsri {{\n")?;
+            write!(cpp, "\n")?;
+
+            for tilemap_asset in tilemap_assets {
+                write!(cpp, "{src}\n", src = tilemap_asset.cpp())?;
+            }
+
+            write!(cpp, "\n")?;
+            write!(cpp, "}}  // namespace AtelierEsri\n")?;
+        }
+    }
+
+    Ok(())
 }
 
 /// Convert tileset image to masked PICT asset, or retrieve it if already converted.
@@ -120,7 +235,7 @@ fn get_tileset_image_asset(
     build_dir: &Path,
     resource_id_generator: &mut ResourceIDGenerator,
     tileset_image_assets_by_path: &mut BTreeMap<PathBuf, MaskedPictAsset>,
-    tilesets_group_dir: &Path,
+    tileset_group_dir: &Path,
     tileset: &Arc<Tileset>,
 ) -> anyhow::Result<MaskedPictAsset> {
     let image_path = tileset
@@ -143,12 +258,12 @@ fn get_tileset_image_asset(
             }
 
             // Copy image to tilesets group directory.
-            let tilesets_group_dir_image_path = tilesets_group_dir.join(
+            let tileset_group_dir_image_path = tileset_group_dir.join(
                 image_path
                     .file_name()
                     .ok_or(anyhow::anyhow!("Couldn't get file name for tileset image"))?,
             );
-            fs::copy(&image_path, &tilesets_group_dir_image_path)?;
+            fs::copy(&image_path, &tileset_group_dir_image_path)?;
 
             let image_base_name = image_path
                 .file_stem()
@@ -161,7 +276,7 @@ fn get_tileset_image_asset(
                     build_dir,
                     image_base_name,
                     resource_id_generator,
-                    &tilesets_group_dir_image_path,
+                    &tileset_group_dir_image_path,
                 )?)
                 .clone()
         }
@@ -176,7 +291,7 @@ fn get_tileset_asset(
     resource_id_generator: &mut ResourceIDGenerator,
     tileset_image_assets_by_path: &mut BTreeMap<PathBuf, MaskedPictAsset>,
     tileset_assets_by_name: &mut BTreeMap<String, TSXAsset>,
-    tilesets_group_dir: &Path,
+    tileset_group_dir: &Path,
     tileset: &Arc<Tileset>,
 ) -> anyhow::Result<TSXAsset> {
     let tileset_asset = match tileset_assets_by_name.entry(tileset.name.clone()) {
@@ -187,7 +302,7 @@ fn get_tileset_asset(
                 build_dir,
                 resource_id_generator,
                 tileset_image_assets_by_path,
-                tilesets_group_dir,
+                tileset_group_dir,
                 tileset,
             )?;
             entry
@@ -203,15 +318,22 @@ fn get_tileset_asset(
     Ok(tileset_asset)
 }
 
+pub trait Codegen {
+    const HPP: &'static str;
+    fn data_id(&self) -> String;
+    fn hpp(&self) -> String;
+    fn cpp(&self) -> String;
+}
+
 #[derive(Debug, Clone)]
 pub struct TSXAsset {
     resource_id: ResourceID,
     name: String,
     // Pad to word.
-    tile_width: i16,
-    tile_height: i16,
-    image_width: i16,
-    image_height: i16,
+    tile_width: u16,
+    tile_height: u16,
+    image_width: u16,
+    image_height: u16,
     /// ID of a `PICT` resource.
     image_pict_resource_id: ResourceID,
     /// ID of a `PICT` resource.
@@ -235,10 +357,10 @@ impl TSXAsset {
         Ok(Self {
             resource_id: resource_id_generator.get(Self::OS_TYPE),
             name: tileset.name.clone(),
-            tile_width: i16::try_from(tileset.tile_width)?,
-            tile_height: i16::try_from(tileset.tile_height)?,
-            image_width: *image_width,
-            image_height: *image_height,
+            tile_width: u16::try_from(tileset.tile_width)?,
+            tile_height: u16::try_from(tileset.tile_height)?,
+            image_width: *image_width as u16,
+            image_height: *image_height as u16,
             image_pict_resource_id: *image_pict_resource_id,
             mask_pict_resource_id: *mask_pict_resource_id,
         })
@@ -297,6 +419,53 @@ impl Resourceful for TSXAsset {
     }
 }
 
+impl Codegen for TSXAsset {
+    const HPP: &'static str = r#"struct TSXAsset {
+  uint16_t tile_width;
+  uint16_t tile_height;
+  uint16_t image_width;
+  uint16_t image_height;
+  ResourceID image_pict_resource_id;
+  std::optional<ResourceID> mask_pict_resource_id;
+};
+"#;
+
+    fn data_id(&self) -> String {
+        self.id_constant()
+            .strip_suffix("ResourceId")
+            .expect("Missing ResourceId suffix")
+            .to_string()
+    }
+
+    fn hpp(&self) -> String {
+        format!(r#"extern const TSXAsset {id};"#, id = self.data_id())
+    }
+
+    fn cpp(&self) -> String {
+        format!(
+            r#"const TSXAsset {id}{{
+  .tile_width = {tile_width},
+  .tile_height = {tile_height},
+  .image_width = {image_width},
+  .image_height = {image_height},
+  .image_pict_resource_id = {image_pict_resource_id},
+  .mask_pict_resource_id = {mask_pict_resource_id},
+}};
+"#,
+            id = self.data_id(),
+            tile_width = self.tile_width,
+            tile_height = self.tile_height,
+            image_width = self.image_width,
+            image_height = self.image_height,
+            image_pict_resource_id = self.image_pict_resource_id,
+            mask_pict_resource_id = self
+                .mask_pict_resource_id
+                .map(|id| id.to_string())
+                .unwrap_or("{}".to_string()),
+        )
+    }
+}
+
 /// Tile map.
 #[derive(Debug, Clone)]
 pub struct TMXAsset {
@@ -304,6 +473,14 @@ pub struct TMXAsset {
     /// From file; maps don't have internal names.
     name: String,
     resource_id: ResourceID,
+    /// In tiles.
+    width: u16,
+    /// In tiles.
+    height: u16,
+    /// In pixels.
+    tile_width: u16,
+    /// In pixels.
+    tile_height: u16,
     /// TSX resources.
     tileset_resource_ids: Vec<ResourceID>,
     tile_layers: Vec<TMXTileLayer>,
@@ -419,13 +596,166 @@ impl Resourceful for TMXAsset {
     }
 }
 
+impl Codegen for TMXAsset {
+    const HPP: &'static str = r#"struct TMXTile {
+  bool flip_h;
+  bool flip_v;
+  bool flip_d;
+  /// 1 + index into parent map's list of tilesets.
+  /// 0 indicates an empty tile position; all other fields should be 0/false.
+  uint8_t tileset_ordinal;
+  /// ID within tileset.
+  uint16_t tile_id;
+};
+
+struct TMXTileLayer {
+  std::string name;
+  /// In tiles.
+  uint16_t width;
+  /// In tiles.
+  uint16_t height;
+  std::vector<TMXTile> tiles;
+};
+
+struct TMXRegionGroup {
+  std::string name;
+  ResourceID rgn_resource_id;
+};
+
+struct TMXAsset {
+  /// In tiles.
+  uint16_t width;
+  /// In tiles.
+  uint16_t height;
+  /// In pixels.
+  uint16_t tile_width;
+  /// In pixels.
+  uint16_t tile_height;
+  /// 'TSX ' resource IDs.
+  std::vector<ResourceID> tileset_resource_ids;
+  std::vector<TMXTileLayer> tile_layers;
+  std::vector<TMXRegionGroup> region_groups;
+};
+"#;
+
+    fn data_id(&self) -> String {
+        self.id_constant()
+            .strip_suffix("ResourceId")
+            .expect("Missing ResourceId suffix")
+            .to_string()
+    }
+
+    fn hpp(&self) -> String {
+        format!(r#"extern const TMXAsset {id};"#, id = self.data_id())
+    }
+
+    fn cpp(&self) -> String {
+        if self.tileset_resource_ids != vec![128] {
+            todo!("Handle tileset resolution");
+        }
+        let tileset_resource_ids: String = {
+            self.tileset_resource_ids
+                .iter()
+                .map(|id| format!("    {id},\n"))
+                .collect()
+        };
+
+        let tile_layers: String = {
+            self.tile_layers
+                .iter()
+                .map(|tile_layer| {
+                    let tiles: String = {
+                        tile_layer
+                            .tiles
+                            .iter()
+                            .map(|tile| {
+                                format!(
+                                    r#"      TMXTile{{
+        .flip_h = {flip_h},
+        .flip_v = {flip_v},
+        .flip_d = {flip_d},
+        .tileset_ordinal = {tileset_ordinal},
+        .tile_id = {tile_id},
+      }},
+"#,
+                                    flip_h = tile.flip_h,
+                                    flip_v = tile.flip_v,
+                                    flip_d = tile.flip_d,
+                                    tileset_ordinal = tile.tileset_ordinal,
+                                    tile_id = tile.tile_id,
+                                )
+                            })
+                            .collect()
+                    };
+
+                    format!(
+                        r#"    TMXTileLayer{{
+      .name = "{name}",
+      .width = {width},
+      .height = {height},
+      .tiles = {{
+{tiles}
+      }},
+    }},
+"#,
+                        name = tile_layer.name,
+                        width = tile_layer.width,
+                        height = tile_layer.height,
+                    )
+                })
+                .collect()
+        };
+
+        let region_groups: String = {
+            self.region_groups
+                .iter()
+                .map(|region_group| {
+                    format!(
+                        r#"    TMXRegionGroup{{
+      .name = "{name}",
+      .rgn_resource_id = {rgn_resource_id},
+    }},
+"#,
+                        name = region_group.name,
+                        rgn_resource_id = region_group.rgn_resource_id,
+                    )
+                })
+                .collect()
+        };
+
+        format!(
+            r#"const TMXAsset {id}{{
+  .width = {width},
+  .height = {height},
+  .tile_width = {tile_width},
+  .tile_height = {tile_height},
+  .tileset_resource_ids = {{
+{tileset_resource_ids}
+  }},
+  .tile_layers = {{
+{tile_layers}
+  }},
+  .region_groups = {{
+{region_groups}
+  }},
+}};
+"#,
+            id = self.data_id(),
+            width = self.width,
+            height = self.height,
+            tile_width = self.tile_width,
+            tile_height = self.tile_height,
+        )
+    }
+}
+
 /// Tile layer within a map.
 #[derive(Debug, Clone)]
 struct TMXTileLayer {
     name: String,
     // Pad to word.
-    width: i16,
-    height: i16,
+    width: u16,
+    height: u16,
     tiles: Vec<TMXTile>,
 }
 
@@ -548,7 +878,7 @@ fn load_map(
     tileset_image_assets_by_path: &mut BTreeMap<PathBuf, MaskedPictAsset>,
     tileset_assets_by_name: &mut BTreeMap<String, TSXAsset>,
     tilemap_rgn_assets: &mut Vec<RGNAsset>,
-    tilesets_group_dir: &Path,
+    tileset_group_dir: &Path,
     loader: &mut Loader,
     src: &Path,
     base_name: &OsStr,
@@ -560,6 +890,11 @@ fn load_map(
         anyhow::bail!("Only orthogonal rectangular maps are supported");
     }
 
+    let width = u16::try_from(map.width)?;
+    let height = u16::try_from(map.height)?;
+    let tile_width = u16::try_from(map.tile_width)?;
+    let tile_height = u16::try_from(map.tile_height)?;
+
     let mut tileset_resource_ids = Vec::<ResourceID>::new();
     for tileset in map.tilesets() {
         let tileset_asset = get_tileset_asset(
@@ -567,7 +902,7 @@ fn load_map(
             resource_id_generator,
             tileset_image_assets_by_path,
             tileset_assets_by_name,
-            tilesets_group_dir,
+            tileset_group_dir,
             tileset,
         )?;
         tileset_resource_ids.push(tileset_asset.resource_id);
@@ -611,6 +946,10 @@ fn load_map(
     Ok(TMXAsset {
         name,
         resource_id,
+        width,
+        height,
+        tile_width,
+        tile_height,
         tileset_resource_ids,
         tile_layers,
         region_groups,
@@ -621,8 +960,8 @@ fn finite_tile_layer_to_tmx_tile_layer(
     layer: FiniteTileLayer,
     name: String,
 ) -> anyhow::Result<TMXTileLayer> {
-    let width = i16::try_from(layer.width())?;
-    let height = i16::try_from(layer.height())?;
+    let width = u16::try_from(layer.width())?;
+    let height = u16::try_from(layer.height())?;
     let mut tiles = vec![];
 
     for y in 0..(layer.height() as i32) {

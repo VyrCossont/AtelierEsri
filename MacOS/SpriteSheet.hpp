@@ -54,8 +54,9 @@ class SpriteSheet {
   SpriteSheet(const SpriteSheet &src) = delete;
   SpriteSheet &operator=(const SpriteSheet &src) = delete;
 
- private:
+  // TODO: temporarily public until separated from SpriteSheet
   static std::vector<Rect> ReadRGN(ResourceID resourceID);
+ private:
   static std::vector<Rect> ReadRGN(size_t len, uint8_t *ptr);
 
   static std::vector<NinePatch> Read9PC(ResourceID resourceID);

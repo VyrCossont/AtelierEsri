@@ -1,8 +1,7 @@
 use proc_macro::TokenStream;
-use quote::{format_ident, quote, ToTokens};
+use quote::{quote, ToTokens};
 use std::collections::HashSet;
-use syn::__private::Span;
-use syn::{parse_macro_input, parse_quote, Data, DeriveInput, Field, Fields, Ident, Item, Type};
+use syn::{parse_macro_input, parse_quote, Data, DeriveInput, Fields, Item, Type};
 
 /// Add an attribute to a struct that sets up and invokes `derive(CppCodegen)` below.
 #[proc_macro_attribute]
@@ -59,7 +58,8 @@ pub fn derive_cpp_codegen(input: TokenStream) -> TokenStream {
 
     let namespace = "AtelierEsri";
 
-    let mut includes = HashSet::<String>::new();
+    let mut system_includes = HashSet::<String>::new();
+    let mut user_includes = HashSet::<String>::new();
 
     let mut fields_lines = Vec::<String>::new();
 
@@ -80,9 +80,10 @@ pub fn derive_cpp_codegen(input: TokenStream) -> TokenStream {
             });
         };
         let rust_type = last.ident.to_string();
+        // TODO: generalize to CppType below
         let cpp_type = match rust_type.as_ref() {
             "i16" => {
-                includes.insert("cstdint".to_string());
+                system_includes.insert("cstdint".to_string());
                 "std::int16_t".to_string()
             }
             _ => rust_type,
@@ -90,12 +91,19 @@ pub fn derive_cpp_codegen(input: TokenStream) -> TokenStream {
         fields_lines.push(format!("{type} {name};", type = cpp_type, name = name.to_string()));
     }
 
-    let mut includes = includes.into_iter().collect::<Vec<String>>();
-    includes.sort();
-    for include in includes {
-        hpp_lines.push(format!("#include <{include}>"));
+    for (l_delim, includes, r_delim) in vec![('<', system_includes, '>'), ('"', user_includes, '"')]
+    {
+        if includes.is_empty() {
+            continue;
+        }
+
+        let mut includes = includes.into_iter().collect::<Vec<String>>();
+        includes.sort();
+        for include in includes {
+            hpp_lines.push(format!("#include {l_delim}{include}{r_delim}"));
+        }
+        hpp_lines.push("".to_string());
     }
-    hpp_lines.push("".to_string());
 
     hpp_lines.push(format!("namespace {namespace} {{"));
     hpp_lines.push("".to_string());
@@ -112,7 +120,7 @@ pub fn derive_cpp_codegen(input: TokenStream) -> TokenStream {
     hpp_lines.push(format!("}}  // namespace {namespace}"));
     hpp_lines.push("".to_string());
 
-    // TODO: size_t FooStruct::read(void*)
+    // TODO: size_t FooStruct::read(void*, size_t)
 
     let hpp_text = hpp_lines.join("\n");
 
@@ -130,3 +138,9 @@ pub fn derive_cpp_codegen(input: TokenStream) -> TokenStream {
 
     TokenStream::from(expanded)
 }
+
+// TODO: should be able to handle primitive types, strings, structs, arrays of either primitives or structs
+//  and know which types have alignment requirements afterward (strings, bytes, byte arrays)
+//  and know which header to include
+// TODO: (later) pack adjacent bools into bytes
+struct CppType {}

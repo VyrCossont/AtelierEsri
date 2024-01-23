@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Quickdraw.h>
 #include <Resources.h>
 
 #include <memory>
@@ -85,6 +86,8 @@ class Resource {
 using PICTResource = Resource<'PICT', PicPtr, PicHandle, GetPicture>;
 using RGNResource = Resource<'RGN#'>;
 using NinePatchResource = Resource<'9PC#'>;
+using TSXResource = Resource<'TSX '>;
+using TMXResource = Resource<'TMX '>;
 // ReSharper restore CppMultiCharacterLiteral
 
 }  // namespace AtelierEsri

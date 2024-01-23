@@ -5,6 +5,7 @@
 #include "Cinematic/AlchemySlightlyExplained.hpp"
 #include "Cinematic/CinematicGameMode.hpp"
 #include "Debug.hpp"
+#include "Walkaround/WalkaroundGameMode.hpp"
 
 namespace AtelierEsri {
 
@@ -13,6 +14,7 @@ AtelierInteriorGameMode::AtelierInteriorGameMode(Game& game)
       window(atelierInteriorWINDResourceID),
       synthesizeButton(atelierInteriorSynthesizeButtonCNTLResourceID, window),
       theaterButton(atelierInteriorTheaterButtonCNTLResourceID, window),
+      walkaroundButton(atelierInteriorWalkaroundButtonCNTLResourceID, window),
       atelierInterior(assetSceneAtelierInteriorImagePictResourceId) {
   window.onUpdate = [&](const Window& window) {
     GWorldActiveGuard activeGuard = window.MakeActivePort();
@@ -34,6 +36,12 @@ AtelierInteriorGameMode::AtelierInteriorGameMode(Game& game)
   theaterButton.onClick = [&]([[maybe_unused]] const Button& button) {
     game.Push(new CinematicGameMode(
         game, AlchemySlightlyExplained, "alchemy, slightly explained"
+    ));
+  };
+
+  walkaroundButton.onClick = [&]([[maybe_unused]] const Button& button) {
+    game.Push(new WalkaroundGameMode(
+        game, assetVillageTmxResourceId, "Aufgang Village"
     ));
   };
 }

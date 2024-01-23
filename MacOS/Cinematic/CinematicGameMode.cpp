@@ -99,7 +99,8 @@ void CinematicGameMode::Advance() {
     if (player.Apply(*position)) {
       // Convert player IDs to resources and sprites.
 
-      if (player.background) {
+      // These are not even remotely the same branch.
+      if (player.background) {  // NOLINT(*-branch-clone)
         background.emplace(static_cast<ResourceID>(*player.background));
       } else {
         background.reset();

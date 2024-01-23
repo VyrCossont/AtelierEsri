@@ -171,6 +171,17 @@ resource 'CNTL' (atelierInteriorTheaterButtonCNTLResourceID, "atelier interior t
     "Theater" /* title */
 };
 
+resource 'CNTL' (atelierInteriorWalkaroundButtonCNTLResourceID, "atelier interior walkaround button", preload, purgeable) {
+    {227, 23, 247, 82},
+    0, /* initial setting */
+    visible,
+    1, /* max setting */
+    0, /* min setting */
+    pushButProc,
+    0x0, /* refCon */
+    "Go Outside" /* title */
+};
+
 /* Cinematic playback currently uses the atelier interior WIND. */
 
 resource 'CNTL' (cinematicForwardButtonCNTLResourceID, "cinematic forward button", preload, purgeable) {
