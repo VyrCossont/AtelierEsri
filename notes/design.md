@@ -250,7 +250,6 @@ T3 is the first tier where Esri synthesizes her own equipment designs, but she w
         - "You're welcome!"
         - "Now let's go very, very, very far from the atelier so I can get the hang of this."
 
-
 # cutscenes
 
 ## page operations
@@ -269,3 +268,102 @@ T3 is the first tier where Esri synthesizes her own equipment designs, but she w
 
 - execute page (generates log entry)
 - conditional on plot counter value or range
+
+
+# combat
+
+Stats in the Atelier games almost always come out to HP, MP, ATK, DEF, SPD, resistances, and some sort of equipment cap. [Atelier Sophie 2](https://www.koeitecmoamerica.com/manual/sophie2/en/7200.html) is a good example.
+
+- ATK: modifies damage dealt
+- DEF: modifies damage received (combined with resistances)
+- SPD: affects wait time between turns, and also critical hit chance
+
+## resistances
+
+Resistances can be negative, increasing that damage type. If we go with the Sophie 2 model, damage can be either physical or magical, and it has an optional elemental subtype. All of the applicable resistances should be applied: elemental (if applicable), damage type, and then DEF.
+
+Sophie 1 and Firis don't have elemental subtypes for physical damage (calling it "impact damage"?) and do have "ultimate non-attribute damage" which bypasses all resistances. I'm tempted to include this. 
+
+It's possible for resistance to be 100%, making something totally immune to damage of that type unless it's modified.
+
+It's not clear how the chances of catching a status effect are calculated. Might be based on magic resistance, or on level.
+
+## status effects
+
+[Sophie 2](https://www.koeitecmoamerica.com/manual/sophie2/en/6200.html)
+
+- specific stat or resistances up/down
+- all stats (ATK/DEF/SPD anyway) or resistances up/down
+  - pushing resistances to negative so something takes extra fire damage would be fun
+- HP and/or MP regen
+- Acceleration: shortens wait time but doesn't affect crits (unlike increasing SPD)
+- damage boost to skill damage or item damage (I would also add normal attack damage, might be fun)
+- Damage Reduction: not clear if this is the same as boosting DEF
+- Poison: DoT
+- Sleep: skip turn, take extra damage, may wake up if damaged
+- Curse: reduce magic resistance, block HP recovery or do damage on HP recovery attempt
+- Burns: take additional fire damage when attacked
+- Frostbite: extended wait, reduce physical resistance
+- Paralysis: from lightning effects? chance to skip turn
+- Restraints: "Make it impossible to evade attacks", which is weird because Sophie 2 doesn't have a dodge mechanic?, increases chance of critical hits to the target
+- Slow: (provisional) extended wait but unlike Frostbite leaves physical resistance alone
+- add a damage type to normal attacks
+
+## gauges
+
+I like break mechanics so let's have a break gauge. Broken enemies (or party members) have dramatically lowered stats and resistances until the break wears off.
+
+## skills
+
+- Esri
+  - can use all items
+    - Esri should not be using attacks or skills until she's all out of items, except possibly in the presence of normal attack damage up/skill damage up buffs.
+  - normal attack by swinging staff
+    - magic damage (it's alchemizing the target more than it is hitting it)
+  - Burn
+    - fire magic damage
+    - 2x damage if target has Frostbite
+    - OR chance to Burns? if we go that route, Burn synergizes with *itself*
+  - Shatter
+    - ice magic damage
+    - chance to Frostbite
+- Allie
+  - cannot use items
+  - normal attack with whatever blade she has
+    - physical damage
+  - Bulwark
+    - enemies doing physical damage should target Allie first
+  - Smash
+    - physical damage
+    - stun damage
+  - Blitz
+    - physical lightning damage
+    - if it crits, becomes a multi-target attack
+    - chance to inflict Paralysis?
+    - synergizes with Restraints and anything that increases crit chance
+  - Overwatch
+    - reaction skill, expires on Allie's next turn
+    - large physical damage to any physical attacker, once
+    - should be expensive
+  - Cleave
+    - physical damage
+    - if target is affected by Burns, Frostbite, Paralysis, or Restraints, do additional magical fire, ice, lightning, or wind damage
+- Sae
+  - can use some items, maybe up to T2
+  - normal attack with slingshot/bow
+    - physical damage
+  - Rapid Fire
+    - six physical damage attacks
+      - modify count based on Sae's level?
+    - each does a small amount but it should add up to slightly more than a normal attack
+    - random targets
+  - Called Shot
+    - physical damage
+    - chance of random effect
+      - Slow
+      - Stun
+      - Restraints
+  - Acid Rain
+    - 2x time card physical AoE wind damage
+  - Corrosion
+    - -DEF
