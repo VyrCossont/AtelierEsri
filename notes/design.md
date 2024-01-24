@@ -19,33 +19,6 @@ Goals for this demake:
     - if you don't have the tools, the spot is dark and disabled
 - small hub town that gets a few more buildings as you progress
 
-## further reduced goals for this demake
-
-Alchemy cartridge only:
-- you get some recipes
-- you get some items
-- you make the requested item
-- any extra items you make (neutralizers and other intermediates, target items above the requested count) roll over to the next round
-- after 5 rounds, you're done, you get a high score
-
-# architecture
-
-- multiple cartridges? (not on WASM-4)
-    - title/loader
-    - hub town
-    - atelier interior
-    - synthesis (maybe one per set of recipes if necessary)
-    - gathering area (one per gathering area)
-    - combat (one or more per gathering area or boss fight)
-    - cutscene
-- save format
-    - item
-        - ID
-        - quantity
-        - quality
-        - item effect counters
-        - trait flags
-
 # characters
 
 ## party
@@ -197,6 +170,8 @@ early 20s
 
 ## weapon tiers
 
+T3 is the first tier where Esri synthesizes her own equipment designs, but she will also be able to synthesize improved copies of T2 equipment, unlocking numbered effect slots not available on equipment from the shop. Given that there are only 3 playable characters, I'd like the player to be able to customize the party a bit by making T2 and T3 weapons overlap in power but with differing attacks and effects. This is kind of already a thing in real Atelier, but usually weapons of a given tier are significantly more powerful than weapons from a previous tier, and there's no point to keeping the old stuff around.
+
 1. junk every character starts with
     - Esri: Sae's staff
         - "It's just a loaner, okay? I want it back eventually."
@@ -246,6 +221,34 @@ early 20s
         - "Harmonium and spider silk, baby!"
         - "Wait, did you get over your thing about spiders?"
         - "Absolutely not. I'm just drunk enough to synthesize something beautiful from them and put the screaming off for a few hours."
+4. Endgame weapons. Black with glowing bits. Totally unnecessary overkill. We may never actually put these in. I wanted to write the fiction anyway.
+    - Esri: The Fulcrum (staff)
+        - "That thing worries me."
+        - "It's ominous, right? Not dangerous, not by itself, but it feels like something I shouldn't have. And this is me saying that."
+        - "The fundamental forces of the universe are more or less balanced, Esri. They have to be, or we wouldn't exist. Gravity pulls us down, the floor keeps us up. But you put a thumb wrong on the new staff, and I think gravity goes sideways and the floor is lava."
+        - "I'll be careful. We get through this, Sae. We do what we need to do. Then it goes in a safe under the floorboards, and we hope we never need it again."
+        - "You really have grown since we started this, Esri. I'm proud of you. And that's the only reason I'm not running for it right now."
+    - Allie: photonic scythe (double-ended, doubles physical attacks)
+        - "I saw Death, once. The very first time I almost died. Did I tell you that?"
+        - "You what? You saw Death?"
+        - "You know my family has that whole 'live by the sword, die by the sword' deal. Maybe we have Death's attention already, and Death came by as a courtesy, or a reminder. It was a training accident with my dad. Blunt sword, but the blade snapped, got me in the lung."
+        - "Holy shit, Allie. When was this?"
+        - "I was fifteen. People get the black robe right, but the skeleton part? Nah. She's a woman, did you know that? Beautiful, and a little sad. She looked at me, and shook her head, like, 'not yet', and next thing I knew, I was on the dining room table, coughing up blood while my uncle stitched my chest back together."
+        - "Your family is terrifying. I'm glad they're on our side. But why are you telling us this now?"
+        - "People get the scythe part right too. Death carries a scythe. I saw it. Same shape as any farmer's. To fifteen-year-old me, it looked like the end of all things, and maybe it is. But you know what? Today I'm looking at this gorgeous glowing double-bladed slicing machine you made me, and I'm thinking, and it's crazy, but I'm thinking, with this… maybe I could take her. If I had to."
+    - Sae: transmutation bow
+        - "Sae, I wanted to say thanks. For everything. Alchemy is my life now. But, like, if I were the one teaching someone how to do it, and they were doing it way easier than I ever could, I'd be such a mess, and you've been so patient, I don't even know how you do it. Anyway, sorry, I'm fucking awful at having feelings, so I made you this."
+        - "A longbow? Uh. Thanks, but I'm not sure I have the muscles to draw one of these things."
+        - "It's… more longbow-shaped than it's a longbow. Give it a pull. You don't need to load it. But for the love of fuck don't let go suddenly, and don't point it at anything but the floor."
+        - "Esri, what is this thing? My hands are tingling. My *teeth* are tingling. There're rainbows round the edges of everything."
+        - "I wanted to make you something that'd help with your alchemy. I don't know if that's possible, but I had to try. And the most confident I've ever seen you is when you're grinning down the sights of something."
+        - "When I'm what?"
+        - "You're, like, practically feral. I've seen you literally licking your lips. It's honestly hot. So I crammed a bow full of variations on cauldron metal, and every other transmutation catalyst I could think of that'd fit your whole deal. A lot of twisty little bits, a lot of really poisonous stuff."
+        - "Twisty bits and poisons; should I be insulted? Never mind. It sounds almost like an alchemical staff."
+        - "Yeah, I guess, but it's a bow. I couldn't test the final version. My alchemy was barely enough to make it, and it's not the right kind to use it; it has to be yours. But I think if *you* fire an arrow from it, it won't be an arrow when it hits. It'll be whatever you need it to be. Acid. Darkness. Big ol' tungsten spikes."
+        - "I… don't know what to say either. That's so much effort. I can feel how much power went into this. Nobody's ever done anything like this for me. Even if it doesn't work, thank you. Thank you for trying. And it's been fun teaching you, you know? You've come so far! My own attempt to learn alchemy turned out to not be totally pointless because I could pass it on to you."
+        - "You're welcome!"
+        - "Now let's go very, very, very far from the atelier so I can get the hang of this."
 
 
 # cutscenes
