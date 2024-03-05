@@ -8,6 +8,7 @@
 #include <memory>
 #include <optional>
 
+#include "Breeze/Geometry/C2.hpp"
 #include "Breeze/Geometry/R2.hpp"
 #include "Breeze/Geometry/V2.hpp"
 #include "Resource.hpp"
@@ -38,6 +39,11 @@ struct R2I : Breeze::R2<R2I, V2I> {
 
   // ReSharper disable once CppNonExplicitConversionOperator
   operator Rect() const;  // NOLINT(*-explicit-constructor)
+};
+
+/// 2D int circle.
+struct C2I : Breeze::C2<C2I, V2I, R2I> {
+  constexpr C2I(const V2I center, const int radius) : C2(center, radius){};
 };
 
 /// QuickDraw global state.
