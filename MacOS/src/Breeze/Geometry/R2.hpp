@@ -65,6 +65,19 @@ struct R2 {
            rect.Right() <= Right() && rect.Bottom() <= Bottom();
   }
 
+  [[nodiscard]] bool Intersects(const Base& other) const {
+    const Element ax1 = origin.x;
+    const Element ax2 = ax1 + size.x;
+    const Element bx1 = other.origin.x;
+    const Element bx2 = bx1 + other.size.x;
+    const Element ay1 = origin.y;
+    const Element ay2 = ay1 + size.y;
+    const Element by1 = other.origin.y;
+    const Element by2 = by1 + other.size.y;
+    return SpansIntersect(ax1, ax2, bx1, bx2) ||
+           SpansIntersect(ay1, ay2, by1, by2);
+  }
+
   [[nodiscard]] bool Empty() const { return size.x == 0 || size.y == 0; }
 
   bool operator==(const Base& rhs) const {
@@ -108,6 +121,14 @@ struct R2 {
         std::max(Right(), rhs.Right()),
         std::max(Bottom(), rhs.Bottom()),
     };
+  }
+
+  /// Assumes a2 >= a1 and b2 >= b1.
+  [[nodiscard]] static bool SpansIntersect(
+      Element a1, Element a2, Element b1, Element b2
+  ) {
+    return (b1 <= a1 && a1 <= b2) || (b1 <= a2 && a2 <= b2) ||
+           (a1 <= b1 && b1 <= a2) || (a1 <= b2 && b2 <= a2);
   }
 };
 

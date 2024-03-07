@@ -30,6 +30,7 @@ if (NOT RETRO68)
             src/Breeze
             src/Breeze/AlchemyTest.cpp
             src/Breeze/BinIO/BinIOTest.cpp
+            src/Breeze/Geometry/IntersectsTest.cpp
     )
     target_link_libraries(BreezeTests PUBLIC Breeze)
     target_include_directories(BreezeTests PUBLIC "${PROJECT_SOURCE_DIR}/src")
