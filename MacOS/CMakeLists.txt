@@ -81,6 +81,14 @@ if (RETRO68)
     )
     target_link_libraries(AtelierEsri PUBLIC Breeze)
     target_include_directories(AtelierEsri PUBLIC "${PROJECT_SOURCE_DIR}/src")
+
+    add_custom_target(Launch
+            "${RETRO68_ROOT}/bin/LaunchAPPL"
+            --emulator shared
+            --shared-directory "${CMAKE_HOME_DIRECTORY}/../../../Desktop/MacEmulation/LaunchAPPLShared"
+            "${AtelierEsri_BINARY_DIR}/AtelierEsri.APPL"
+    )
+    add_dependencies(Launch AtelierEsri_APPL)
 endif ()
 
 # Size reduction disabled because it breaks exceptions on 68k:
@@ -92,7 +100,7 @@ endif ()
 # (don't do this when debugging...)
 #set_target_properties(AtelierEsri PROPERTIES COMPILE_OPTIONS -ffunction-sections)
 #if (CMAKE_SYSTEM_NAME MATCHES Retro68)
-#    set_target_properties(AtelierEsri PROPERTIES LINK_FLAGS "-Wl,-gc-sections -Wl,--mac-strip-macsbug")
+#    set_target_properties(AtelierEsri PROPERTIES LINK_FLAGS " -Wl,-gc-sections -Wl,--mac-strip-macsbug")
 #else ()
 #    set_target_properties(AtelierEsri PROPERTIES LINK_FLAGS "-Wl,-gc-sections")
 #endif ()
