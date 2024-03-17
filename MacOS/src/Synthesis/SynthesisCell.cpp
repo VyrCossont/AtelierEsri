@@ -1,6 +1,8 @@
 #include "SynthesisCell.hpp"
 
 #include "Assets.h"
+#include "Debug.hpp"
+#include "Exception.hpp"
 
 namespace AtelierEsri {
 
@@ -33,9 +35,41 @@ void SynthesisCell::Draw() const {
   // TODO: polygon can probably be cached too
   //  Heck, we might be able to make a `Picture` or `GWorld` of this whole deal.
 
+  const std::vector<std::reference_wrapper<const Breeze::Item>> items =
+      state.ItemsPlacedIn(node);
+
+  // Find the sprite for this element.
+  SpriteSheet::SpriteIndex pipSpriteIndex;
+  switch (node.element) {
+    case Breeze::Element::Fire:
+      pipSpriteIndex = assetSpriteSheet00ElementFireSpriteIndex;
+      break;
+    case Breeze::Element::Ice:
+      pipSpriteIndex = assetSpriteSheet00ElementIceSpriteIndex;
+      break;
+    case Breeze::Element::Lightning:
+      pipSpriteIndex = assetSpriteSheet00ElementLightningSpriteIndex;
+      break;
+    case Breeze::Element::Wind:
+      pipSpriteIndex = assetSpriteSheet00ElementWindSpriteIndex;
+      break;
+    default:
+      BAIL("Unknown Breeze::Element in switch statement");
+      break;
+  }
+
+  // Count up matching elemental pips.
+  int numPips = 0;
+  // ReSharper disable once CppRangeBasedForIncompatibleReference
+  for (const Breeze::Item& item : items) {
+    if (item.elements.test(node.element)) {
+      numPips += item.elementValue;
+    }
+  }
+
   constexpr int nodeR = 32;
   constexpr int numPoints = 6;
-  const auto ngon = Ngon(center, nodeR, numPoints, 0, true);
+  const auto ngon = Ngon(center, nodeR, numPoints, -5 * M_PI / 6);
   {
     // Draw polygon, adjusted to center it in its own frame
     // (rectangles, ovals, etc. don't need this).
@@ -56,25 +90,20 @@ void SynthesisCell::Draw() const {
       FillOval(&pipSlotRect, &pattern);
       FrameOval(&pipSlotRect);
 
-      if (i < 3) {
+      if (i < numPips) {
         constexpr int pipHalfWidth = 4;
         const auto pipRect = R2I::Around(center, pipHalfWidth);
-        spriteSheet.Draw(assetSpriteSheet00ElementFireSpriteIndex, pipRect);
+        spriteSheet.Draw(pipSpriteIndex, pipRect);
       }
     }
   }
 
-  const std::vector<std::reference_wrapper<const Breeze::Item>> items =
-      state.ItemsPlacedIn(node);
   if (!items.empty()) {
     // TODO: draw more than one item
     const Breeze::Item& item = items[0];
     // ReSharper disable once CppUseStructuredBinding
     const Material& material = catalog[item.material.id];
     constexpr int MaterialIconHalfWidth = 8;
-    // TODO: we're drawing sprite 0 (Allie) and crashing when an item is added
-    //  Obviously this is wrong, if funny.
-    //  Something's probably null and should't be.
     spriteSheet.Draw(
         material.spriteIndex, R2I::Around(center, MaterialIconHalfWidth)
     );
