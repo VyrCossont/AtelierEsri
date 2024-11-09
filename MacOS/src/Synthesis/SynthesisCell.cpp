@@ -1,7 +1,6 @@
 #include "SynthesisCell.hpp"
 
 #include "Assets.h"
-#include "Debug.hpp"
 #include "Exception.hpp"
 
 namespace AtelierEsri {
@@ -70,31 +69,30 @@ void SynthesisCell::Draw() const {
   constexpr int nodeR = 32;
   constexpr int numPoints = 6;
   const auto ngon = Ngon(center, nodeR, numPoints, -5 * M_PI / 6);
-  {
-    // Draw polygon, adjusted to center it in its own frame
-    // (rectangles, ovals, etc. don't need this).
-    constexpr int halfPenWidth = 2;
-    const ManagedPolygon polygon = ngon.Polygon();
-    OffsetPoly(polygon.get(), -halfPenWidth, -halfPenWidth);
-    QD_CHECKED(ErasePoly(polygon.get()), "Couldn't clear hexagon");
-    PenSize(2 * halfPenWidth, 2 * halfPenWidth);
-    QD_CHECKED(FramePoly(polygon.get()), "Couldn't draw hexagon");
-  }
-  {
-    const Pattern pattern = QD::White();
-    PenSize(2, 2);
-    for (auto i = 0; i < numPoints; i++) {
-      const V2I center = ngon[i];
-      constexpr int pipSlotHalfWidth = 6;
-      const Rect pipSlotRect = R2I::Around(center, pipSlotHalfWidth);
-      FillOval(&pipSlotRect, &pattern);
-      FrameOval(&pipSlotRect);
 
-      if (i < numPips) {
-        constexpr int pipHalfWidth = 4;
-        const auto pipRect = R2I::Around(center, pipHalfWidth);
-        spriteSheet.Draw(pipSpriteIndex, pipRect);
-      }
+  // Draw polygon, adjusted to center it in its own frame
+  // (rectangles, ovals, etc. don't need this).
+  constexpr int halfPenWidth = 2;
+  const ManagedPolygon polygon = ngon.Polygon();
+  OffsetPoly(polygon.get(), -halfPenWidth, -halfPenWidth);
+  QD_CHECKED(ErasePoly(polygon.get()), "Couldn't clear hexagon");
+  PenSize(2 * halfPenWidth, 2 * halfPenWidth);
+  QD_CHECKED(FramePoly(polygon.get()), "Couldn't draw hexagon");
+
+  // Draw pip slots and filled pips.
+  const Pattern pattern = QD::White();
+  PenSize(2, 2);
+  for (auto i = 0; i < numPoints; i++) {
+    const V2I center = ngon[i];
+    constexpr int pipSlotHalfWidth = 6;
+    const Rect pipSlotRect = R2I::Around(center, pipSlotHalfWidth);
+    FillOval(&pipSlotRect, &pattern);
+    FrameOval(&pipSlotRect);
+
+    if (i < numPips) {
+      constexpr int pipHalfWidth = 4;
+      const auto pipRect = R2I::Around(center, pipHalfWidth);
+      spriteSheet.Draw(pipSpriteIndex, pipRect);
     }
   }
 

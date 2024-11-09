@@ -295,6 +295,7 @@ void SynthesisController::Click(const V2I point) {
               const Breeze::Item& item) {
             state.Place(node, item);
             // TODO: update ingredient picker item list without losing state
+            ingredientPicker.reset();
             InvalidateRecipeArea();
             ConfigureButtons();
           };
