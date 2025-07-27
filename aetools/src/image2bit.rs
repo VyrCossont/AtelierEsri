@@ -4,7 +4,7 @@ use std::fs::File;
 use std::io::BufWriter;
 use std::path::Path;
 
-/// 2-bit image packed to 4 bits per pixel in memory.
+/// 2-bit image packed to 4 pixels per byte in memory.
 /// Stored this way so it can be passed to compressors like Poképak.
 pub struct Image2Bit {
     width: u32,

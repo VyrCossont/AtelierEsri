@@ -1,4 +1,5 @@
-use crate::mac_assets::{asset_group_foreach, AssetGroup, MaskedPictAsset, RGNAsset};
+use crate::assets::{asset_group_foreach, AssetGroup};
+use crate::mac_assets::{MaskedPictAsset, RGNAsset};
 use anyhow;
 use convert_case::{Case, Casing};
 use lazy_static::lazy_static;

@@ -1,6 +1,9 @@
 mod cinematic;
 mod tiled;
 
+use crate::assets::{asset_group_foreach, IMAGE_ASSETS, SPRITE_ASSETS};
+use crate::ext::{aseprite, imagemagick};
+use crate::fsutil::{delete_dir, ensure_dir};
 use crate::mac::resource::TypedResource;
 use crate::mac::OSType;
 use crate::mac_assets::cinematic::compile_cinematics;
@@ -20,7 +23,7 @@ use serde_json;
 use std::collections::{BTreeMap, HashMap};
 use std::ffi::OsStr;
 use std::fs::{self, File};
-use std::io::{BufWriter, ErrorKind, Write};
+use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -142,32 +145,6 @@ pub fn generate(asset_base_dir: &Path, build_dir: &Path) -> anyhow::Result<()> {
         build_dir,
     )?;
 
-    Ok(())
-}
-
-fn delete_dir(path: &Path) -> anyhow::Result<()> {
-    if let Err(err) = fs::remove_dir_all(path) {
-        if err.kind() != ErrorKind::NotFound {
-            anyhow::bail!(
-                "Couldn't remove directory {}: {}",
-                path.to_string_lossy(),
-                err
-            );
-        }
-    }
-    Ok(())
-}
-
-fn ensure_dir(path: &Path) -> anyhow::Result<()> {
-    if let Err(err) = fs::create_dir_all(path) {
-        if err.kind() != ErrorKind::AlreadyExists {
-            anyhow::bail!(
-                "Couldn't create directory {}: {}",
-                path.to_string_lossy(),
-                err
-            );
-        }
-    }
     Ok(())
 }
 
@@ -356,10 +333,10 @@ impl QDRect {
     }
 }
 
-impl TryFrom<&AsepriteRect> for QDRect {
+impl TryFrom<&aseprite::Rect> for QDRect {
     type Error = anyhow::Error;
 
-    fn try_from(value: &AsepriteRect) -> Result<Self, Self::Error> {
+    fn try_from(value: &aseprite::Rect) -> Result<Self, Self::Error> {
         let x = i16::try_from(value.x)?;
         let y = i16::try_from(value.y)?;
         let w = i16::try_from(value.w)?;
@@ -371,76 +348,6 @@ impl TryFrom<&AsepriteRect> for QDRect {
             right: x + w,
         })
     }
-}
-
-/// Top-level sprite info JSON for an Aseprite project.
-///
-/// https://www.aseprite.org/docs/cli#data
-#[derive(Debug, Deserialize)]
-struct AsepriteProject {
-    meta: AsepriteMeta,
-}
-
-#[derive(Debug, Deserialize)]
-struct AsepriteMeta {
-    slices: Vec<AsepriteSlice>,
-}
-
-#[derive(Debug, Deserialize)]
-struct AsepriteSlice {
-    name: String,
-    keys: Vec<AsepriteSliceKey>,
-}
-
-#[derive(Debug, Deserialize)]
-struct AsepriteSliceKey {
-    /// 9-patch data. Origin relative to bounds.
-    center: Option<AsepriteRect>,
-}
-
-#[derive(Debug, Deserialize)]
-struct AsepriteRect {
-    x: i32,
-    y: i32,
-    w: i32,
-    h: i32,
-}
-
-fn asset_group_foreach<F, G>(
-    asset_groups: &[AssetGroup],
-    asset_base_dir: &Path,
-    build_dir: &Path,
-    mut glob_match_fn: F,
-    mut group_fn: G,
-) -> anyhow::Result<()>
-where
-    F: FnMut(&str, &Path, &Path, &OsStr, &str) -> anyhow::Result<()>,
-    G: FnMut(&str, &Path) -> anyhow::Result<()>,
-{
-    for group in asset_groups {
-        let group_name = group.name;
-        let group_dir = build_dir.join(group_name);
-        ensure_dir(&group_dir)?;
-        for src_glob in group.srcs {
-            for glob_result in glob(&asset_base_dir.join(src_glob).to_string_lossy())? {
-                let src = glob_result?;
-                let base_name = src.file_stem().ok_or(anyhow::anyhow!(
-                    "Couldn't get file stem for asset file: {src}",
-                    src = src.to_string_lossy()
-                ))?;
-
-                let ext = src
-                    .extension()
-                    .map(|ext| ext.to_string_lossy().to_string())
-                    .unwrap_or("".to_string());
-
-                glob_match_fn(group_name, &group_dir, &src, base_name, &ext)?;
-            }
-        }
-
-        group_fn(group_name, &group_dir)?;
-    }
-    Ok(())
 }
 
 /// Combine all Aseprite sprite slices into a single color and mask PICT pair.
@@ -475,14 +382,14 @@ fn generate_sprite_sheet(
         match ext {
             "aseprite" => {
                 // Export sprite slices from each Aseprite project into the group directory.
-                aseprite_export_slices(&src, &group_dir)?;
+                aseprite::export_slices(&src, &group_dir)?;
 
                 // Get sprite metadata to identify sprites that are 9-patches.
                 let aseprite_project = {
                     let mut metadata_json = group_dir.join(base_name);
                     metadata_json.set_extension("json");
-                    aseprite_export_metadata(&src, &metadata_json)?;
-                    aseprite_read_metadata(&metadata_json)?
+                    aseprite::export_metadata(&src, &metadata_json)?;
+                    aseprite::read_metadata(&metadata_json)?
                 };
                 for slice in &aseprite_project.meta.slices {
                     if slice.keys.len() != 1 {
@@ -677,7 +584,7 @@ pub fn png_to_pict(
 
     let mut image_pict = png.to_path_buf();
     image_pict.set_extension("pict");
-    imagemagick_convert(&png, &image_pict)?;
+    imagemagick::convert(&png, &image_pict)?;
 
     let mut image_pict_data = png.to_path_buf();
     image_pict_data.set_extension("pictdata");
@@ -688,12 +595,12 @@ pub fn png_to_pict(
         .to_string_lossy()
         .to_string();
 
-    let (mask_pict_resource_id, mask_pict_data_rel) = if imagemagick_opaque(png)? {
+    let (mask_pict_resource_id, mask_pict_data_rel) = if imagemagick::opaque(png)? {
         (None, None)
     } else {
         let mut mask_pict = png.to_path_buf();
         mask_pict.set_extension("mask.pict");
-        imagemagick_mask(&png, &mask_pict)?;
+        imagemagick::mask(&png, &mask_pict, true)?;
 
         let mut mask_pict_data = png.to_path_buf();
         mask_pict_data.set_extension("mask.pictdata");
@@ -739,7 +646,7 @@ fn generate_masked_pict_assets(
         image_png.set_extension("png");
 
         match ext {
-            "aseprite" => aseprite_export(&src, &image_png)?,
+            "aseprite" => aseprite::export(&src, &image_png)?,
             "png" => {
                 fs::copy(src, image_png)?;
             }
@@ -780,145 +687,6 @@ fn generate_masked_pict_assets(
     )?;
 
     Ok(assets)
-}
-
-struct AssetGroup<'a> {
-    name: &'a str,
-    /// These can be globs.
-    srcs: &'a [&'a str],
-}
-
-/// These images should be used as is.
-/// Can accept Aseprite projects or PNGs.
-const IMAGE_ASSETS: &[AssetGroup] = &[AssetGroup {
-    name: "scene",
-    srcs: &[
-        "atelier_interior.aseprite",
-        "new_title_screen.aseprite",
-        "background-cave0.png",
-    ],
-}];
-
-/// These images should be sliced and then packed into sprite sheets.
-const SPRITE_ASSETS: &[AssetGroup] = &[
-    AssetGroup {
-        name: "avatar",
-        srcs: &[
-            "Esri.aseprite",
-            "Allie.aseprite",
-            "Sae.aseprite",
-            "avatars/Esri_*.png",
-            "avatars/Allie_*.aseprite",
-            "avatars/Sae_*.png",
-        ],
-    },
-    // AssetGroup {
-    //     name: "cursor",
-    //     srcs: &["cursor.aseprite"],
-    // },
-    AssetGroup {
-        name: "element",
-        srcs: &["element.aseprite"],
-    },
-    AssetGroup {
-        name: "item",
-        srcs: &[
-            "fantasy-tileset.aseprite",
-            "roguelikeitems.aseprite",
-            "items/*.aseprite",
-        ],
-    },
-];
-
-/// Export an Aseprite file to a single image.
-fn aseprite_export(input: &Path, output: &Path) -> anyhow::Result<()> {
-    let program = "aseprite";
-    let status = Command::new(program)
-        .arg("--batch")
-        .arg(input)
-        .arg("--save-as")
-        .arg(output)
-        .status()?;
-    if !status.success() {
-        anyhow::bail!("{program} exited with code {status}");
-    }
-    Ok(())
-}
-
-/// Export an Aseprite file to a PNG for each slice.
-fn aseprite_export_slices(input: &Path, output_dir: &Path) -> anyhow::Result<()> {
-    let program = "aseprite";
-    let status = Command::new(program)
-        .arg("--batch")
-        .arg(input)
-        .arg("--save-as")
-        .arg(output_dir.join("{slice}.png"))
-        .status()?;
-    if !status.success() {
-        anyhow::bail!("{program} exited with code {status}");
-    }
-    Ok(())
-}
-
-/// Export sprite metadata from an Aseprite file.
-fn aseprite_export_metadata(input: &Path, output: &Path) -> anyhow::Result<()> {
-    let program = "aseprite";
-    let status = Command::new(program)
-        .arg("--batch")
-        .arg("--list-slices")
-        .arg(input)
-        .arg("--data")
-        .arg(output)
-        .status()?;
-    if !status.success() {
-        anyhow::bail!("{program} exited with code {status}");
-    }
-    Ok(())
-}
-
-fn aseprite_read_metadata(input: &Path) -> anyhow::Result<AsepriteProject> {
-    let aseprite_project = serde_json::from_reader(File::open(input)?)?;
-    Ok(aseprite_project)
-}
-
-/// Convert an image to another format (controlled by file extensions).
-fn imagemagick_convert(input: &Path, output: &Path) -> anyhow::Result<()> {
-    let program = "magick";
-    let status = Command::new(program).arg(input).arg(output).status()?;
-    if !status.success() {
-        anyhow::bail!("{program} exited with code {status}");
-    }
-    Ok(())
-}
-
-fn imagemagick_opaque(input: &Path) -> anyhow::Result<bool> {
-    let program = "magick";
-    let output = Command::new(program)
-        .args(["identify", "-format", "%[opaque]"])
-        .arg(input)
-        .output()?;
-    if !output.status.success() {
-        anyhow::bail!(
-            "{program} exited with code {status}",
-            status = output.status
-        );
-    }
-    Ok(output.stdout.as_slice() == b"True")
-}
-
-/// Extract an image's alpha channel as a mask image.
-/// Note that masks for QuickDraw `CopyMask` are inverted: black pixels are copied, white pixels are ignored.
-fn imagemagick_mask(input: &Path, output: &Path) -> anyhow::Result<()> {
-    let program = "magick";
-    let status = Command::new(program)
-        .arg(input)
-        .args(["-alpha", "extract", "-monochrome", "-negate"])
-        .arg(output)
-        .status()?;
-    if !status.success() {
-        anyhow::bail!("{program} exited with code {status}");
-    }
-    Ok(())
 }
 
 /// Remove a PICT file's 512-byte header, which is not used when it's stored as a resource.

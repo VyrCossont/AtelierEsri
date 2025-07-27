@@ -1,3 +1,6 @@
+mod assets;
+mod ext;
+mod fsutil;
 mod grey_quantizer;
 mod histogram;
 mod image2bit;
@@ -8,6 +11,7 @@ mod mac;
 mod mac_assets;
 mod mac_icon;
 mod palettes;
+mod pico8;
 mod pokepak;
 mod tileshred;
 mod unisprite;
@@ -117,6 +121,15 @@ enum Commands {
         output: PathBuf,
     },
     MacCodegen {},
+    /// Convert a subset of assets to PICO-8 format.
+    PICO8Assets {
+        /// Input assets directory.
+        #[clap(value_parser)]
+        input: PathBuf,
+        /// Output assets build directory.
+        #[clap(value_parser)]
+        output: PathBuf,
+    },
 }
 
 fn main() -> anyhow::Result<()> {
@@ -148,6 +161,9 @@ fn main() -> anyhow::Result<()> {
         }
         Commands::MacIconDemo { output } => mac_icon::demo(output.as_path())?,
         Commands::MacCodegen {} => mac_assets::hpp()?,
+        Commands::PICO8Assets { input, output } => {
+            pico8::generate_assets(input.as_path(), output.as_path())?
+        }
     }
     Ok(())
 }

@@ -149,7 +149,7 @@ early 20s
     - pterodactyls
     - jungle cats
     - carnivorous plants
-    - boss: ???
+    - boss: volcanic elemental
 4. rust desert
     - slags
     - antlions

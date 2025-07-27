@@ -15,7 +15,7 @@ use crate::implicit_tree::ImplicitTree;
 /// This algorithm doesn't necessarily produce an optimal palette in terms of minimizing
 /// [MSE](https://en.wikipedia.org/wiki/Mean_squared_error),
 /// [PSNR](https://en.wikipedia.org/wiki/Peak_signal-to-noise_ratio),
-/// or [SSIM](https://en.wikipedia.org/wiki/Structural_similarity,
+/// or [SSIM](https://en.wikipedia.org/wiki/Structural_similarity),
 /// but it might be good enough.
 /// Given the smallish color space, better but more expensive algorithms may be practical.
 pub struct GreyQuantizer(ImplicitTree<ColorNode>);

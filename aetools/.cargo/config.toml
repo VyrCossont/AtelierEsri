@@ -1,3 +1,0 @@
-[build]
-# Workaround for https://github.com/rust-lang/cargo/issues/8112
-target = "x86_64-apple-darwin"
