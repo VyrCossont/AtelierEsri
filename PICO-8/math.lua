@@ -1,5 +1,5 @@
 -- reusable math functions
 
 function lerp(a, b, t)
-    return (1 - t) * a + t * b
+ return (1 - t) * a + t * b
 end
