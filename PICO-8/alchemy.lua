@@ -1,28 +1,30 @@
 -- alchemy data model
 
-function match_exact(material_id)
-    return function(item)
-        return item.material.id == material_id
-    end
-end
+match_material = 'match_material'
+match_item = 'match_item'
 
-function match_type(material_type)
-    return function(item)
-        return item.material.type == material_type
-    end
-end
+-- item properties
 
--- effects
-
-function set_item(id)
-    return function(item)
-        item.id = id
-    end
-end
+-- flat damage addition
+damage = 'damage'
+-- projectiles go thru one additional enemy per pierce level
+pierce = 'pierce'
+-- increases effect radius
+radius = 'radius'
+-- harvest increases material drop chance
+harvest = 'harvest'
+-- deployables with longer duration last longer
+duration = 'duration'
+-- quality multiplies pretty much every good stat somewhere
+quality = 'quality'
+-- burn and other elemental effect types add chance to proc that effect
+burn = 'burn'
 
 -- material types
 material_type_ingot = 'ingot'
 material_type_ore = 'ore'
+material_type_crystal = 'crystal'
+material_type_rock = 'rock'
 
 -- blitz ore material
 blitz_ore = {
@@ -128,7 +130,7 @@ pylon = {
         -- required
         {
             {
-                condition = match_exact(copper_ingot.id),
+                condition = {match_item, blitz_ore.id},
                 -- ring 1 has the implicit effect of setting the item id
             }
         },
@@ -136,51 +138,27 @@ pylon = {
         {
             -- range
             {
-                condition = match_type(material_type_ingot),
+                condition = {match_material, material_type_ingot},
+                effect = {radius, 10},
             },
             -- damage
             {
-                condition = match_exact(blitz_ore.id),
-                effect
+                condition = {match_item, blitz_ore.id},
+                effect = {damage, 10},
             },
         },
         -- minor variant or bonus
-        --
+        {
+            -- duration
+            {
+                condition = {match_material, material_type_rock},
+                effect = {duration, 10},
+            },
+        },
+        -- polar shared nodes should be quality
+        -- other ones are harder to reach and should have more powerful effects
     },
 }
-
-function lerp(a, b, t)
-    return (1 - t) * a + t * b
-end
-
--- slow but precise filled arc
--- assumes rmin < rmax and thetamin < thetamax
-function arcfill(cx, cy, rmin, rmax, thetamin, thetamax, thetaoffset, color)
-    local xmin = cx - rmax
-    local xmax = cx + rmax
-    local ymin = cy - rmax
-    local ymax = cy + rmax
-    for y = ymin, ymax do
-        for x = xmin, xmax do
-            local dx = x - cx
-            local dy = y - cy
-            local r = sqrt(dx * dx + dy * dy)
-            local theta = atan2(dx, dy) - thetaoffset
-            theta = theta % 1
-            if rmin <= r and r < rmax and thetamin <= theta and theta < thetamax then
-                pset(x, y, color)
-            end
-        end
-    end
-end
-
--- return center (x, y) of arc
-function arccenter(cx, cy, rmin, rmax, thetamin, thetamax, thetaoffset)
-    local r = lerp(rmin, rmax, 0.5)
-    local theta = lerp(thetamin, thetamax, 0.5) + thetaoffset
-    theta = theta % 1
-    return cx + r * cos(theta), cy + r * sin(theta)
-end
 
 function draw_alchemy_diagram()
     local cx = 64
@@ -257,12 +235,12 @@ function draw_alchemy_diagram()
 
     -- draw nodes
     -- todo: light up only filled nodes
-    local shape = ord('A') + 65
+    local shape = 0
     for ring_nodes in all(node_centers) do
         for sector_nodes in all(ring_nodes) do
             local x, y = unpack(sector_nodes)
             circfill(x, y, r * 0.35, 0)
-            print(chr(shape), x - 3, y - 2, 7)
+            item_sspr(shape, x - 3, y - 3, 8, 8)
             shape = shape + 1
         end
     end
@@ -272,4 +250,8 @@ function _draw()
     cls()
 
     draw_alchemy_diagram()
+end
+
+function _update60()
+
 end
