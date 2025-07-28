@@ -215,6 +215,8 @@ function SynthesisState:must_finish()
 end
 
 -- the current ring (the one the player is picking a slot on)
+-- todo: someday we want them to be able to add multiple items to a single ring
+--  but for now they can't do that
 function SynthesisState:ring()
  return #self.choices + 1
 end
@@ -320,16 +322,17 @@ function draw_alchemy_diagram()
  for ring_index_2 = 2, synstate:ring() do
   node_centers[ring_index_2] = {}
   local ring_index_1 = ring_index_2 - 1
-  for sector_links in all(synstate.material.recipe.shape.ring_links[ring_index_1]) do
-   local sector_index_1, sector_indexes = unpack(sector_links)
-   for sector_index_2 in all(sector_indexes) do
-    local x1, y1 = unpack(sector_centers[ring_index_1][sector_index_1])
-    local x2, y2 = unpack(sector_centers[ring_index_2][sector_index_2])
-    -- draw lines between ring centers
-    line(x1, y1, x2, y2, 0)
-    -- add the node at the end of the line
-    node_centers[ring_index_2][sector_index_2] = { x2, y2 }
-   end
+  local choice_1 = synstate.choices[ring_index_1]
+  local choice_2 = synstate.choices[ring_index_2]
+  if choice_1 ~= nil and choice_2 ~= nil then
+   local slot_id_1 = choice_1[1]
+   local slot_id_2 = choice_2[1]
+   local x1, y1 = unpack(sector_centers[ring_index_1][slot_id_1])
+   local x2, y2 = unpack(sector_centers[ring_index_2][slot_id_2])
+   -- draw lines between ring centers
+   line(x1, y1, x2, y2, 0)
+   -- add the node at the end of the line
+   node_centers[ring_index_2][slot_id_2] = { x2, y2 }
   end
  end
 
@@ -339,13 +342,9 @@ function draw_alchemy_diagram()
   local choice = synstate.choices[ring_index]
   if choice ~= nil then
    local slot_id, item = unpack(choice)
-   for sector_id, sector_nodes in pairs(ring_nodes) do
-    local x, y = unpack(sector_nodes)
-    circfill(x, y, r * 0.35, 0)
-    if slot_id == sector_id then
-     item_sspr(item.material.big_sprite_index, x - 3, y - 3, 8, 8)
-    end
-   end
+   local x, y = unpack(ring_nodes[slot_id])
+   circfill(x, y, r * 0.35, 0)
+   item_sspr(item.material.big_sprite_index, x - 3, y - 3, 8, 8)
   end
  end
 end
