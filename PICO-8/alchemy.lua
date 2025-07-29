@@ -50,16 +50,20 @@ granite = {
 }
 
 -- slot IDs for standard recipe shape
+ring_1 = 1
 ring_1_c = 1
 
+ring_2 = 2
 ring_2_e = 1
 ring_2_w = 2
 
+ring_3 = 3
 ring_3_ne = 1
 ring_3_nw = 2
 ring_3_sw = 3
 ring_3_se = 4
 
+ring_4 = 4
 ring_4_ne = 1
 ring_4_n = 2
 ring_4_nw = 3
@@ -67,77 +71,49 @@ ring_4_sw = 4
 ring_4_s = 5
 ring_4_se = 6
 
+Ring = mkclass {
+ theta_offset = 0,
+}
+
+function Ring:new(obj)
+ setmetatable(obj, self)
+ return obj
+end
+
+-- a shape is a list of rings
 recipe_shape_standard = {
- rings = 4,
- num_slot_ids_by_ring = { 1, 2, 4, 6 },
- -- ring 2 is rotated halfway to look nicer
- theta_offsets = { 0, -0.25, 0, 0 },
- -- each pair of rings maps a slot in the first ring
- -- to a list of slots in the second ring
- ring_links = {
-  -- ring 1 to 2
-  {
-   {
-    ring_1_c,
-    {
-     ring_2_e,
-    },
-   },
-   {
-    ring_1_c,
-    {
-     ring_2_w,
-    },
-   },
+ [ring_1] = Ring {
+  links = {
+   [ring_1_c] = { ring_2_e, ring_2_w },
   },
-  -- ring 2 to 3
-  {
-   {
-    ring_2_e,
-    {
-     ring_3_ne,
-     ring_3_se,
-    },
-   },
-   {
-    ring_2_w,
-    {
-     ring_3_nw,
-     ring_3_sw,
-    },
-   },
+ },
+ [ring_2] = Ring {
+  -- ring 2 is rotated halfway to look nicer
+  theta_offset = -0.25,
+  links = {
+   [ring_2_e] = { ring_3_ne, ring_3_se },
+   [ring_2_w] = { ring_3_nw, ring_3_sw },
+  }
+ },
+ [ring_3] = Ring {
+  links = {
+   [ring_3_ne] = { ring_4_ne, ring_4_n },
+   [ring_3_nw] = { ring_4_n, ring_4_nw },
+   [ring_3_sw] = { ring_4_sw, ring_4_s },
+   [ring_3_se] = { ring_4_s, ring_4_se },
   },
-  -- ring 3 to 4
-  {
-   {
-    ring_3_ne,
-    {
-     ring_4_ne,
-     ring_4_n,
-    },
-   },
-   {
-    ring_3_nw,
-    {
-     ring_4_n,
-     ring_4_nw,
-    },
-   },
-   {
-    ring_3_sw,
-    {
-     ring_4_sw,
-     ring_4_s,
-    },
-   },
-   {
-    ring_3_se,
-    {
-     ring_4_s,
-     ring_4_se,
-    },
-   }
-  },
+ },
+ [ring_4] = Ring {
+  -- we need the keys to provide the list of slots,
+  -- but ring 4 is the last so the links for each slot are empty
+  links = {
+   [ring_4_ne] = {},
+   [ring_4_n] = {},
+   [ring_4_nw] = {},
+   [ring_4_sw] = {},
+   [ring_4_s] = {},
+   [ring_4_se] = {},
+  }
  }
 }
 
@@ -183,26 +159,12 @@ pylon = {
  },
 }
 
--- https://www.lua.org/pil/16.1.html
-function mkclass()
- local cls = {}
- cls.__index = cls
- return cls
-end
-
-SynthesisState = mkclass()
-
 -- a SynthesisState tracks progress on a recipe
 -- material must have a recipe attached
-function SynthesisState:new(material)
- local new = {
-  material = material,
-  -- list of { slot ID, item } pairs for each filled ring
-  choices = {},
- }
- setmetatable(new, self)
- return new
-end
+SynthesisState = mkclass {
+ -- list of { slot ID, item } pairs for each filled ring
+ choices = {},
+}
 
 -- for now, we can finish any synthesis if we've placed the center item
 function SynthesisState:can_finish()
@@ -268,7 +230,7 @@ function draw_alchemy_diagram()
   }
  }
 
- local synstate = SynthesisState:new(pylon)
+ local synstate = SynthesisState { material = pylon }
  synstate:place(ring_1_c, inventory[1])
  synstate:place(ring_2_e, inventory[2])
  synstate:place(ring_3_ne, inventory[3])
@@ -287,8 +249,9 @@ function draw_alchemy_diagram()
   local dtheta = 1 / num_slots
   local rmin = (r / 2) + r * (ring_index - 2)
   local rmax = rmin + r
-  local thetaoffset = synstate.material.recipe.shape.theta_offsets[ring_index]
-  for sector_index = 1, synstate.material.recipe.shape.num_slot_ids_by_ring[ring_index] do
+  local ring = synstate.material.recipe.shape[ring_index]
+  local thetaoffset = ring.theta_offset
+  for sector_index = 1, #ring.links do
    local thetamin = (sector_index - 1) * dtheta
    local thetamax = thetamin + dtheta
    color = color + 1
@@ -324,15 +287,25 @@ function draw_alchemy_diagram()
   local ring_index_1 = ring_index_2 - 1
   local choice_1 = synstate.choices[ring_index_1]
   local choice_2 = synstate.choices[ring_index_2]
-  if choice_1 ~= nil and choice_2 ~= nil then
+  if choice_1 ~= nil then
    local slot_id_1 = choice_1[1]
-   local slot_id_2 = choice_2[1]
-   local x1, y1 = unpack(sector_centers[ring_index_1][slot_id_1])
-   local x2, y2 = unpack(sector_centers[ring_index_2][slot_id_2])
-   -- draw lines between ring centers
-   line(x1, y1, x2, y2, 0)
-   -- add the node at the end of the line
-   node_centers[ring_index_2][slot_id_2] = { x2, y2 }
+   local slot_id_2s
+   if choice_2 ~= nil then
+    -- draw two connected filled nodes
+    slot_id_2s = { choice_2[1] }
+   else
+    -- draw a filled node and empty nodes next to it
+    local ring_1 = synstate.material.recipe.shape[ring_index_1]
+    slot_id_2s = ring_1.links[slot_id_1]
+   end
+   for slot_id_2 in all(slot_id_2s) do
+    local x1, y1 = unpack(sector_centers[ring_index_1][slot_id_1])
+    local x2, y2 = unpack(sector_centers[ring_index_2][slot_id_2])
+    -- draw lines between ring centers
+    line(x1, y1, x2, y2, 0)
+    -- add the node at the end of the line
+    node_centers[ring_index_2][slot_id_2] = { x2, y2 }
+   end
   end
  end
 

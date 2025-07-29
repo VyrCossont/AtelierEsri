@@ -6,6 +6,7 @@ __lua__
 
 #include pinput.lua
 #include input.lua
+#include oop.lua
 #include alchemy.lua
 #include draw.lua
 #include init.lua
