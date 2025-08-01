@@ -1,6 +1,9 @@
+use crate::ext::aseprite;
 use crate::fsutil::ensure_dir;
+use anyhow::bail;
 use glob::glob;
 use std::ffi::OsStr;
+use std::fs;
 use std::path::Path;
 
 /// Named asset group with source file list.
@@ -22,6 +25,7 @@ pub const IMAGE_ASSETS: &[AssetGroup] = &[AssetGroup {
 }];
 
 /// These images should be sliced and then packed into sprite sheets.
+/// 2-bit + 1-bit alpha.
 pub const SPRITE_ASSETS: &[AssetGroup] = &[
     AssetGroup {
         name: "avatar",
@@ -38,6 +42,7 @@ pub const SPRITE_ASSETS: &[AssetGroup] = &[
     //     name: "cursor",
     //     srcs: &["cursor.aseprite"],
     // },
+    // 8x8 and 7x7 element (water, fire, earth, air, ice, bolt), empty node, and lock icons
     AssetGroup {
         name: "element",
         srcs: &["element.aseprite"],
@@ -51,6 +56,12 @@ pub const SPRITE_ASSETS: &[AssetGroup] = &[
         ],
     },
 ];
+
+/// 8x8 status icon masks
+pub const CUSTOM_CHAR_ASSET_GROUP: AssetGroup = AssetGroup {
+    name: "status",
+    srcs: &["status*.aseprite"],
+};
 
 /// Given a list of asset groups,
 /// - create a per-group directory in the build directory
@@ -91,4 +102,29 @@ where
         group_fn(group_name, &group_dir)?;
     }
     Ok(())
+}
+
+/// Export Aseprite sprite slices to PNGs.
+/// Copy PNGs as is.
+pub fn export_or_copy_to_png(
+    _group_name: &str,
+    group_dir: &Path,
+    src: &Path,
+    base_name: &OsStr,
+    ext: &str,
+) -> anyhow::Result<()> {
+    match ext {
+        "aseprite" => {
+            // Export sprite slices from each Aseprite project into the group directory.
+            aseprite::export_slices(&src, &group_dir)
+        }
+        "png" => {
+            // Copy PNG sprites into the group directory.
+            let mut image_png = group_dir.join(base_name);
+            image_png.set_extension("png");
+            fs::copy(src, image_png)?;
+            Ok(())
+        }
+        _ => bail!("Unsupported file extension: {ext}"),
+    }
 }

@@ -18,7 +18,7 @@ divrem = "1.0.0"
 deku = "0.13.1"
 encoding_rs = "0.8.33"
 glob = "0.3.0"
-image  = "0.24.3"
+image  = "0.25.6"
 itertools = "0.10.5"
 lazy_static = { version = "1.4.0", features = [] }
 literally = "0.1.3"
