@@ -75,11 +75,6 @@ Ring = mkclass {
  theta_offset = 0,
 }
 
-function Ring:new(obj)
- setmetatable(obj, self)
- return obj
-end
-
 -- a shape is a list of rings
 recipe_shape_standard = {
  [ring_1] = Ring {
@@ -161,10 +156,13 @@ pylon = {
 
 -- a SynthesisState tracks progress on a recipe
 -- material must have a recipe attached
-SynthesisState = mkclass {
+SynthesisState = mkclass()
+
+function SynthesisState:init(material)
+ self.material = material
  -- list of { slot ID, item } pairs for each filled ring
- choices = {},
-}
+ self.choices = {}
+end
 
 -- for now, we can finish any synthesis if we've placed the center item
 function SynthesisState:can_finish()
@@ -230,7 +228,7 @@ function draw_alchemy_diagram()
   }
  }
 
- local synstate = SynthesisState { material = pylon }
+ local synstate = SynthesisState(pylon)
  synstate:place(ring_1_c, inventory[1])
  synstate:place(ring_2_e, inventory[2])
  synstate:place(ring_3_ne, inventory[3])
