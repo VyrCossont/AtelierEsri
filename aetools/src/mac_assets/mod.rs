@@ -18,8 +18,6 @@ use rectangle_pack::{
     contains_smallest_box, pack_rects, volume_heuristic, GroupedRectsToPlace, PackedLocation,
     RectToInsert, RectanglePackError, RectanglePackOk, TargetBin,
 };
-use serde::Deserialize;
-use serde_json;
 use std::collections::{BTreeMap, HashMap};
 use std::ffi::OsStr;
 use std::fs::{self, File};
