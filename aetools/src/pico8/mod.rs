@@ -13,6 +13,7 @@ use custom_character::CustomCharacter;
 use glob::glob;
 use image::{GenericImage, GrayImage};
 use item_sprite::ItemSprite;
+use std::fs;
 use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::Path;
@@ -56,43 +57,38 @@ pub fn generate_assets(asset_base_dir: &Path, build_dir: &Path) -> Result<()> {
         },
     )?;
 
-    let mut writer = BufWriter::new(File::create(build_dir.join("craft.p8"))?);
+    let mut lua_includes = Vec::from(LUA_INCLUDES);
+
+    // Copy Lua files that aren't generated.
+    let Some(code_dir) = asset_base_dir.parent().map(|p| p.join("PICO-8")) else {
+        bail!("couldn't find Lua source directory");
+    };
+    for include_path in &lua_includes {
+        fs::copy(code_dir.join(include_path), build_dir.join(include_path))?;
+    }
+
+    // Contains our custom characters.
+    let icons_lua = "icons.lua";
+    lua_includes.push(icons_lua);
+    let mut icons_writer = BufWriter::new(File::create(build_dir.join(icons_lua))?);
+    for cc in custom_characters {
+        icons_writer.write(cc.lua_line(false).as_bytes())?;
+    }
+
+    // Generate the cartridge itself.
+    let mut writer = BufWriter::new(File::create(build_dir.join("atelier_esri.p8"))?);
     writer.write(CARTRIDGE_HEADER)?;
     writer.write(LUA_HEADER)?;
-    for cc in custom_characters {
-        writer.write(cc.lua_line(true).as_bytes())?;
+    writer.write(LUA_TITLE_DESC)?;
+    for include_path in lua_includes {
+        writer.write(b"#include ")?;
+        writer.write(include_path.as_bytes())?;
+        writer.write(b"\n")?;
     }
     let gfx = Pico8Gfx::from_item_sprites(&item_sprites[..64])?;
     gfx.write(&mut writer)?;
 
     Ok(())
-}
-
-/// PICO-8 cartridge graphics section.
-struct Pico8Gfx {
-    /// We'll use this as an indexed color image with the PICO-8 palette.
-    image: GrayImage,
-}
-
-#[derive(Copy, Clone)]
-enum Pico8GfxSize {
-    /// 128x64
-    Normal,
-    /// 128x128 (overlaps with lower half of map)
-    Extra,
-}
-
-impl Pico8GfxSize {
-    fn width(&self) -> u32 {
-        128
-    }
-
-    fn height(&self) -> u32 {
-        match &self {
-            Self::Normal => 64,
-            Self::Extra => 128,
-        }
-    }
 }
 
 const CARTRIDGE_HEADER: &[u8] = b"\
@@ -104,9 +100,32 @@ const LUA_HEADER: &[u8] = b"\
 __lua__
 ";
 
+const LUA_TITLE_DESC: &[u8] = b"\
+-- gEOMETRY wARS x aTELIER
+-- @vyr@princess.industries
+
+";
+
+/// Order is significant.
+const LUA_INCLUDES: &[&str] = &[
+    "pinput.lua",
+    "input.lua",
+    "oop.lua",
+    "alchemy.lua",
+    "draw.lua",
+    "init.lua",
+    "math.lua",
+];
+
 const GFX_HEADER: &[u8] = b"\
 __gfx__
 ";
+
+/// PICO-8 cartridge graphics section.
+struct Pico8Gfx {
+    /// We'll use this as an indexed color image with the PICO-8 palette.
+    image: GrayImage,
+}
 
 impl Pico8Gfx {
     fn new(size: Pico8GfxSize) -> Self {
@@ -131,7 +150,6 @@ impl Pico8Gfx {
         let mut sx = 0u32;
         let mut sy = 0u32;
         for item_sprite in item_sprites {
-            println!("copying {}", item_sprite.name);
             gfx.image.copy_from(&item_sprite.image, sx, sy)?;
             sx += 16;
             if sx > size.width() - 16 {
@@ -160,5 +178,26 @@ impl Pico8Gfx {
             writer.write(&line_buf)?;
         }
         Ok(())
+    }
+}
+
+#[derive(Copy, Clone)]
+enum Pico8GfxSize {
+    /// 128x64
+    Normal,
+    /// 128x128 (overlaps with lower half of map)
+    Extra,
+}
+
+impl Pico8GfxSize {
+    fn width(&self) -> u32 {
+        128
+    }
+
+    fn height(&self) -> u32 {
+        match &self {
+            Self::Normal => 64,
+            Self::Extra => 128,
+        }
     }
 }

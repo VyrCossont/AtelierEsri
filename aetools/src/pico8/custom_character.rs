@@ -52,6 +52,9 @@ impl CustomCharacter {
     /// See: <https://pico-8.fandom.com/wiki/P8SCII>
     fn p8scii_compact(&self) -> String {
         let prefix = br"\^.";
+        // TODO: this has a bug with decimal escapes: for example, writing [0x02, 0x38, 0x38]
+        //  results in the Lua string "\288" which PICO-8 interprets as a too-large decimal escape.
+        //  Hex escapes might be better. Finding the *most* compact encoding is left as an exercise.
         let mut bytes = Vec::<u8>::with_capacity(prefix.len() + 4 * self.bytes.len());
         bytes.extend_from_slice(prefix);
         for b in self.bytes {
