@@ -113,9 +113,10 @@ function RecipeShape:slot_bounds(ring_index, slot_index)
   thetaoffset
 end
 
+-- find the slot for a given ring and angle
 function RecipeShape:slot_index(ring_index, theta)
  local ring = self.rings[ring_index]
- theta = theta + ring.thetaoffset
+ theta = theta - ring.thetaoffset
  theta = theta % 1
  return 1 + flr(theta * ring:num_slots())
 end
@@ -206,6 +207,14 @@ function SynthesisState:init(material)
  self.material = material
  -- list of { slot ID, item } pairs for each filled ring
  self.choices = {}
+
+ -- input state
+ self.theta = 0
+ self.btn_cooldown = 0
+
+ -- draw state
+ self.slot_index = 1
+ self.ring_dirty = true
 end
 
 -- for now, we can finish any synthesis if we've placed the center item
@@ -221,13 +230,13 @@ end
 -- the current ring (the one the player is picking a slot on)
 -- todo: someday we want them to be able to add multiple items to a single ring
 --  but for now they can't do that
-function SynthesisState:ring()
+function SynthesisState:ring_index()
  return #self.choices + 1
 end
 
 -- returns whether a given slot on the current ring will accept a given item
 function SynthesisState:can_place(slot_id, item)
- local match, id = unpack(self.material.recipe.nodes[self:ring()][slot_id])
+ local match, id = unpack(self.material.recipe.nodes[self:ring_index()][slot_id])
  return (match == match_item and item.material.id == id)
   or (match == match_material and item.material.type == id)
 end
@@ -236,12 +245,51 @@ end
 -- assumes you already checked if it'll go there
 function SynthesisState:place(slot_id, item)
  add(self.choices, { slot_id, item })
+ self.ring_dirty = true
 end
 
 -- pop the choices stack
 function SynthesisState:undo()
  if #self.choices > 0 then
   deli(self.choices)
+ end
+ self.ring_dirty = true
+end
+
+-- track the input to update the selected slot
+function SynthesisState:track(lx, ly, btn_a, btn_b)
+ if self.btn_cooldown > 1 then
+  if not btn_a and not btn_b then
+   self.btn_cooldown = self.btn_cooldown - 1
+  end
+ else
+  local cooldown_max = 5
+  if btn_a then
+   self.btn_cooldown = cooldown_max
+   if self:ring_index() == 2 then
+    self:place(self.slot_index, inventory[2])
+   elseif self:ring_index() == 3 then
+    self:place(self.slot_index, inventory[3])
+   else
+    print("would finish synthesis")
+   end
+  elseif btn_b then
+   self.btn_cooldown = cooldown_max
+   if self:ring_index() == 2 then
+    print("would abort synthesis")
+   else
+    self:undo()
+   end
+  end
+ end
+
+ if lx ~= 0 or ly ~= 0 then
+  self.theta = atan2(lx, ly)
+  local slot_index = self.material.recipe.shape:slot_index(self:ring_index(), self.theta)
+  if slot_index ~= self.slot_index then
+   self.ring_dirty = true
+   self.slot_index = slot_index
+  end
  end
 end
 
@@ -254,47 +302,35 @@ function SynthesisState:items()
  return result
 end
 
+inventory = {
+ {
+  material = blitz_ore,
+ },
+ {
+  material = copper_ingot,
+ },
+ {
+  material = granite,
+ }
+}
+
+synstate = SynthesisState(pylon)
+synstate:place(ring_1_c, inventory[1])
+--synstate:place(ring_2_e, inventory[2])
+--synstate:place(ring_3_ne, inventory[3])
+
 function draw_alchemy_diagram()
  local cx = 64
  local cy = 64
  local r = 16
  local color = 0
 
- local inventory = {
-  {
-   material = blitz_ore,
-  },
-  {
-   material = copper_ingot,
-  },
-  {
-   material = granite,
-  }
- }
-
- local synstate = SynthesisState(pylon)
- synstate:place(ring_1_c, inventory[1])
- synstate:place(ring_2_e, inventory[2])
- --synstate:place(ring_3_ne, inventory[3])
-
- local ring_index = synstate:ring()
- local shape = synstate.material.recipe.shape
- local slot_index = shape:slot_index(ring_index, syn_theta)
-
- if ring_index == syn_prev_ring_index and slot_index == syn_prev_slot_index then
-  return
- end
- syn_prev_ring_index = ring_index
- syn_prev_slot_index = slot_index
-
- cls()
-
  -- draw ring 1 (the required center node)
  circfill(cx, cy, r / 2, color)
  color = color + 1
 
  -- draw rings 2-4
- local rmin, rmax, thetamin, thetamax, thetaoffset = shape:slot_bounds(ring_index, slot_index)
+ local rmin, rmax, thetamin, thetamax, thetaoffset = synstate.material.recipe.shape:slot_bounds(synstate:ring_index(), synstate.slot_index)
  arcfill(
   cx,
   cy,
@@ -313,7 +349,7 @@ function donothing()
  -- todo: light up only paths that can be selected
  -- start with the root node
  local node_centers = { { { cx, cy } } }
- for ring_index_2 = 2, synstate:ring() do
+ for ring_index_2 = 2, synstate:ring_index() do
   node_centers[ring_index_2] = {}
   local ring_index_1 = ring_index_2 - 1
   local choice_1 = synstate.choices[ring_index_1]
@@ -367,12 +403,16 @@ function _draw()
   return
  end
 
- draw_alchemy_diagram()
+ if synstate ~= nil and synstate.ring_dirty then
+  cls()
+  draw_alchemy_diagram()
+  synstate.ring_dirty = false
+ end
 end
 
 function _update60()
- local lx, ly = input_stick(pi_l)
- if lx ~= 0 or ly ~= 0 then
-  syn_theta = atan2(lx, ly)
+ if synstate ~= nil then
+  local lx, ly = input_stick(pi_l)
+  synstate:track(lx, ly, input_button(pi_a), input_button(pi_b))
  end
 end
