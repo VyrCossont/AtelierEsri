@@ -25,3 +25,7 @@ function mkclass(defaults)
  setmetatable(cls, mt)
  return cls
 end
+
+function instanceof(obj, cls)
+ return getmetatable(obj) == cls
+end

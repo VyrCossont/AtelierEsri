@@ -114,7 +114,7 @@ const LUA_INCLUDES: &[&str] = &[
     "alchemy.lua",
     "draw.lua",
     "init.lua",
-    "math.lua",
+    "aemath.lua",
 ];
 
 const GFX_HEADER: &[u8] = b"\
