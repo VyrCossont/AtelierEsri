@@ -72,11 +72,55 @@ ring_4_s = 5
 ring_4_se = 6
 
 Ring = mkclass {
- theta_offset = 0,
+ thetaoffset = 0,
 }
 
--- a shape is a list of rings
-recipe_shape_standard = {
+function Ring:num_slots()
+ return #self.links
+end
+
+RecipeShape = mkclass()
+
+-- a recipe shape is a list of rings
+function RecipeShape:init(rings)
+ self.rings = rings
+end
+
+function RecipeShape:num_rings()
+ return #self.rings
+end
+
+-- polar coords each ring slot falls into
+-- returns rmin, rmax, thetamin, thetamax, thetaoffset
+function RecipeShape:slot_bounds(ring_index, slot_index)
+ if ring_index == ring_1 and slot_index == ring_1_c then
+  -- ring 1 is special, only rmax is really relevant
+  return 0, 0.5, 0, 1, 0
+ end
+
+ local rmin = 0.5 + (ring_index - 2)
+ local rmax = rmin + 1
+ local ring = self.rings[ring_index]
+ local dtheta = 1 / ring:num_slots()
+ local thetaoffset = ring.thetaoffset
+ local thetamin = (slot_index - 1) * dtheta
+ local thetamax = thetamin + dtheta
+ return
+  rmin,
+  rmax,
+  thetamin,
+  thetamax,
+  thetaoffset
+end
+
+function RecipeShape:slot_index(ring_index, theta)
+ local ring = self.rings[ring_index]
+ theta = theta + ring.thetaoffset
+ theta = theta % 1
+ return 1 + flr(theta * ring:num_slots())
+end
+
+recipe_shape_standard = RecipeShape {
  [ring_1] = Ring {
   links = {
    [ring_1_c] = { ring_2_e, ring_2_w },
@@ -84,7 +128,7 @@ recipe_shape_standard = {
  },
  [ring_2] = Ring {
   -- ring 2 is rotated halfway to look nicer
-  theta_offset = -0.25,
+  thetaoffset = -0.25,
   links = {
    [ring_2_e] = { ring_3_ne, ring_3_se },
    [ring_2_w] = { ring_3_nw, ring_3_sw },
@@ -204,8 +248,8 @@ end
 -- list of items that are in use by this synthesis
 function SynthesisState:items()
  local result = {}
- for entry in all(self.choices) do
-  add(entry[2])
+ for _, item in all(self.choices) do
+  add(item)
  end
  return result
 end
@@ -231,51 +275,40 @@ function draw_alchemy_diagram()
  local synstate = SynthesisState(pylon)
  synstate:place(ring_1_c, inventory[1])
  synstate:place(ring_2_e, inventory[2])
- synstate:place(ring_3_ne, inventory[3])
+ --synstate:place(ring_3_ne, inventory[3])
 
- local sector_centers = {}
+ local ring_index = synstate:ring()
+ local shape = synstate.material.recipe.shape
+ local slot_index = shape:slot_index(ring_index, syn_theta)
+
+ if ring_index == syn_prev_ring_index and slot_index == syn_prev_slot_index then
+  return
+ end
+ syn_prev_ring_index = ring_index
+ syn_prev_slot_index = slot_index
+
+ cls()
 
  -- draw ring 1 (the required center node)
  circfill(cx, cy, r / 2, color)
  color = color + 1
- sector_centers[1] = { { cx, cy } }
 
  -- draw rings 2-4
- for ring_index = 2, synstate:ring() do
-  sector_centers[ring_index] = {}
-  local num_slots = 2 * (ring_index - 1)
-  local dtheta = 1 / num_slots
-  local rmin = (r / 2) + r * (ring_index - 2)
-  local rmax = rmin + r
-  local ring = synstate.material.recipe.shape[ring_index]
-  local thetaoffset = ring.theta_offset
-  for sector_index = 1, #ring.links do
-   local thetamin = (sector_index - 1) * dtheta
-   local thetamax = thetamin + dtheta
-   color = color + 1
-   arcfill(
-    cx,
-    cy,
-    rmin,
-    rmax,
-    thetamin,
-    thetamax,
-    thetaoffset,
-    color
-   )
-   local tx, ty = arccenter(
-    cx,
-    cy,
-    rmin,
-    rmax,
-    thetamin,
-    thetamax,
-    thetaoffset
-   )
-   sector_centers[ring_index][sector_index] = { tx, ty }
-  end
- end
+ local rmin, rmax, thetamin, thetamax, thetaoffset = shape:slot_bounds(ring_index, slot_index)
+ arcfill(
+  cx,
+  cy,
+  rmin * r,
+  rmax * r,
+  thetamin,
+  thetamax,
+  thetaoffset,
+  color
+ )
+end
 
+-- todo: reintegrate this stuff
+function donothing()
  -- draw inter-node lines and collect nodes
  -- todo: light up only paths that can be selected
  -- start with the root node
@@ -320,12 +353,26 @@ function draw_alchemy_diagram()
  end
 end
 
+syn_theta = 0
+syn_prev_ring_index = nil
+syn_prev_slot_index = nil
+
 function _draw()
- cls()
+ if not input_is_inited() then
+  input_draw_instructions()
+  return
+ elseif not input_is_connected() then
+  cls()
+  print("player #1, connect your gamepad...")
+  return
+ end
 
  draw_alchemy_diagram()
 end
 
 function _update60()
-
+ local lx, ly = input_stick(pi_l)
+ if lx ~= 0 or ly ~= 0 then
+  syn_theta = atan2(lx, ly)
+ end
 end
