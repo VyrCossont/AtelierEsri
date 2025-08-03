@@ -14,6 +14,10 @@ function V2:init(x, y)
  self.y = y
 end
 
+function V2:__tostring()
+ return "V2("..self.x..", "..self.y..")"
+end
+
 function V2:__eq(v)
  return self.x == v.x and self.y == v.y
 end
@@ -62,6 +66,47 @@ end
 -- 2D cross product: return magnitude of cross vector
 function V2:cross(v)
  return self.x * v.y - self.y * v.x
+end
+
+--}}}
+
+--{{{ triangle
+
+-- triangle
+T2 = mkclass()
+
+-- takes 3 position vectors
+function T2:init(a, b, c)
+ self.a = a
+ self.b = b
+ self.c = c
+end
+
+function T2:__tostring()
+ return "T2("..self.a..", "..self.b..", "..self.c..")"
+end
+
+function T2:contains(v)
+ for pair in all({{self.a, self.b}, {self.b, self.c}, {self.c, self.a}}) do
+  if not Halfplane(unpack(pair)):contains(v) then
+   return false
+  end
+ end
+ return true
+end
+
+Halfplane = mkclass()
+
+function Halfplane:init(p, q)
+ self.p = p
+ self.a = p.y - q.y
+ self.b = q.x - p.x
+ self.c = -p.x
+end
+
+function Halfplane:contains(v)
+ v = v - self.p
+ return v.x * self.a + v.y * self.b + self.c <= 0
 end
 
 --}}}

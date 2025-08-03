@@ -80,4 +80,33 @@ end
 
 --}}}
 
+--{{{ triangle
+
+test_aemath_triangle = {}
+
+function test_aemath_triangle:test_contains()
+ local t = T2(
+  V2(16, 64),
+  V2(96, 96),
+  V2(96, 16)
+ )
+ luaunit.assertTrue(
+  t:contains(V2(64, 64))
+ )
+ luaunit.assertFalse(
+  t:contains(V2(0, 0))
+ )
+ luaunit.assertFalse(
+  t:contains(V2(128, 0))
+ )
+ luaunit.assertFalse(
+  t:contains(V2(128, 128))
+ )
+ luaunit.assertFalse(
+  t:contains(V2(0, 128))
+ )
+end
+
+--}}}
+
 os.exit(luaunit.LuaUnit.run())
