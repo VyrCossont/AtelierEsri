@@ -255,7 +255,7 @@ function tostr(...)
  if not hex and not shift16 then
   return tostring(val)
  end
- val = math.modf(val * 2^16)
+ val = math.modf(val * 2 ^ 16)
  if not hex and shift16 then
   return tostring(val)
  end
@@ -271,8 +271,34 @@ end
 -- https://www.lexaloffle.com/dl/docs/pico-8_manual.html#TONUM
 -- https://www.lua.org/manual/5.4/manual.html#pdf-tonumber
 function tonum(val, format_flags)
- -- todo: use format_flags
- return tonumber(val)
+ -- undocumented PICO-8 behavior
+ if val == true then
+  return 1
+ elseif val == false then
+  return 0
+ end
+
+ format_flags = format_flags or 0
+ local hex = format_flags & 1 ~= 0
+ local shr16 = format_flags & 2 ~= 0
+ local invalid_zero = format_flags & 4 ~= 0
+
+ local r = tonumber(val, hex and 16 or nil)
+ if r == nil then
+  if invalid_zero then
+   return 0
+  else
+   -- no return value
+   return
+  end
+ end
+
+ if shr16 then
+  -- normal Lua interpreter doesn't have PICO-8 fixed-point math
+  r = r / 65536
+ end
+
+ return r
 end
 
 --}}}
