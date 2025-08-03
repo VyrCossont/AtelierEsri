@@ -1,5 +1,5 @@
 -- one-time init
 function _init()
- cartdata("vyrcossont_craft_0")
+ cartdata("vyrcossont_atelier_esri_0")
  input_init()
 end
