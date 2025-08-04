@@ -39,3 +39,18 @@ function item_sspr(n, x, y, w, h, flip_x, flip_y)
  local sprite_y = (n % 8) * 16
  sspr(sprite_x, sprite_y, 16, 16, x, y, w, h, flip_x, flip_y)
 end
+
+-- load a custom font
+function load_font(data)
+ for i = 1, #data do
+  poke4(
+   0x5600 + 4 * (i - 1),
+   data[i]
+  )
+  -- fixme
+  --poke4(
+  -- 0x5600 + 4 * (i - 1),
+  -- rnd(0xffff.ffff)
+  --)
+ end
+end

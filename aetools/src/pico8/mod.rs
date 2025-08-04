@@ -1,6 +1,7 @@
 //! PICO-8 asset format support.
 
 mod custom_character;
+mod custom_font;
 mod item_sprite;
 mod palette;
 
@@ -8,6 +9,10 @@ use crate::assets::{
     asset_group_foreach, export_or_copy_to_png, CUSTOM_CHAR_ASSET_GROUP, SPRITE_ASSETS,
 };
 use crate::fsutil::{delete_dir, ensure_dir};
+use crate::pico8::custom_font::{
+    CustomFont, TINY_FONT_CHAR_WIDTHS, TINY_FONT_FIRST_CHAR, TINY_FONT_INTERLINE_SPACING,
+    TINY_FONT_KERNING, TINY_FONT_LAST_CHAR,
+};
 use anyhow::{anyhow, bail, Result};
 use custom_character::CustomCharacter;
 use glob::glob;
@@ -51,7 +56,7 @@ pub fn generate_assets(asset_base_dir: &Path, build_dir: &Path) -> Result<()> {
         export_or_copy_to_png,
         |group_name: &str, group_dir: &Path| -> Result<()> {
             for glob_result in glob(&group_dir.join("*.png").to_string_lossy())? {
-                custom_characters.push(CustomCharacter::load(group_name, &glob_result?)?);
+                custom_characters.push(CustomCharacter::load(group_name, &glob_result?, u8::MAX)?);
             }
             Ok(())
         },
@@ -67,12 +72,29 @@ pub fn generate_assets(asset_base_dir: &Path, build_dir: &Path) -> Result<()> {
         fs::copy(code_dir.join(include_path), build_dir.join(include_path))?;
     }
 
-    // Contains our custom characters.
+    // Contains our custom fonts.
+    // All that work and all it does is give us prettier lowercase…
+    // TODO: Maybe we can inline our status icons?
+    let fonts_lua = "fonts.lua";
+    lua_includes.push(fonts_lua);
+    let mut fonts_writer = BufWriter::new(File::create(build_dir.join(fonts_lua))?);
+    let tiny_font = CustomFont::load(
+        &asset_base_dir.join("tiny_font.png"),
+        u8::MAX,
+        TINY_FONT_FIRST_CHAR,
+        TINY_FONT_LAST_CHAR,
+        TINY_FONT_INTERLINE_SPACING,
+        TINY_FONT_KERNING,
+        TINY_FONT_CHAR_WIDTHS,
+    )?;
+    fonts_writer.write(tiny_font.lua_src().as_bytes())?;
+
+    // Contains our other custom characters.
     let icons_lua = "icons.lua";
     lua_includes.push(icons_lua);
     let mut icons_writer = BufWriter::new(File::create(build_dir.join(icons_lua))?);
-    for cc in custom_characters {
-        icons_writer.write(cc.lua_line(false).as_bytes())?;
+    for lua_line in custom_characters.iter().flat_map(|cc| cc.lua_line(false)) {
+        icons_writer.write(lua_line.as_bytes())?;
     }
 
     // Generate the cartridge itself.

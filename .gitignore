@@ -2,5 +2,6 @@ target
 *.tiled-session
 /asset_originals/items.schema.json
 /build
+/PICO-8/fonts.lua
 /PICO-8/icons.lua
 /PICO-8/atelier_esri.p8

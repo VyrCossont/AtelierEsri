@@ -1,18 +1,65 @@
-use anyhow::{anyhow, bail};
+use anyhow::{anyhow, bail, Result};
 use image::{GenericImageView, ImageReader};
 use std::path::Path;
 
 pub struct CustomCharacter {
-    pub group_name: String,
-    pub name: String,
-    bytes: [u8; 8],
+    pub group_name: Option<String>,
+    pub name: Option<String>,
+    pub bytes: [u8; 8],
 }
 
 impl CustomCharacter {
-    /// Treats input image as a mask: fully opaque pixels are set, others are cleared.
-    pub fn load(group_name: &str, png_path: &Path) -> anyhow::Result<Self> {
+    pub fn load(group_name: &str, png_path: &Path, threshold: u8) -> Result<Self> {
         let image = ImageReader::open(png_path)?.decode()?;
-        if image.dimensions() != (8, 8) {
+        let name = png_path
+            .file_stem()
+            .ok_or(anyhow!("Couldn't get file stem for PNG path"))?
+            .to_string_lossy();
+        Ok(Self {
+            group_name: Some(group_name.to_string()),
+            name: Some(name.to_string()),
+            bytes: Self::bytes_from_image(image, threshold)?,
+        })
+    }
+
+    pub fn from_image(
+        image: impl GenericImageView<Pixel = image::Rgba<u8>>,
+        threshold: u8,
+    ) -> Result<Self> {
+        Ok(Self {
+            group_name: None,
+            name: None,
+            bytes: Self::bytes_from_image(image, threshold)?,
+        })
+    }
+
+    /// Generate a 4x4 block centered in the 8x8 area.
+    #[rustfmt::skip]
+    pub fn rectangle() -> Self {
+        Self {
+            group_name: None,
+            name: None,
+            bytes: [
+                0b00000000,
+                0b00000000,
+                0b00111100,
+                0b00111100,
+                0b00111100,
+                0b00111100,
+                0b00000000,
+                0b00000000,
+            ],
+        }
+    }
+
+    /// `threshold` is for the alpha channel:
+    /// - if 255, fully opaque pixels are set, others are cleared.
+    /// - if 1, fully transparent pixels are cleared, others are set.
+    fn bytes_from_image(
+        image: impl GenericImageView<Pixel = image::Rgba<u8>>,
+        threshold: u8,
+    ) -> Result<[u8; 8]> {
+        if image.width() > 8 || image.height() > 8 {
             bail!(
                 "wrong image size for PICO-8 custom character: {}x{}",
                 image.width(),
@@ -23,21 +70,13 @@ impl CustomCharacter {
         let mut bytes = [0u8; 8];
         for y in 0..image.height() {
             for x in 0..image.width() {
-                if let image::Rgba([_, _, _, u8::MAX]) = image.get_pixel(x, y) {
+                let image::Rgba([_, _, _, a]) = image.get_pixel(x, y);
+                if a >= threshold {
                     bytes[y as usize] |= 1 << x;
                 }
             }
         }
-
-        Ok(CustomCharacter {
-            group_name: group_name.to_string(),
-            name: png_path
-                .file_stem()
-                .ok_or(anyhow!("Couldn't get file stem for PNG path"))?
-                .to_string_lossy()
-                .to_string(),
-            bytes,
-        })
+        Ok(bytes)
     }
 
     // todo: there must be byte string formatting *somewhere*
@@ -104,16 +143,31 @@ impl CustomCharacter {
         )
     }
 
-    pub fn lua_line(&self, compact: bool) -> String {
-        format!(
-            "{}_{} = \"{}\"\n",
-            self.group_name,
-            self.name,
-            if compact {
-                self.p8scii_compact()
-            } else {
-                self.p8scii_hex()
-            }
-        )
+    pub fn lua_line(&self, compact: bool) -> Option<String> {
+        let Some(name) = &self.name else {
+            return None;
+        };
+
+        let p8scii = if compact {
+            self.p8scii_compact()
+        } else {
+            self.p8scii_hex()
+        };
+
+        Some(if let Some(group_name) = &self.group_name {
+            format!("{group_name}_{name} = \"{p8scii}\"\n")
+        } else {
+            format!("{name} = \"{p8scii}\"\n")
+        })
+    }
+}
+
+impl Default for CustomCharacter {
+    fn default() -> Self {
+        Self {
+            group_name: None,
+            name: None,
+            bytes: [0; 8],
+        }
     }
 }
