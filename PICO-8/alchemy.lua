@@ -320,27 +320,57 @@ synstate:place(ring_1_c, inventory[1])
 --synstate:place(ring_3_ne, inventory[3])
 
 function draw_alchemy_diagram()
- local cx = 64
- local cy = 64
+ local c = V2(64, 64)
  local r = 16
- local color = 0
+
+ -- selected slot
+ local rmin, rmax, thetamin, thetamax, thetaoffset = synstate.material.recipe.shape:slot_bounds(synstate:ring_index(), synstate.slot_index)
 
  -- draw ring 1 (the required center node)
- circfill(cx, cy, r / 2, color)
- color = color + 1
+ circfill(c.x, c.y, rmin * r, 1)
+ circfill(c.x, c.y, r / 2, 0)
 
  -- draw rings 2-4
- local rmin, rmax, thetamin, thetamax, thetaoffset = synstate.material.recipe.shape:slot_bounds(synstate:ring_index(), synstate.slot_index)
  arcfill(
-  cx,
-  cy,
+  c.x,
+  c.y,
   rmin * r,
   rmax * r,
   thetamin,
   thetamax,
   thetaoffset,
-  color
+  1
  )
+ local slot_rel_c = V2(arccenter(
+  c.x,
+  c.y,
+  rmin * r,
+  rmax * r,
+  thetamin,
+  thetamax,
+  thetaoffset
+ )) - c
+ local end_rel_slot = slot_rel_c:norm():rotate(0.25) * 80
+ local end1 = c + slot_rel_c + end_rel_slot
+ local end2 = c + slot_rel_c - end_rel_slot
+ for i = 0, 100, 1 do
+  local a = i / 100
+  local v = lerp(end1, end2, a)
+  circfill(v.x, v.y, 8, 2)
+ end
+ for i = 0, 100, 1 do
+  local a = i / 100
+  local v = lerp(end1, end2, a)
+  circfill(v.x, v.y, 6, 0)
+ end
+ local item = 0
+ for i = 0, 100, 10 do
+  local a = i / 100
+  local v = lerp(end1, end2, a)
+  circfill(v.x, v.y, 5, 1)
+  item_sspr(item, v.x - 3, v.y - 3 , 8, 8)
+  item = item + 1
+ end
 end
 
 -- todo: reintegrate this stuff

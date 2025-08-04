@@ -1,7 +1,8 @@
 -- reusable math functions
 
 function lerp(a, b, t)
- return (1 - t) * a + t * b
+ -- written backwards so that V2:__mul works
+ return a * (1 - t) + b * t
 end
 
 --{{{ vector
@@ -66,6 +67,16 @@ end
 -- 2D cross product: return magnitude of cross vector
 function V2:cross(v)
  return self.x * v.y - self.y * v.x
+end
+
+-- https://en.wikipedia.org/wiki/Rotation_matrix
+function V2:rotate(theta)
+ local s = sin(theta)
+ local c = cos(theta)
+ return V2(
+  self.x * c - self.y * s,
+  self.x * s + self.y * c
+ )
 end
 
 --}}}
