@@ -235,6 +235,55 @@ function test_pico8_compat_string.test_tonum()
   tonum('hoge', 0x4),
   0
  )
+ -- suspected PICO-8 bug
+ luaunit.assertEquals(
+  tonum('hoge', 0x2),
+  0
+ )
+ -- binary
+ luaunit.assertEquals(
+  tonum('0b0'),
+  0
+ )
+ luaunit.assertEquals(
+  tonum('0b1'),
+  1
+ )
+ luaunit.assertEquals(
+  tonum('0b10'),
+  2
+ )
+ luaunit.assertEquals(
+  tonum('0b11'),
+  3
+ )
+ luaunit.assertEquals(
+  tonum('0b11.1'),
+  3.5
+ )
+ luaunit.assertEquals(
+  tonum('0b11.10'),
+  3.5
+ )
+ luaunit.assertEquals(
+  tonum('0b11.01'),
+  3.25
+ )
+ luaunit.assertEquals(
+  tonum('0b11.11'),
+  3.75
+ )
+ luaunit.assertEquals(
+  tonum('0b1.'),
+  1
+ )
+ luaunit.assertEquals(
+  tonum('0b.1'),
+  0.5
+ )
+ luaunit.assertNil(
+  tonum('0b.')
+ )
 end
 
 --}}}

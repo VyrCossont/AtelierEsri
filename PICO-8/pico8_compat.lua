@@ -129,6 +129,12 @@ end
 
 --}}}
 
+--{{{ bit ops
+
+
+
+--}}}
+
 --{{{ string
 
 -- https://www.lexaloffle.com/dl/docs/pico-8_manual.html#CHR
@@ -277,6 +283,51 @@ function tostr(...)
  return '0x' .. val
 end
 
+-- does a string have the literal binary number prefix 0b or 0B?
+-- not part of PICO-8 API but used by tonum below
+function tonum_has_bin_prefix(val)
+ if type(val) ~= "string"
+  or #val < 3
+  or sub(val, 1, 1) ~= '0' then
+  return false
+ end
+
+ local b = sub(val, 2, 2)
+ return b == 'b' or b == 'B'
+end
+
+-- parse binary literal strings including fractional part
+-- not part of PICO-8 API but used by tonum below
+function tonum_bin(val)
+ if not tonum_has_bin_prefix(val) then
+  return
+ end
+
+ local acc = 0
+ local divisor
+
+ for i = 3, #val do
+  local c = sub(val, i, i)
+  if c == "0" then
+   acc = acc << 1
+  elseif c == "1" then
+   acc = (acc << 1) | 1
+  elseif c == "." then
+   if divisor ~= nil then
+    return
+   end
+   local num_int_digits = i - 3
+   local num_frac_digits = #val - i
+   if num_int_digits == 0 and num_frac_digits == 0 then
+    return
+   end
+   divisor = 2 ^ num_frac_digits
+  end
+ end
+
+ return acc / (divisor or 1)
+end
+
 -- https://www.lexaloffle.com/dl/docs/pico-8_manual.html#TONUM
 -- https://www.lua.org/manual/5.4/manual.html#pdf-tonumber
 function tonum(val, format_flags)
@@ -292,9 +343,26 @@ function tonum(val, format_flags)
  local shr16 = format_flags & 2 ~= 0
  local invalid_zero = format_flags & 4 ~= 0
 
- local r = tonumber(val, hex and 16 or nil)
+ local r
+
+ -- undocumented PICO-8 behavior: parse its binary literal format
+ if not hex and tonum_has_bin_prefix(val) then
+  if shr16 then
+   -- shr16 doesn't work with binary numbers in PICO-8
+   return 0
+  end
+  r = tonum_bin(val)
+ else
+  -- todo: if hex is set, implement documented tolerant parsing:
+  --  > Non-hexadecimal characters are taken to be '0'
+  r = tonumber(val, hex and 16 or nil)
+ end
+
+ -- handle invalid values
  if r == nil then
-  if invalid_zero then
+  if invalid_zero or hex or shr16 then
+   -- the effects of hex and shr16 on unparseable values
+   -- are observed behavior and may well be a bug
    return 0
   else
    -- no return value
