@@ -109,4 +109,37 @@ end
 
 --}}}
 
+--{{{ rectangle
+
+test_aemath_rectangle = {}
+
+function test_aemath_rectangle:test_contains()
+ local r = R2(V2(16, 16), V2(64, 64))
+ luaunit.assertTrue(
+  r:contains(V2(64, 64))
+ )
+ luaunit.assertFalse(
+  r:contains(V2(0, 0))
+ )
+ luaunit.assertFalse(
+  r:contains(V2(128, 0))
+ )
+ luaunit.assertFalse(
+  r:contains(V2(128, 128))
+ )
+ luaunit.assertFalse(
+  r:contains(V2(0, 128))
+ )
+end
+
+function test_aemath_rectangle:test_tostr()
+ local r = R2(V2(16, 16), V2(64, 64))
+ luaunit.assertEquals(
+  tostr(r),
+  "R2(V2(16, 16), V2(64, 64))"
+ )
+end
+
+--}}}
+
 os.exit(luaunit.LuaUnit.run())

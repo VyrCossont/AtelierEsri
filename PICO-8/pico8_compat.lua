@@ -220,6 +220,7 @@ function tostr(...)
  if args.n == 0 then
   return ''
  end
+
  local val, format_flags = ...
  if format_flags == nil then
   format_flags = 0
@@ -228,6 +229,14 @@ function tostr(...)
  elseif format_flags == true then
   format_flags = 1
  end
+
+ -- observed behavior: when PICO-8 sees a metatable
+ -- with a __tostring method, format flags are ignored
+ local mt_val = getmetatable(val)
+ if mt_val and mt_val.__tostring then
+  return mt_val.__tostring(val)
+ end
+
  local type_val = type(val)
 
  -- not affected by either format flag

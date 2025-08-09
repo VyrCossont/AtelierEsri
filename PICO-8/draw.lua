@@ -40,6 +40,21 @@ function item_sspr(n, x, y, w, h, flip_x, flip_y)
  sspr(sprite_x, sprite_y, 16, 16, x, y, w, h, flip_x, flip_y)
 end
 
+-- proof of concept triangle rasterizer
+-- todo: make this much much faster, currently takes a *second* to draw a big triangle
+function trifill(t, color)
+ local aabb = t:aabb()
+ local v1 = aabb:v1()
+ local v2 = aabb:v2()
+ for y = flr(v1.y), ceil(v2.y) do
+  for x = flr(v1.x), ceil(v2.x) do
+   if t:contains(V2(x, y)) then
+    pset(x, y, color)
+   end
+  end
+ end
+end
+
 -- load a custom font
 function load_font(data)
  for i = 1, #data do
@@ -47,10 +62,5 @@ function load_font(data)
    0x5600 + 4 * (i - 1),
    data[i]
   )
-  -- fixme
-  --poke4(
-  -- 0x5600 + 4 * (i - 1),
-  -- rnd(0xffff.ffff)
-  --)
  end
 end

@@ -81,6 +81,43 @@ end
 
 --}}}
 
+--{{{ rectangle
+
+-- rectangle
+R2 = mkclass()
+
+-- takes position and size
+-- size components assumed to be non-negative
+function R2:init(pos, size)
+ self.pos = pos
+ self.size = size
+end
+
+function R2:__tostring()
+ return "R2("..tostr(self.pos)..", "..tostr(self.size)..")"
+end
+
+-- more negative corner
+function R2:v1()
+ return self.pos
+end
+
+-- more positive corner
+function R2:v2()
+ return self.pos + self.size
+end
+
+function R2:contains(v)
+ local v1 = self:v1()
+ local v2 = self:v2()
+ return v.x >= v1.x
+  and v.y >= v1.y
+  and v.x <= v2.x
+  and v.y <= v2.y
+end
+
+--}}}
+
 --{{{ triangle
 
 -- triangle
@@ -94,7 +131,7 @@ function T2:init(a, b, c)
 end
 
 function T2:__tostring()
- return "T2("..self.a..", "..self.b..", "..self.c..")"
+ return "T2("..tostr(self.a)..", "..tostr(self.b)..", "..tostr(self.c)..")"
 end
 
 function T2:contains(v)
@@ -104,6 +141,15 @@ function T2:contains(v)
   end
  end
  return true
+end
+
+-- returns rectangle containing the triangle
+function T2:aabb()
+ local xmin = min(self.a.x, min(self.b.x, self.c.x))
+ local xmax = max(self.a.x, max(self.b.x, self.c.x))
+ local ymin = min(self.a.y, min(self.b.y, self.c.y))
+ local ymax = max(self.a.y, max(self.b.y, self.c.y))
+ return R2(V2(xmin, ymin), V2(xmax - xmin, ymax - ymin))
 end
 
 Halfplane = mkclass()
