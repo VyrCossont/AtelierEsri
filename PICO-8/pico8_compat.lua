@@ -131,7 +131,78 @@ end
 
 --{{{ bit ops
 
+-- round number towards zero
+-- not part of PICO-8 API but used to fake its bit ops functions
+function bitops_truncate(x)
+ return x - (x % 1) + (x < 0 and 1 or 0)
+end
 
+-- multiply input values by 0x10000, truncate, apply function, divide by 0x10000
+-- to work around Lua proper not supporting bit ops on non-integer numbers
+-- not part of PICO-8 API but used to fake its bit ops functions
+-- https://www.lexaloffle.com/dl/docs/pico-8_manual.html#Bitwise_Operations
+function bitops_emulate_fixed(f, x, y)
+ local r = f(
+  bitops_truncate(x * 65536),
+  bitops_truncate(y * 65536)
+ ) / 65536
+ if r < 0 then
+  r = r + 32768
+ end
+ return r
+end
+
+-- shift variant of above: rounds shift down
+function bitops_emulate_fixed_for_shift(f, x, n)
+ return f(bitops_truncate(x * 65536), flr(n)) / 65536
+end
+
+function band(x, y)
+ return bitops_emulate_fixed(function(u, v) return u & v end, x, y)
+end
+
+function bor(x, y)
+ return bitops_emulate_fixed(function(u, v) return u | v end, x, y)
+end
+
+function bxor(x, y)
+ return bitops_emulate_fixed(function(u, v) return u ~ v end, x, y)
+end
+
+function bnot(x)
+ return bitops_emulate_fixed(function(u, _) return ~u end, x, 0)
+end
+
+function shl(x, n)
+ return bitops_emulate_fixed_for_shift(function(u, m) return u << m end, x, n)
+end
+
+-- arithmetic right shift preserves sign
+function shr(x, n)
+ if x < 0 then
+  -- todo: shr(x, n) for negative x
+  print("shr(x, n) not implemented for negative x")
+  return
+ end
+
+ return bitops_emulate_fixed_for_shift(function(u, m) return u >> m end, x, n)
+end
+
+-- logical right shift doesn't
+function lshr(x, n)
+ -- todo: lshr(x, n)
+ print("shr(x, n) not implemented")
+end
+
+function rotl(x, n)
+ -- todo: rotl(x, n)
+ print("rotl(x, n) not implemented")
+end
+
+function rotr(x, n)
+ -- todo: rotr(x, n)
+ print("rotr(x, n) not implemented")
+end
 
 --}}}
 
@@ -286,13 +357,25 @@ end
 -- does a string have the literal binary number prefix 0b or 0B?
 -- not part of PICO-8 API but used by tonum below
 function tonum_has_bin_prefix(val)
- if type(val) ~= "string"
-  or #val < 3
-  or sub(val, 1, 1) ~= '0' then
+ if type(val) ~= "string" then
   return false
  end
 
- local b = sub(val, 2, 2)
+ local min_len = 3
+ local z_index = 1
+ local b_index = 2
+ if #val > 1 and sub(val, 1, 1) == "-" then
+  min_len = min_len + 1
+  z_index = z_index + 1
+  b_index = b_index + 1
+ end
+
+ if #val < min_len
+  or sub(val, z_index, z_index) ~= '0' then
+  return false
+ end
+
+ local b = sub(val, b_index, b_index)
  return b == 'b' or b == 'B'
 end
 
@@ -303,10 +386,17 @@ function tonum_bin(val)
   return
  end
 
+ local start_index = 3
+ local sign = 1
  local acc = 0
  local divisor
 
- for i = 3, #val do
+ if sub(val, 1, 1) == "-" then
+  start_index = start_index + 1
+  sign = -1
+ end
+
+ for i = start_index, #val do
   local c = sub(val, i, i)
   if c == "0" then
    acc = acc << 1
@@ -316,7 +406,7 @@ function tonum_bin(val)
    if divisor ~= nil then
     return
    end
-   local num_int_digits = i - 3
+   local num_int_digits = i - start_index
    local num_frac_digits = #val - i
    if num_int_digits == 0 and num_frac_digits == 0 then
     return
@@ -325,7 +415,7 @@ function tonum_bin(val)
   end
  end
 
- return acc / (divisor or 1)
+ return sign * acc / (divisor or 1)
 end
 
 -- https://www.lexaloffle.com/dl/docs/pico-8_manual.html#TONUM

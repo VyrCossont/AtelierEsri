@@ -12,7 +12,7 @@ require 'pico8_compat'
 
 test_pico8_compat_table = {}
 
-function test_pico8_compat_table.test_all()
+function test_pico8_compat_table:test_all()
  local tbl = { 1, 2, 3 }
  local len = 0
  local sum = 0
@@ -36,7 +36,7 @@ end
 
 test_pico8_compat_math = {}
 
-function test_pico8_compat_math.test_mid()
+function test_pico8_compat_math:test_mid()
  luaunit.assertEquals(
   mid(7, 5, 10),
   7
@@ -51,7 +51,7 @@ function test_pico8_compat_math.test_mid()
  )
 end
 
-function test_pico8_compat_math.test_flr()
+function test_pico8_compat_math:test_flr()
  luaunit.assertEquals(
   flr(4.1),
   4
@@ -62,7 +62,7 @@ function test_pico8_compat_math.test_flr()
  )
 end
 
-function test_pico8_compat_math.test_ceil()
+function test_pico8_compat_math:test_ceil()
  luaunit.assertEquals(
   ceil(4.1),
   5
@@ -73,21 +73,21 @@ function test_pico8_compat_math.test_ceil()
  )
 end
 
-function test_pico8_compat_math.test_sin()
+function test_pico8_compat_math:test_sin()
  luaunit.assertEquals(
   sin(0.25),
   -1
  )
 end
 
-function test_pico8_compat_math.test_atan2()
+function test_pico8_compat_math:test_atan2()
  luaunit.assertEquals(
   atan2(0, -1),
   0.25
  )
 end
 
-function test_pico8_compat_math.sgn()
+function test_pico8_compat_math.test_sgn()
  luaunit.assertEquals(
   sgn(-1),
   -1
@@ -104,11 +104,107 @@ end
 
 --}}}
 
+--{{{ bit ops
+
+test_pico8_compat_bitops = {
+ -- close enough for PICO-8 16.16 fixed math
+ eps = 1e-4,
+ x = tonum_bin("0b1010"),
+ y = tonum_bin("0b0110"),
+ x_frac = tonum_bin("0b.1010"),
+ y_frac = tonum_bin("0b.0110"),
+}
+
+function test_pico8_compat_bitops:test_bitops_truncate()
+ luaunit.assertEquals(
+  bitops_truncate(9.1),
+  9
+ )
+ luaunit.assertEquals(
+  bitops_truncate(-9.1),
+  -9
+ )
+ luaunit.assertEquals(
+  bitops_truncate(0),
+  0
+ )
+end
+
+function test_pico8_compat_bitops:test_band()
+ luaunit.assertEquals(
+  band(self.x, self.y),
+  tonum_bin("0b0010")
+ )
+ luaunit.assertEquals(
+  band(self.x_frac, self.y_frac),
+  tonum_bin("0b.0010")
+ )
+end
+
+function test_pico8_compat_bitops:test_bor()
+ luaunit.assertEquals(
+  bor(self.x, self.y),
+  tonum_bin("0b1110")
+ )
+ luaunit.assertEquals(
+  bor(self.x_frac, self.y_frac),
+  tonum_bin("0b.1110")
+ )
+end
+
+function test_pico8_compat_bitops:test_bxor()
+ luaunit.assertEquals(
+  bxor(self.x, self.y),
+  tonum_bin("0b1100")
+ )
+ luaunit.assertEquals(
+  bxor(self.x_frac, self.y_frac),
+  tonum_bin("0b.1100")
+ )
+end
+
+function test_pico8_compat_bitops:test_bnot()
+ luaunit.assertEquals(
+  bnot(self.x),
+  tonum_bin("0b111111111110101.1111111111111111")
+ )
+ luaunit.assertEquals(
+  bnot(self.x_frac),
+  tonum_bin("0b111111111111111.0101111111111111")
+ )
+end
+
+function test_pico8_compat_bitops:test_shl()
+ luaunit.assertAlmostEquals(
+  shl(12.8, 2),
+  51.2,
+  self.eps
+ )
+ luaunit.assertAlmostEquals(
+  shl(12.8, 2.1),
+  51.2,
+  self.eps
+ )
+end
+
+function test_pico8_compat_bitops:test_shr()
+ luaunit.assertAlmostEquals(
+  shr(12.8, 2),
+  3.2,
+  self.eps
+ )
+ luaunit.assertAlmostEquals(
+  shr(12.8, 2.1),
+  3.2,
+  self.eps
+ )
+end
+
 --{{{ string
 
 test_pico8_compat_string = {}
 
-function test_pico8_compat_string.test_chr()
+function test_pico8_compat_string:test_chr()
  luaunit.assertEquals(
   chr(64),
   '@'
@@ -119,7 +215,7 @@ function test_pico8_compat_string.test_chr()
  )
 end
 
-function test_pico8_compat_string.test_ord()
+function test_pico8_compat_string:test_ord()
  luaunit.assertEquals(
   ord('@'),
   64
@@ -135,7 +231,7 @@ function test_pico8_compat_string.test_ord()
  )
 end
 
-function test_pico8_compat_string.test_sub()
+function test_pico8_compat_string:test_sub()
  local s = 'the quick brown fox'
  luaunit.assertEquals(
   sub(s, 5, 9),
@@ -151,7 +247,7 @@ function test_pico8_compat_string.test_sub()
  )
 end
 
-function test_pico8_compat_string.test_split()
+function test_pico8_compat_string:test_split()
  luaunit.assertEquals(
   split('1,2,3'),
   { 1, 2, 3 }
@@ -170,7 +266,7 @@ function test_pico8_compat_string.test_split()
  )
 end
 
-function test_pico8_compat_string.test_tostr()
+function test_pico8_compat_string:test_tostr()
  luaunit.assertEquals(
   tostr(-32768, true),
   '0x8000.0000'
@@ -205,7 +301,7 @@ function test_pico8_compat_string.test_tostr()
  )
 end
 
-function test_pico8_compat_string.test_tonum()
+function test_pico8_compat_string:test_tonum()
  luaunit.assertEquals(
   tonum('17.5'),
   17.5
@@ -283,6 +379,10 @@ function test_pico8_compat_string.test_tonum()
  )
  luaunit.assertNil(
   tonum('0b.')
+ )
+ luaunit.assertEquals(
+  tonum('-0b101'),
+  -5
  )
 end
 
